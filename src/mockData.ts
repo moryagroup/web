@@ -403,9 +403,9 @@ export const INITIAL_OCCASIONS: OccasionEvent[] = [
 ];
 
 export const DEFAULT_USER: CurrentUser = {
-  name: 'संकेत कौले',
-  role: 'खजिनदार',
-  phone: '9822010104',
+  name: 'पाहुणा (Guest)',
+  role: 'सभासद',
+  isLoggedIn: false,
 };
 
 export const INITIAL_INCOMES: IncomeTransaction[] = [

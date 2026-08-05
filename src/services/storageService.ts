@@ -16,6 +16,8 @@ import {
   INITIAL_EVENT_GALLERY,
 } from '../mockData';
 
+export { DEFAULT_USER };
+
 const STORAGE_KEYS = {
   INCOMES: 'morya_mandal_incomes_v2',
   EXPENSES: 'morya_mandal_expenses_v2',
@@ -102,7 +104,12 @@ export const saveCustomIncomeType = (newType: string) => {
 export const getStoredUser = (): CurrentUser => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.USER);
-    return data ? JSON.parse(data) : DEFAULT_USER;
+    if (!data) return DEFAULT_USER;
+    const parsed = JSON.parse(data);
+    if (!parsed || typeof parsed !== 'object' || parsed.isLoggedIn === undefined) {
+      return DEFAULT_USER;
+    }
+    return parsed;
   } catch {
     return DEFAULT_USER;
   }

@@ -18,6 +18,7 @@ import {
   saveCustomIncomeType,
   getStoredUser,
   saveUser,
+  DEFAULT_USER,
   getStoredEventGallery,
   saveEventGallery,
   getStoredGroupLogo,
@@ -98,11 +99,8 @@ export default function App() {
 
   // Logout handler
   const handleLogout = () => {
-    setCurrentUser({
-      name: 'पाहुणा (Guest)',
-      role: 'सभासद',
-      isLoggedIn: false,
-    });
+    setCurrentUser(DEFAULT_USER);
+    saveUser(DEFAULT_USER);
     setActiveTab('dashboard');
   };
 

@@ -9,9 +9,9 @@ import {
 import { INITIAL_MEMBERS } from '../mockData';
 
 export const DEFAULT_CURRENT_USER: CurrentUser = {
-  name: 'संकेत कौले',
-  role: 'खजिनदार',
-  phone: '9822010104',
+  name: 'पाहुणा (Guest)',
+  role: 'सभासद',
+  isLoggedIn: false,
 };
 
 export { INITIAL_MEMBERS };
