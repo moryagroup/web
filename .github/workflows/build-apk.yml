@@ -60,13 +60,13 @@ jobs:
           name: morya-group-android-apk
           path: android/app/build/outputs/apk/debug/morya-group-v1.0.0.apk
 
-      - name: Upload APK to GitHub Release
-        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+      - name: Create & Publish GitHub Release with APK
         uses: softprops/action-gh-release@v2
         with:
           files: android/app/build/outputs/apk/debug/morya-group-v1.0.0.apk
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          tag_name: 'v1.0.0'
+          name: 'Morya Group Mobile APK (v1.0.0)'
+          body: 'Android APK build for Morya Group Web application.'
           draft: false
           prerelease: false
         env:
