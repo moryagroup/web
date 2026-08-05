@@ -1,0 +1,6 @@
+{
+  "name": "Morya Group",
+  "description": "मोरया ग्रुप मित्र मंडळ (ट्रस्ट), हडपसर गोंधळनगर - सर्वंकष जमा व खर्च नोंदणी, सभासद वर्गणी हिशोब, देणगी व प्रायोजक व्यवस्थापन प्रणाली.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
