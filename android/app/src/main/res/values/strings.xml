@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Morya Group</string>
+    <string name="title_activity_main">Morya Group</string>
+    <string name="package_name">com.moryagroup.app</string>
+    <string name="custom_url_scheme">com.moryagroup.app</string>
+</resources>

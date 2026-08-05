@@ -12,7 +12,9 @@ import {
   FileSpreadsheet,
   X,
   Lock,
+  Share2,
 } from 'lucide-react';
+import { NativeService } from '../services/nativeService';
 
 interface IncomeHistoryProps {
   incomes: IncomeTransaction[];
@@ -490,12 +492,26 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               </span>
             </div>
 
-            <button
-              onClick={() => setSelectedIncomeDetail(null)}
-              className="w-full py-2 bg-slate-800 text-white font-bold text-xs rounded-xl hover:bg-slate-900"
-            >
-              बंद करा
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  await NativeService.triggerHaptic();
+                  const msg = `मोरया ग्रुप मित्र मंडळ पावती\nजमादार: ${selectedIncomeDetail.depositorName}\nरक्कम: ₹${selectedIncomeDetail.amount}\nप्रकार: ${selectedIncomeDetail.incomeType}\nपावती क्र: ${selectedIncomeDetail.receiptNumber || 'N/A'}\nतारीख: ${selectedIncomeDetail.date}`;
+                  await NativeService.shareReceipt('मोरया ग्रुप जमा पावती', msg);
+                }}
+                className="flex-1 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+              >
+                <Share2 className="w-4 h-4" />
+                शेअर करा (WhatsApp)
+              </button>
+
+              <button
+                onClick={() => setSelectedIncomeDetail(null)}
+                className="flex-1 py-2 bg-slate-800 text-white font-bold text-xs rounded-xl hover:bg-slate-900 shadow-sm"
+              >
+                बंद करा
+              </button>
+            </div>
           </div>
         </div>
       )}

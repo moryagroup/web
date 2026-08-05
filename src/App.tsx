@@ -38,6 +38,7 @@ import { MemberSubscriptionsView } from './components/MemberSubscriptionsView';
 import { ProfileView } from './components/ProfileView';
 import { LoginModal } from './components/LoginModal';
 import { isBadgedMember } from './utils/rbac';
+import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -339,6 +340,9 @@ export default function App() {
         initialSelectedMemberId={loginModalMemberId}
         initialLoginType={loginModalType}
       />
+
+      {/* Mobile Network Status Notifier */}
+      <NetworkStatusNotifier />
     </div>
   );
 }
