@@ -5,6 +5,12 @@ on:
     branches:
       - main
       - master
+    paths:
+      - 'android/**'
+      - 'capacitor.config.ts'
+      - 'src/services/nativeService.ts'
+      - 'src/components/NetworkStatusNotifier.tsx'
+      - '.github/workflows/build-apk.yml'
   release:
     types: [published, created]
   workflow_dispatch:
