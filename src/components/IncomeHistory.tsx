@@ -49,6 +49,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   const [selectedIncomeDetail, setSelectedIncomeDetail] = useState<IncomeTransaction | null>(null);
 
   const isLoggedIn = currentUser?.isLoggedIn !== false;
+  const isAdmin = isLoggedIn && (currentUser?.role === 'ॲडमिन' || currentUser?.role === 'Admin' || currentUser?.role === 'अध्यक्ष' || currentUser?.role === 'खजिनदार');
 
   if (!isLoggedIn && currentUser) {
     return (
@@ -62,6 +63,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   }
 
   const isFullAccess = currentUser ? hasFullFinancialAccess(currentUser.role) : false;
+  const [editingIncome, setEditingIncome] = useState<IncomeTransaction | null>(null);
 
   const currentMember = useMemo(() => {
     if (!currentUser) return null;

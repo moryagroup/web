@@ -340,7 +340,7 @@ export default function App() {
                 selectedYear={selectedYear}
                 setSelectedYear={setSelectedYear}
                 groupLogo={groupLogo}
-                onSaveGallery={(newGallery) => setGallery(newGallery)}
+                onSaveGallery={(newGallery) => setGalleryState(newGallery)}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onApproveExpense={handleApproveExpense}
                 onLogout={handleLogout}
@@ -422,7 +422,7 @@ export default function App() {
                   members={members}
                   currentUser={currentUser}
                   gallery={gallery}
-                  onSaveGallery={(newGallery) => setGallery(newGallery)}
+                  onSaveGallery={(newGallery) => setGalleryState(newGallery)}
                   onNavigate={(tab) => setActiveTab(tab)}
                   onApproveExpense={handleApproveExpense}
                   onLogout={handleLogout}

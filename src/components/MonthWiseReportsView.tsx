@@ -208,7 +208,8 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.keys(monthlyData).length > 0 ? (
-            Object.entries(monthlyData).map(([monthName, data]) => {
+            Object.entries(monthlyData).map(([monthName, rawData]) => {
+              const data = rawData as { income: number; expense: number };
               const netMonthBalance = data.income - data.expense;
               return (
                 <div

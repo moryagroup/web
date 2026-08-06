@@ -45,11 +45,13 @@ export const SuggestionsView: React.FC<SuggestionsViewProps> = ({
   members,
   onAddSuggestion,
   onUpdateSuggestion,
+  onNavigate,
   onOpenLogin,
 }) => {
   const isLoggedIn = currentUser.isLoggedIn !== false;
   const isAdmin = isLoggedIn && (currentUser.role === 'ॲडमिन' || currentUser.role === 'Admin');
   const isOfficeBearer = isLoggedIn && (isBadgedMember(currentUser.role) || currentUser.role === 'ॲडमिन' || currentUser.role === 'Admin');
+  const isCoreMember = isLoggedIn && isCoreMemberRole(currentUser.role);
 
   // Default target recipient roles (All members having medal 🏅 before name)
   const [adminSelectedRecipients, setAdminSelectedRecipients] = useState<string[]>([
