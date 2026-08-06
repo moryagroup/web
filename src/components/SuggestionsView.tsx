@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { MemberSuggestion, CurrentUser, Member } from '../types';
-import { isCoreMemberRole } from '../utils/rbac';
+import { isCoreMemberRole, isBadgedMember } from '../utils/rbac';
 import {
   MessageSquarePlus,
   Send,
@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Sparkles,
   Settings,
+  Award,
 } from 'lucide-react';
 
 interface SuggestionsViewProps {
@@ -46,13 +47,16 @@ export const SuggestionsView: React.FC<SuggestionsViewProps> = ({
 }) => {
   const isLoggedIn = currentUser.isLoggedIn !== false;
   const isAdmin = isLoggedIn && (currentUser.role === 'ॲडमिन' || currentUser.role === 'Admin');
-  const isCoreMember = isLoggedIn && isCoreMemberRole(currentUser.role);
+  const isOfficeBearer = isLoggedIn && (isBadgedMember(currentUser.role) || currentUser.role === 'ॲडमिन' || currentUser.role === 'Admin');
 
-  // Default target recipient roles selected by Admin
+  // Default target recipient roles (All members having medal 🏅 before name)
   const [adminSelectedRecipients, setAdminSelectedRecipients] = useState<string[]>([
     'अध्यक्ष',
+    'कार्याध्यक्ष',
+    'उपाध्यक्ष',
     'सचिव',
     'खजिनदार',
+    'उपखजिनदार',
   ]);
 
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
@@ -322,8 +326,8 @@ export const SuggestionsView: React.FC<SuggestionsViewProps> = ({
                     </div>
                   )}
 
-                  {/* Action for Core Members to Reply & Update Status */}
-                  {isCoreMember && (
+                  {/* Action for Office Bearers (All members having medal 🏅) to Reply & Update Status */}
+                  {isOfficeBearer && (
                     <div className="pt-1 flex justify-end">
                       <button
                         onClick={() => {
