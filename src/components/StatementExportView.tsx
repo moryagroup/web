@@ -187,6 +187,8 @@ export const StatementExportView: React.FC<StatementExportViewProps> = ({
   };
 
   return (
+    <>
+    <h1 className="text-2xl font-black text-center text-amber-400 mb-4">मोरया ग्रुप मित्र मंडळ (ट्रस्ट)</h1>
     <div className="space-y-6 my-2">
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-amber-950 via-rose-950 to-orange-950 text-white p-6 rounded-3xl shadow-xl border border-amber-500/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -597,5 +599,6 @@ export const StatementExportView: React.FC<StatementExportViewProps> = ({
         </div>
       )}
     </div>
+    </>
   );
 };

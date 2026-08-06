@@ -8,27 +8,35 @@ import {
   CurrentUser,
 } from './types';
 import {
-  getStoredIncomes,
-  saveIncomes,
-  getStoredExpenses,
-  saveExpenses,
-  getStoredMembers,
-  saveMembers,
-  getStoredOccasions,
-  getCustomIncomeTypes,
-  saveCustomIncomeType,
   getStoredUser,
   saveUser,
   DEFAULT_USER,
-  getStoredEventGallery,
-  saveEventGallery,
-  getStoredGroupLogo,
-  saveGroupLogo,
-  getStoredSuggestions,
-  saveSuggestions,
+  getCustomIncomeTypes,
+  saveCustomIncomeType,
   calculateFinancialSummary,
-  resetToDemoData,
 } from './services/storageService';
+import {
+  seedAllCollections,
+  subscribeToIncomes,
+  subscribeToExpenses,
+  subscribeToMembers,
+  subscribeToOccasions,
+  subscribeToGallery,
+  subscribeToSuggestions,
+  subscribeToGroupLogo,
+  saveIncome,
+  deleteIncome,
+  saveExpense,
+  deleteExpense,
+  saveMember,
+  deleteMember,
+  saveOccasion,
+  saveGalleryImage,
+  deleteGalleryImage,
+  saveSuggestion,
+  saveGroupLogo as saveGroupLogoFirestore,
+  resetFirestoreToDemo,
+} from './services/firestoreService';
 
 import { Sidebar } from './components/Sidebar';
 import { HeaderStats } from './components/HeaderStats';
@@ -56,33 +64,61 @@ export default function App() {
   const [loginModalMemberId, setLoginModalMemberId] = useState<string | undefined>(undefined);
   const [loginModalType, setLoginModalType] = useState<'admin' | 'member'>('member');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Application persistent states
-  const [incomes, setIncomes] = useState<IncomeTransaction[]>(getStoredIncomes);
-  const [expenses, setExpenses] = useState<ExpenseTransaction[]>(getStoredExpenses);
-  const [members, setMembers] = useState<Member[]>(getStoredMembers);
-  const [occasions, setOccasions] = useState<OccasionEvent[]>(getStoredOccasions);
+  // Application states — populated by Firestore real-time listeners
+  const [incomes, setIncomes] = useState<IncomeTransaction[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseTransaction[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [occasions, setOccasions] = useState<OccasionEvent[]>([]);
   const [customIncomeTypes, setCustomIncomeTypes] = useState<string[]>(getCustomIncomeTypes);
   const [currentUser, setCurrentUser] = useState<CurrentUser>(getStoredUser);
-  const [gallery, setGallery] = useState(getStoredEventGallery);
-  const [groupLogo, setGroupLogo] = useState<string>(getStoredGroupLogo);
-  const [suggestions, setSuggestions] = useState(getStoredSuggestions);
+  const [gallery, setGalleryState] = useState<any[]>([]);
+  const [groupLogo, setGroupLogo] = useState<string>('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+
+  // Seed Firestore with mock data on first load, then subscribe to all collections
+  useEffect(() => {
+    let unsubscribers: (() => void)[] = [];
+    seedAllCollections().then(() => {
+      unsubscribers = [
+        subscribeToIncomes(setIncomes),
+        subscribeToExpenses(setExpenses),
+        subscribeToMembers((data) => {
+          setMembers(data);
+          setIsLoading(false);
+        }),
+        subscribeToOccasions(setOccasions),
+        subscribeToGallery(setGalleryState),
+        subscribeToSuggestions(setSuggestions),
+        subscribeToGroupLogo(setGroupLogo),
+      ];
+    }).catch((err) => {
+      console.error('Firestore seed error:', err);
+      setIsLoading(false);
+    });
+    return () => unsubscribers.forEach((u) => u());
+  }, []);
+
+  // Keep currentUser in localStorage (it's device-specific session data)
+  useEffect(() => {
+    saveUser(currentUser);
+    if (activeTab === 'member-subscriptions' && (!currentUser.isLoggedIn || !isBadgedMember(currentUser.role))) {
+      setActiveTab('dashboard');
+    }
+  }, [currentUser, activeTab]);
+
 
   const handleAddSuggestion = (newSug: any) => {
-    const updated = [newSug, ...suggestions];
-    setSuggestions(updated);
-    saveSuggestions(updated);
+    saveSuggestion(newSug).catch(console.error);
   };
 
   const handleUpdateSuggestion = (updatedSug: any) => {
-    const updated = suggestions.map((s) => (s.id === updatedSug.id ? updatedSug : s));
-    setSuggestions(updated);
-    saveSuggestions(updated);
+    saveSuggestion(updatedSug).catch(console.error);
   };
 
   const handleUpdateGroupLogo = (logoUrl: string) => {
-    saveGroupLogo(logoUrl);
-    setGroupLogo(logoUrl);
+    saveGroupLogoFirestore(logoUrl).catch(console.error);
   };
 
   const handleOpenLogin = (memberId?: string, type: 'admin' | 'member' = 'member') => {
@@ -91,29 +127,7 @@ export default function App() {
     setIsLoginModalOpen(true);
   };
 
-  // Sync to localStorage
-  useEffect(() => {
-    saveIncomes(incomes);
-  }, [incomes]);
-
-  useEffect(() => {
-    saveExpenses(expenses);
-  }, [expenses]);
-
-  useEffect(() => {
-    saveMembers(members);
-  }, [members]);
-
-  useEffect(() => {
-    saveUser(currentUser);
-    if (activeTab === 'member-subscriptions' && (!currentUser.isLoggedIn || !isBadgedMember(currentUser.role))) {
-      setActiveTab('dashboard');
-    }
-  }, [currentUser, activeTab]);
-
-  useEffect(() => {
-    saveEventGallery(gallery);
-  }, [gallery]);
+  // (localStorage sync removed — Firestore handles persistence)
 
   // Login Success handler
   const handleLoginSuccess = (user: CurrentUser) => {
@@ -138,17 +152,17 @@ export default function App() {
 
   // Add Income Transaction
   const handleAddIncome = (newIncome: IncomeTransaction) => {
-    setIncomes((prev) => [newIncome, ...prev]);
+    saveIncome(newIncome).catch(console.error);
   };
 
   // Update Income Transaction (Admin Only)
   const handleUpdateIncome = (updatedIncome: IncomeTransaction) => {
-    setIncomes((prev) => prev.map((i) => (i.id === updatedIncome.id ? updatedIncome : i)));
+    saveIncome(updatedIncome).catch(console.error);
   };
 
   // Delete Income Transaction (Admin Only)
   const handleDeleteIncome = (incomeId: string) => {
-    setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
+    deleteIncome(incomeId).catch(console.error);
   };
 
   // Add Custom Income Type
@@ -159,70 +173,69 @@ export default function App() {
 
   // Add Expense Transaction
   const handleAddExpense = (newExpense: ExpenseTransaction) => {
-    setExpenses((prev) => [newExpense, ...prev]);
+    saveExpense(newExpense).catch(console.error);
   };
 
   // Update Expense Transaction (Admin Only)
   const handleUpdateExpense = (updatedExpense: ExpenseTransaction) => {
-    setExpenses((prev) => prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e)));
+    saveExpense(updatedExpense).catch(console.error);
   };
 
   // Delete Expense Transaction (Admin Only)
   const handleDeleteExpense = (expenseId: string) => {
-    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+    deleteExpense(expenseId).catch(console.error);
   };
 
   // Approve Expense
   const handleApproveExpense = (expId: string, approverName: string, approverRole: any) => {
-    setExpenses((prev) =>
-      prev.map((e) => {
-        if (e.id === expId) {
-          return {
-            ...e,
-            approvalStatus: 'मंजूर',
-            approvedBy: `${approverName} (${approverRole})`,
-            approvedByRole: approverRole,
-            approvedAt: new Date().toISOString(),
-          };
-        }
-        return e;
-      })
-    );
+    const expense = expenses.find((e) => e.id === expId);
+    if (!expense) return;
+    const updated = {
+      ...expense,
+      approvalStatus: 'मंजूर' as const,
+      approvedBy: `${approverName} (${approverRole})`,
+      approvedByRole: approverRole,
+      approvedAt: new Date().toISOString(),
+    };
+    saveExpense(updated).catch(console.error);
   };
 
   // Add Member
   const handleAddMember = (newMember: Member) => {
-    setMembers((prev) => [...prev, newMember]);
+    saveMember(newMember).catch(console.error);
   };
 
   // Update Member
   const handleUpdateMember = (updatedMember: Member) => {
-    setMembers((prev) =>
-      prev.map((m) => (m.id === updatedMember.id ? updatedMember : m))
-    );
+    saveMember(updatedMember).catch(console.error);
   };
 
   // Delete Member
   const handleDeleteMember = (memberId: string) => {
-    setMembers((prev) => prev.filter((m) => m.id !== memberId));
+    deleteMember(memberId).catch(console.error);
   };
 
   // Reset to Demo Data
   const handleResetData = () => {
     if (window.confirm('तुम्हाला खरोखर सर्व मूळ प्रात्यक्षिक (Demo) डेटा रिसेट करायचा आहे का?')) {
-      resetToDemoData();
-      setIncomes(getStoredIncomes());
-      setExpenses(getStoredExpenses());
-      setMembers(getStoredMembers());
-      setOccasions(getStoredOccasions());
-      setCustomIncomeTypes(getCustomIncomeTypes());
-      setCurrentUser(getStoredUser());
-      setGallery(getStoredEventGallery());
-      setGroupLogo(getStoredGroupLogo());
+      resetFirestoreToDemo().catch(console.error);
+      setCurrentUser(DEFAULT_USER);
+      saveUser(DEFAULT_USER);
     }
   };
 
   return (
+    <>
+    {isLoading && (
+      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950">
+        <img src={moryaLogo} alt="logo" className="w-20 h-20 rounded-full border-2 border-amber-400 mb-4 animate-pulse" />
+        <p className="text-amber-400 font-bold text-lg mb-2">मोरया ग्रुप मित्र मंडळ (ट्रस्ट)</p>
+        <p className="text-slate-400 text-sm">डेटा लोड होत आहे...</p>
+        <div className="mt-4 w-40 h-1 bg-slate-800 rounded-full overflow-hidden">
+          <div className="h-full bg-amber-500 rounded-full animate-[pulse_1s_ease-in-out_infinite] w-2/3"></div>
+        </div>
+      </div>
+    )}
     <div className="flex h-screen bg-gradient-to-br from-amber-50/80 via-orange-50/40 to-amber-100/60 font-sans text-slate-800 overflow-hidden antialiased select-none">
       {/* Sidebar / Mobile Drawer Component */}
       <Sidebar
@@ -256,10 +269,16 @@ export default function App() {
             </button>
 
             <div className="flex items-center gap-2">
+              <img
+                src={groupLogo || moryaLogo}
+                alt="मोरया ग्रुप मित्र मंडळ (ट्रस्ट) लोगो"
+                className="w-8 h-8 object-contain rounded-full border border-amber-400 p-0.5 bg-slate-950 shrink-0 shadow-sm"
+              />
               <div>
-                <h1 className="text-xs font-black text-amber-400">
-                  हडपसर गोंधळनगर
+                <h1 className="text-xs font-black text-amber-400 truncate max-w-[180px] sm:max-w-none">
+                  मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
                 </h1>
+                <p className="text-[9px] text-amber-200/80 font-bold leading-none">हडपसर गोंधळनगर</p>
               </div>
             </div>
           </div>
@@ -502,5 +521,6 @@ export default function App() {
       {/* Mobile Network Status Notifier */}
       <NetworkStatusNotifier />
     </div>
+    </>
   );
 }

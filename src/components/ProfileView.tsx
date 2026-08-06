@@ -66,6 +66,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const profileLogoInputRef = useRef<HTMLInputElement>(null);
 
   const [cropImageSrc, setCropImageSrc] = useState<string>('');
+  // Ref for member photo file input
+  const memberPhotoInputRef = useRef<HTMLInputElement>(null);
+
   const [isCropModalOpen, setIsCropModalOpen] = useState<boolean>(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
 
@@ -88,6 +91,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     }
     e.target.value = '';
   };
+
+  // Handle member photo change (no cropping for simplicity)
+  const handleMemberPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 8 * 1024 * 1024) {
+        alert('चित्राचा आकार ८MB पेक्षा कमी असावा.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        if (result) {
+          // Update member's photoUrl
+          onUpdateMember({ ...currentProfile, photoUrl: result });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
 
   const handleCropComplete = (croppedUrl: string) => {
     if (onUpdateGroupLogo) {
@@ -303,14 +325,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <ShieldCheck className="w-4 h-4" />
               </span>
             )}
-            <input
-              type="file"
-              ref={profileLogoInputRef}
-              accept="image/*"
-              className="hidden"
-              onChange={handleProfileLogoChange}
-            />
+            {/* Hidden file inputs */}
+            <input type="file" ref={profileLogoInputRef} accept="image/*" className="hidden" onChange={handleProfileLogoChange} />
           </div>
+
+          {/* Member Profile Photo (separate from logo) */}
+          <div className="relative group cursor-pointer shrink-0" onClick={() => memberPhotoInputRef.current?.click()} title="मेमेंबर फोटो बदला (Click to Change Photo)">
+            {currentProfile.photoUrl ? (
+              <img src={currentProfile.photoUrl} alt={currentProfile.fullName} className="w-16 h-16 object-cover rounded-full border-2 border-amber-400 p-0.5 bg-slate-950" />
+            ) : (
+              <div className="w-16 h-16 rounded-full border-2 border-amber-400/90 bg-amber-500/20 flex flex-col items-center justify-center text-amber-300 font-black">
+                <User className="w-7 h-7 text-amber-400" />
+                <span className="text-[8px] font-bold text-amber-200">फोटो जोडा</span>
+              </div>
+            )}
+            <div className="absolute -bottom-1 -right-1 bg-amber-500 hover:bg-amber-400 text-slate-950 p-1 rounded-full border border-amber-300 shadow-md group-hover:scale-110 transition-transform">
+              <Camera className="w-3.5 h-3.5" />
+            </div>
+            <input type="file" ref={memberPhotoInputRef} accept="image/*" className="hidden" onChange={handleMemberPhotoChange} />
+          </div>
+
 
           <div className="text-center sm:text-left flex-1 space-y-2">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
@@ -839,3 +873,4 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     </div>
   );
 };
+}

@@ -80,6 +80,7 @@ export interface Member {
   email?: string; // ई-मेल आयडी
   age?: number; // वय
   password?: string; // सभासद / खात्याचा पासवर्ड
+  photoUrl?: string; // Member profile photo URL
 }
 
 export interface OccasionEvent {
