@@ -256,16 +256,10 @@ export default function App() {
             </button>
 
             <div className="flex items-center gap-2">
-              <img
-                src={groupLogo || moryaLogo}
-                alt="मंडळ लोगो"
-                className="w-7 h-7 object-contain rounded-full border border-amber-400/80 p-0.5 bg-slate-950 shrink-0 shadow-xs"
-              />
               <div>
-                <h1 className="text-xs font-black text-amber-400 truncate max-w-[180px] sm:max-w-none">
-                  मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
+                <h1 className="text-xs font-black text-amber-400">
+                  हडपसर गोंधळनगर
                 </h1>
-                <p className="text-[9px] text-amber-200/80 font-bold leading-none">हडपसर गोंधळनगर</p>
               </div>
             </div>
           </div>

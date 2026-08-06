@@ -213,7 +213,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               नमस्कार, {currentUser.name}! 🙏
             </h2>
             <p className="text-xs text-slate-300 mt-1 max-w-xl">
-              <strong className="text-amber-300">हडपसर गोंधळनगर</strong> — मंडळाचे सर्व उत्पन्न, वर्गणी, प्रायोजकत्व व खर्चाची अधिकृत डिजिटल हिशोब नोंदणी प्रणाली.
+              <strong className="text-amber-300">हडपसर गोंधळनगर</strong> — सर्व उत्पन्न, वर्गणी, प्रायोजकत्व व खर्चाची अधिकृत डिजिटल हिशोब नोंदणी प्रणाली.
             </p>
           </div>
         </div>
