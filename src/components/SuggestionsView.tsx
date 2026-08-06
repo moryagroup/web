@@ -215,7 +215,7 @@ export const SuggestionsView: React.FC<SuggestionsViewProps> = ({
             सभासदांनी मांडलेली कोणतीही नवीन सूचना निवडलेल्या पदाधिकाऱ्यांच्या डॅशबोर्डवर थेट दिसेल.
           </p>
           <div className="flex flex-wrap gap-3 pt-1">
-            {['अध्यक्ष', 'उपाध्यक्ष', 'कार्याध्यक्ष', 'सचिव', 'उपसचिव', 'खजिनदार', 'उपखजिनदार', 'संघटक', 'सहसंघटक', 'सल्लागार', 'कायदा सल्लागार'].map((role) => {
+            {['अध्यक्ष', 'उपाध्यक्ष', 'कार्याध्यक्ष', 'सचिव', 'उपसचिव', 'खजिनदार', 'उपखजिनदार', 'संघटक', 'सहसंघटक', 'सल्लागार', 'कार्या सल्लागार'].map((role) => {
               const isChecked = adminSelectedRecipients.includes(role);
               return (
                 <label
@@ -411,7 +411,7 @@ export const SuggestionsView: React.FC<SuggestionsViewProps> = ({
                   ही सूचना थेट कोणत्या पदाधिकाऱ्यांकडे पाठवायची?
                 </label>
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {['अध्यक्ष', 'उपाध्यक्ष', 'कार्याध्यक्ष', 'सचिव', 'उपसचिव', 'खजिनदार', 'उपखजिनदार', 'संघटक', 'सहसंघटक', 'सल्लागार', 'कायदा सल्लागार'].map((role) => {
+                  {['अध्यक्ष', 'उपाध्यक्ष', 'कार्याध्यक्ष', 'सचिव', 'उपसचिव', 'खजिनदार', 'उपखजिनदार', 'संघटक', 'सहसंघटक', 'सल्लागार', 'कार्या सल्लागार'].map((role) => {
                     const isChecked = selectedRecipients.includes(role);
                     return (
                       <label

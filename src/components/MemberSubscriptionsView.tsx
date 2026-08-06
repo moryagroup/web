@@ -603,7 +603,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                   <option value="संघटक">संघटक</option>
                   <option value="सहसंघटक">सहसंघटक</option>
                   <option value="सल्लागार">सल्लागार</option>
-                  <option value="कायदा सल्लागार">कायदा सल्लागार</option>
+                  <option value="कार्या सल्लागार">कार्या सल्लागार</option>
                   <option value="इतर">इतर (कस्टम पद जोडा)</option>
                 </select>
               </div>
@@ -815,7 +815,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                   <option value="संघटक">संघटक</option>
                   <option value="सहसंघटक">सहसंघटक</option>
                   <option value="सल्लागार">सल्लागार</option>
-                  <option value="कायदा सल्लागार">कायदा सल्लागार</option>
+                  <option value="कार्या सल्लागार">कार्या सल्लागार</option>
                   <option value="इतर">इतर (कस्टम पद)</option>
                 </select>
               </div>
