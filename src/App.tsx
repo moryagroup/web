@@ -48,7 +48,6 @@ import { LoginModal } from './components/LoginModal';
 import { isBadgedMember } from './utils/rbac';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { Menu } from 'lucide-react';
-import moryaLogo from './assets/morya_logo.jpg';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
