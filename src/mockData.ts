@@ -553,6 +553,24 @@ export const INITIAL_EXPENSES: ExpenseTransaction[] = [
     approvalStatus: 'प्रलंबित',
     createdBy: 'राजेश पाटील (खजिनदार)',
     createdAt: '2026-08-03T15:30:00',
+  },
+  {
+    id: 'exp-2003',
+    transactionNo: 'EXP-2026-2068',
+    amount: 200,
+    expenseDate: '2026-08-06',
+    recipientType: 'दुकान / Vendor',
+    recipientName: 'Prasad',
+    expenseCategory: 'महाप्रसाद व भोजन',
+    occasionId: 'occ-1',
+    occasionName: 'गणेशोत्सव २०२६',
+    reason: 'Prasad',
+    description: 'महाप्रसाद व भोजन खर्च',
+    paymentMethod: 'UPI',
+    financialYear: '२०२६-२७',
+    approvalStatus: 'प्रलंबित',
+    createdBy: 'राकेश पोटे (अध्यक्ष)',
+    createdAt: '2026-08-06T12:00:00',
   }
 ];
 
