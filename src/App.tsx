@@ -8,6 +8,13 @@ import {
   CurrentUser,
 } from './types';
 import {
+  getStoredIncomes,
+  getStoredExpenses,
+  getStoredMembers,
+  getStoredOccasions,
+  getStoredEventGallery,
+  getStoredGroupLogo,
+  getStoredSuggestions,
   getStoredUser,
   saveUser,
   DEFAULT_USER,
@@ -66,38 +73,44 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Application states — populated by Firestore real-time listeners
-  const [incomes, setIncomes] = useState<IncomeTransaction[]>([]);
-  const [expenses, setExpenses] = useState<ExpenseTransaction[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [occasions, setOccasions] = useState<OccasionEvent[]>([]);
+  // Application states — populated by initial storage + Firestore real-time listeners
+  const [incomes, setIncomes] = useState<IncomeTransaction[]>(getStoredIncomes);
+  const [expenses, setExpenses] = useState<ExpenseTransaction[]>(getStoredExpenses);
+  const [members, setMembers] = useState<Member[]>(getStoredMembers);
+  const [occasions, setOccasions] = useState<OccasionEvent[]>(getStoredOccasions);
   const [customIncomeTypes, setCustomIncomeTypes] = useState<string[]>(getCustomIncomeTypes);
   const [currentUser, setCurrentUser] = useState<CurrentUser>(getStoredUser);
-  const [gallery, setGalleryState] = useState<any[]>([]);
-  const [groupLogo, setGroupLogo] = useState<string>('');
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [gallery, setGalleryState] = useState<any[]>(getStoredEventGallery);
+  const [groupLogo, setGroupLogo] = useState<string>(getStoredGroupLogo);
+  const [suggestions, setSuggestions] = useState<any[]>(getStoredSuggestions);
 
-  // Seed Firestore with mock data on first load, then subscribe to all collections
+  // Subscribe to Firestore collections & trigger seed in background
   useEffect(() => {
-    let unsubscribers: (() => void)[] = [];
-    seedAllCollections().then(() => {
-      unsubscribers = [
-        subscribeToIncomes(setIncomes),
-        subscribeToExpenses(setExpenses),
-        subscribeToMembers((data) => {
-          setMembers(data);
-          setIsLoading(false);
-        }),
-        subscribeToOccasions(setOccasions),
-        subscribeToGallery(setGalleryState),
-        subscribeToSuggestions(setSuggestions),
-        subscribeToGroupLogo(setGroupLogo),
-      ];
-    }).catch((err) => {
-      console.error('Firestore seed error:', err);
+    // Hide loading screen after max 1 second safety window
+    const timer = setTimeout(() => {
       setIsLoading(false);
-    });
-    return () => unsubscribers.forEach((u) => u());
+    }, 1000);
+
+    const unsubscribers = [
+      subscribeToIncomes(setIncomes),
+      subscribeToExpenses(setExpenses),
+      subscribeToMembers((data) => {
+        setMembers(data);
+        setIsLoading(false);
+      }),
+      subscribeToOccasions(setOccasions),
+      subscribeToGallery(setGalleryState),
+      subscribeToSuggestions(setSuggestions),
+      subscribeToGroupLogo(setGroupLogo),
+    ];
+
+    // Seed empty Firestore collections in background
+    seedAllCollections().catch((err) => console.warn('Background seed error:', err));
+
+    return () => {
+      clearTimeout(timer);
+      unsubscribers.forEach((u) => u());
+    };
   }, []);
 
   // Keep currentUser in localStorage (it's device-specific session data)

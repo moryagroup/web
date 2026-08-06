@@ -48,25 +48,33 @@ async function seedIfEmpty<T extends { id: string }>(
   colName: string,
   initial: T[]
 ): Promise<void> {
-  const snap = await getDocs(collection(db, colName));
-  if (snap.empty) {
-    const batch = writeBatch(db);
-    initial.forEach((item) => {
-      batch.set(doc(db, colName, item.id), item);
-    });
-    await batch.commit();
+  try {
+    const snap = await getDocs(collection(db, colName));
+    if (snap.empty) {
+      const batch = writeBatch(db);
+      initial.forEach((item) => {
+        batch.set(doc(db, colName, item.id), item);
+      });
+      await batch.commit();
+    }
+  } catch (err) {
+    console.warn(`[Firestore] Seed skipped for ${colName}:`, err);
   }
 }
 
 export async function seedAllCollections(): Promise<void> {
-  await Promise.all([
-    seedIfEmpty(COLS.incomes, INITIAL_INCOMES),
-    seedIfEmpty(COLS.expenses, INITIAL_EXPENSES),
-    seedIfEmpty(COLS.members, INITIAL_MEMBERS),
-    seedIfEmpty(COLS.occasions, INITIAL_OCCASIONS),
-    seedIfEmpty(COLS.gallery, INITIAL_EVENT_GALLERY),
-    seedIfEmpty(COLS.suggestions, INITIAL_SUGGESTIONS),
-  ]);
+  try {
+    await Promise.all([
+      seedIfEmpty(COLS.incomes, INITIAL_INCOMES),
+      seedIfEmpty(COLS.expenses, INITIAL_EXPENSES),
+      seedIfEmpty(COLS.members, INITIAL_MEMBERS),
+      seedIfEmpty(COLS.occasions, INITIAL_OCCASIONS),
+      seedIfEmpty(COLS.gallery, INITIAL_EVENT_GALLERY),
+      seedIfEmpty(COLS.suggestions, INITIAL_SUGGESTIONS),
+    ]);
+  } catch (err) {
+    console.warn('[Firestore] seedAllCollections error:', err);
+  }
 }
 
 // ─── Real-time listeners ─────────────────────────────────────────────────────
@@ -74,69 +82,98 @@ export async function seedAllCollections(): Promise<void> {
 export function subscribeToIncomes(
   callback: (data: IncomeTransaction[]) => void
 ): () => void {
-  return onSnapshot(collection(db, COLS.incomes), (snap) => {
-    const data = snap.docs.map((d) => d.data() as IncomeTransaction);
-    // Sort by createdAt descending
-    data.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
-    callback(data);
-  });
+  return onSnapshot(
+    collection(db, COLS.incomes),
+    (snap) => {
+      const data = snap.docs.map((d) => d.data() as IncomeTransaction);
+      data.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
+      callback(data);
+    },
+    (err) => console.warn('[Firestore] subscribeToIncomes error:', err)
+  );
 }
 
 export function subscribeToExpenses(
   callback: (data: ExpenseTransaction[]) => void
 ): () => void {
-  return onSnapshot(collection(db, COLS.expenses), (snap) => {
-    const data = snap.docs.map((d) => d.data() as ExpenseTransaction);
-    data.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
-    callback(data);
-  });
+  return onSnapshot(
+    collection(db, COLS.expenses),
+    (snap) => {
+      const data = snap.docs.map((d) => d.data() as ExpenseTransaction);
+      data.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
+      callback(data);
+    },
+    (err) => console.warn('[Firestore] subscribeToExpenses error:', err)
+  );
 }
 
 export function subscribeToMembers(
   callback: (data: Member[]) => void
 ): () => void {
-  return onSnapshot(collection(db, COLS.members), (snap) => {
-    const data = snap.docs.map((d) => d.data() as Member);
-    data.sort((a, b) => a.memberCode.localeCompare(b.memberCode));
-    callback(data);
-  });
+  return onSnapshot(
+    collection(db, COLS.members),
+    (snap) => {
+      const data = snap.docs.map((d) => d.data() as Member);
+      if (data.length > 0) {
+        data.sort((a, b) => a.memberCode.localeCompare(b.memberCode));
+        callback(data);
+      }
+    },
+    (err) => console.warn('[Firestore] subscribeToMembers error:', err)
+  );
 }
 
 export function subscribeToOccasions(
   callback: (data: OccasionEvent[]) => void
 ): () => void {
-  return onSnapshot(collection(db, COLS.occasions), (snap) => {
-    const data = snap.docs.map((d) => d.data() as OccasionEvent);
-    callback(data);
-  });
+  return onSnapshot(
+    collection(db, COLS.occasions),
+    (snap) => {
+      const data = snap.docs.map((d) => d.data() as OccasionEvent);
+      if (data.length > 0) callback(data);
+    },
+    (err) => console.warn('[Firestore] subscribeToOccasions error:', err)
+  );
 }
 
 export function subscribeToGallery(
   callback: (data: EventGalleryImage[]) => void
 ): () => void {
-  return onSnapshot(collection(db, COLS.gallery), (snap) => {
-    const data = snap.docs.map((d) => d.data() as EventGalleryImage);
-    callback(data);
-  });
+  return onSnapshot(
+    collection(db, COLS.gallery),
+    (snap) => {
+      const data = snap.docs.map((d) => d.data() as EventGalleryImage);
+      if (data.length > 0) callback(data);
+    },
+    (err) => console.warn('[Firestore] subscribeToGallery error:', err)
+  );
 }
 
 export function subscribeToSuggestions(
   callback: (data: MemberSuggestion[]) => void
 ): () => void {
-  return onSnapshot(collection(db, COLS.suggestions), (snap) => {
-    const data = snap.docs.map((d) => d.data() as MemberSuggestion);
-    data.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
-    callback(data);
-  });
+  return onSnapshot(
+    collection(db, COLS.suggestions),
+    (snap) => {
+      const data = snap.docs.map((d) => d.data() as MemberSuggestion);
+      data.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
+      callback(data);
+    },
+    (err) => console.warn('[Firestore] subscribeToSuggestions error:', err)
+  );
 }
 
 export function subscribeToGroupLogo(
   callback: (logo: string) => void
 ): () => void {
-  return onSnapshot(doc(db, COLS.settings, 'groupLogo'), (snap) => {
-    const data = snap.data();
-    callback(data?.url || '');
-  });
+  return onSnapshot(
+    doc(db, COLS.settings, 'groupLogo'),
+    (snap) => {
+      const data = snap.data();
+      if (data?.url) callback(data.url);
+    },
+    (err) => console.warn('[Firestore] subscribeToGroupLogo error:', err)
+  );
 }
 
 // ─── Write helpers ───────────────────────────────────────────────────────────
