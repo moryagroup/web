@@ -412,7 +412,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
         <div>
           <p className="font-bold text-sm">पदाधिकारी क्रमवारी नियम:</p>
           <p className="mt-0.5 text-amber-800">
-            यादीमध्ये प्रथम पदाधिकारी क्रमाने सर्व पदधारकांची नावे (<strong>अध्यक्ष → कार्याध्यक्ष → उपाध्यक्ष → सचिव → खजिनदार → उपखजिनदार</strong>) दर्शविली जातात, त्यानंतर सर्व इतर <strong>सभासद</strong> दाखवले जातात.
+            यादीमध्ये प्रथम पदाधिकारी क्रमाने सर्व पदधारकांची नावे (<strong>अध्यक्ष → उपाध्यक्ष → कार्याध्यक्ष → सचिव → उपसचिव → खजिनदार → उपखजिनदार</strong>) दर्शविली जातात, त्यानंतर सर्व इतर <strong>सभासद</strong> दाखवले जातात.
           </p>
         </div>
       </div>
@@ -594,8 +594,8 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                 >
                   <option value="सभासद">सभासद</option>
                   <option value="अध्यक्ष">अध्यक्ष</option>
-                  <option value="कार्याध्यक्ष">कार्याध्यक्ष</option>
                   <option value="उपाध्यक्ष">उपाध्यक्ष</option>
+                  <option value="कार्याध्यक्ष">कार्याध्यक्ष</option>
                   <option value="सचिव">सचिव</option>
                   <option value="उपसचिव">उपसचिव</option>
                   <option value="खजिनदार">खजिनदार</option>
@@ -806,8 +806,8 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                 >
                   <option value="सभासद">सभासद</option>
                   <option value="अध्यक्ष">अध्यक्ष</option>
-                  <option value="कार्याध्यक्ष">कार्याध्यक्ष</option>
                   <option value="उपाध्यक्ष">उपाध्यक्ष</option>
+                  <option value="कार्याध्यक्ष">कार्याध्यक्ष</option>
                   <option value="सचिव">सचिव</option>
                   <option value="उपसचिव">उपसचिव</option>
                   <option value="खजिनदार">खजिनदार</option>
