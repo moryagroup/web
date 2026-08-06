@@ -478,18 +478,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
         )}
-
-        <button
-          onClick={() => {
-            onResetData();
-            onClose?.();
-          }}
-          className="w-full pt-1 flex items-center justify-center gap-1.5 py-1 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 rounded transition-colors"
-          title="डेमो डेटा रिसेट करा"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>डेटा रिसेट करा</span>
-        </button>
       </div>
 
       {/* Image Crop Modal */}

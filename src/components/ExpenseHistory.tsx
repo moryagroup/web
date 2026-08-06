@@ -12,6 +12,8 @@ import {
   X,
   Check,
   Lock,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 
 interface ExpenseHistoryProps {
@@ -19,6 +21,8 @@ interface ExpenseHistoryProps {
   currentUser: CurrentUser;
   financialYear: string;
   onApproveExpense: (expenseId: string, approverName: string, approverRole: any) => void;
+  onUpdateExpense?: (updatedExpense: ExpenseTransaction) => void;
+  onDeleteExpense?: (expenseId: string) => void;
   onOpenLogin?: () => void;
 }
 
@@ -27,6 +31,8 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
   currentUser,
   financialYear,
   onApproveExpense,
+  onUpdateExpense,
+  onDeleteExpense,
   onOpenLogin,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,8 +43,10 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
   const [selectedExpenseDetail, setSelectedExpenseDetail] = useState<ExpenseTransaction | null>(
     null
   );
+  const [editingExpense, setEditingExpense] = useState<ExpenseTransaction | null>(null);
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
+  const isAdmin = isLoggedIn && (currentUser.role === 'ॲडमिन' || currentUser.role === 'Admin');
 
   if (!isLoggedIn) {
     return (
@@ -341,6 +349,32 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                             <span>मंजूर</span>
                           </button>
                         )}
+                        {isAdmin && (
+                          <>
+                            <button
+                              onClick={() => setEditingExpense({ ...item })}
+                              className="p-1.5 hover:bg-amber-100 text-amber-700 rounded-lg transition-colors cursor-pointer"
+                              title="व्यवहार संपादित करा (ॲडमिन)"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `तुम्हाला खरोखर खर्च पावती क्र. ${item.transactionNo} (₹${item.amount}) डिलीट / रद्द करायची आहे का?`
+                                  )
+                                ) {
+                                  onDeleteExpense?.(item.id);
+                                }
+                              }}
+                              className="p-1.5 hover:bg-rose-100 text-rose-700 rounded-lg transition-colors cursor-pointer"
+                              title="व्यवहार डिलीट करा (ॲडमिन)"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -480,6 +514,124 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
             >
               बंद करा
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Edit Expense Modal */}
+      {editingExpense && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Pencil className="w-5 h-5 text-amber-600" />
+                खर्च व्यवहार संपादित करा (ॲडमिन)
+              </h3>
+              <button
+                onClick={() => setEditingExpense(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (editingExpense) {
+                  onUpdateExpense?.(editingExpense);
+                  setEditingExpense(null);
+                }
+              }}
+              className="space-y-3 text-xs"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">खर्चाची रक्कम (₹) *</label>
+                  <input
+                    type="number"
+                    required
+                    value={editingExpense.amount}
+                    onChange={(e) => setEditingExpense({ ...editingExpense, amount: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-slate-300 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">तारीख *</label>
+                  <input
+                    type="date"
+                    required
+                    value={editingExpense.expenseDate}
+                    onChange={(e) => setEditingExpense({ ...editingExpense, expenseDate: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">प्राप्तकर्ता (कोणाला दिले) *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingExpense.recipientName}
+                  onChange={(e) => setEditingExpense({ ...editingExpense, recipientName: e.target.value })}
+                  className="w-full p-2.5 border border-slate-300 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">कारण / तपशील *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingExpense.reason}
+                  onChange={(e) => setEditingExpense({ ...editingExpense, reason: e.target.value })}
+                  className="w-full p-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-amber-500 outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">पेमेंट मोड *</label>
+                  <select
+                    value={editingExpense.paymentMethod}
+                    onChange={(e) => setEditingExpense({ ...editingExpense, paymentMethod: e.target.value as any })}
+                    className="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 outline-none"
+                  >
+                    <option value="रोख">रोख</option>
+                    <option value="UPI">UPI</option>
+                    <option value="बँक ट्रान्सफर">बँक ट्रान्सफर</option>
+                    <option value="चेक">चेक</option>
+                    <option value="इतर">इतर</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">रेफरन्स क्र. / UPI ID</label>
+                  <input
+                    type="text"
+                    value={editingExpense.paymentReference || ''}
+                    onChange={(e) => setEditingExpense({ ...editingExpense, paymentReference: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-amber-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingExpense(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
+                >
+                  रद्द करा
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow cursor-pointer"
+                >
+                  बदल सेव्ह करा
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

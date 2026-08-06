@@ -140,6 +140,16 @@ export default function App() {
     setIncomes((prev) => [newIncome, ...prev]);
   };
 
+  // Update Income Transaction (Admin Only)
+  const handleUpdateIncome = (updatedIncome: IncomeTransaction) => {
+    setIncomes((prev) => prev.map((i) => (i.id === updatedIncome.id ? updatedIncome : i)));
+  };
+
+  // Delete Income Transaction (Admin Only)
+  const handleDeleteIncome = (incomeId: string) => {
+    setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
+  };
+
   // Add Custom Income Type
   const handleAddCustomIncomeType = (newType: string) => {
     const updated = saveCustomIncomeType(newType);
@@ -149,6 +159,16 @@ export default function App() {
   // Add Expense Transaction
   const handleAddExpense = (newExpense: ExpenseTransaction) => {
     setExpenses((prev) => [newExpense, ...prev]);
+  };
+
+  // Update Expense Transaction (Admin Only)
+  const handleUpdateExpense = (updatedExpense: ExpenseTransaction) => {
+    setExpenses((prev) => prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e)));
+  };
+
+  // Delete Expense Transaction (Admin Only)
+  const handleDeleteExpense = (expenseId: string) => {
+    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
   };
 
   // Approve Expense
@@ -329,6 +349,8 @@ export default function App() {
                 members={members}
                 financialYear={selectedYear}
                 currentUser={currentUser}
+                onUpdateIncome={handleUpdateIncome}
+                onDeleteIncome={handleDeleteIncome}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />
             )}
@@ -339,6 +361,8 @@ export default function App() {
                 currentUser={currentUser}
                 financialYear={selectedYear}
                 onApproveExpense={handleApproveExpense}
+                onUpdateExpense={handleUpdateExpense}
+                onDeleteExpense={handleDeleteExpense}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />
             )}

@@ -13,6 +13,8 @@ import {
   X,
   Lock,
   Share2,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { NativeService } from '../services/nativeService';
 
@@ -21,6 +23,8 @@ interface IncomeHistoryProps {
   members: Member[];
   financialYear: string;
   currentUser?: CurrentUser;
+  onUpdateIncome?: (updatedIncome: IncomeTransaction) => void;
+  onDeleteIncome?: (incomeId: string) => void;
   onOpenLogin?: () => void;
 }
 
@@ -29,6 +33,8 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   members,
   financialYear,
   currentUser,
+  onUpdateIncome,
+  onDeleteIncome,
   onOpenLogin,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -369,13 +375,41 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                     </td>
                     <td className="p-3.5 text-[11px] text-slate-500">{item.createdBy}</td>
                     <td className="p-3.5 text-center">
-                      <button
-                        onClick={() => setSelectedIncomeDetail(item)}
-                        className="p-1.5 hover:bg-slate-100 text-slate-600 hover:text-emerald-700 rounded-lg transition-colors cursor-pointer"
-                        title="संपूर्ण पावती/तपशील पहा"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => setSelectedIncomeDetail(item)}
+                          className="p-1.5 hover:bg-slate-100 text-slate-600 hover:text-emerald-700 rounded-lg transition-colors cursor-pointer"
+                          title="संपूर्ण पावती/तपशील पहा"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        {isAdmin && (
+                          <>
+                            <button
+                              onClick={() => setEditingIncome({ ...item })}
+                              className="p-1.5 hover:bg-amber-100 text-amber-700 rounded-lg transition-colors cursor-pointer"
+                              title="व्यवहार संपादित करा (ॲडमिन)"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `तुम्हाला खरोखर पावती क्र. ${item.transactionNo} (₹${item.amount}) डिलीट / रद्द करायची आहे का?`
+                                  )
+                                ) {
+                                  onDeleteIncome?.(item.id);
+                                }
+                              }}
+                              className="p-1.5 hover:bg-rose-100 text-rose-700 rounded-lg transition-colors cursor-pointer"
+                              title="व्यवहार डिलीट करा (ॲडमिन)"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -496,7 +530,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               <button
                 onClick={async () => {
                   await NativeService.triggerHaptic();
-                  const msg = `मोरया ग्रुप मित्र मंडळ पावती\nजमादार: ${selectedIncomeDetail.depositorName}\nरक्कम: ₹${selectedIncomeDetail.amount}\nप्रकार: ${selectedIncomeDetail.incomeType}\nपावती क्र: ${selectedIncomeDetail.receiptNumber || 'N/A'}\nतारीख: ${selectedIncomeDetail.date}`;
+                  const msg = `मोरया ग्रुप मित्र मंडळ पावती\nजमादार: ${selectedIncomeDetail.depositorName}\nरक्कम: ₹${selectedIncomeDetail.amount}\nप्रकार: ${selectedIncomeDetail.incomeType}\nपावती क्र: ${selectedIncomeDetail.transactionNo || 'N/A'}\nतारीख: ${selectedIncomeDetail.transactionDate}`;
                   await NativeService.shareReceipt('मोरया ग्रुप जमा पावती', msg);
                 }}
                 className="flex-1 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
@@ -512,6 +546,124 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 बंद करा
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Edit Income Modal */}
+      {editingIncome && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Pencil className="w-5 h-5 text-amber-600" />
+                जमा व्यवहार संपादित करा (ॲडमिन)
+              </h3>
+              <button
+                onClick={() => setEditingIncome(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (editingIncome) {
+                  onUpdateIncome?.(editingIncome);
+                  setEditingIncome(null);
+                }
+              }}
+              className="space-y-3 text-xs"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">जमा रक्कम (₹) *</label>
+                  <input
+                    type="number"
+                    required
+                    value={editingIncome.amount}
+                    onChange={(e) => setEditingIncome({ ...editingIncome, amount: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-slate-300 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">तारीख *</label>
+                  <input
+                    type="date"
+                    required
+                    value={editingIncome.transactionDate}
+                    onChange={(e) => setEditingIncome({ ...editingIncome, transactionDate: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">जमा करणाऱ्याचे नाव *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingIncome.depositorName}
+                  onChange={(e) => setEditingIncome({ ...editingIncome, depositorName: e.target.value })}
+                  className="w-full p-2.5 border border-slate-300 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">कारण / तपशील *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingIncome.reason}
+                  onChange={(e) => setEditingIncome({ ...editingIncome, reason: e.target.value })}
+                  className="w-full p-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-amber-500 outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">पेमेंट मोड *</label>
+                  <select
+                    value={editingIncome.paymentMethod}
+                    onChange={(e) => setEditingIncome({ ...editingIncome, paymentMethod: e.target.value as any })}
+                    className="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 outline-none"
+                  >
+                    <option value="रोख">रोख</option>
+                    <option value="UPI">UPI</option>
+                    <option value="बँक ट्रान्सफर">बँक ट्रान्सफर</option>
+                    <option value="चेक">चेक</option>
+                    <option value="इतर">इतर</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">रेफरन्स क्र. / UPI ID</label>
+                  <input
+                    type="text"
+                    value={editingIncome.paymentReference || ''}
+                    onChange={(e) => setEditingIncome({ ...editingIncome, paymentReference: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-amber-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingIncome(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
+                >
+                  रद्द करा
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow cursor-pointer"
+                >
+                  बदल सेव्ह करा
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
