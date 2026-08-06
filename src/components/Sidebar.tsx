@@ -253,7 +253,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[82vw] max-w-[290px] sm:w-72 bg-[#0F172A] text-white flex flex-col justify-between shrink-0 select-none border-r border-slate-800 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:w-64 ${
+        className={`fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[300px] sm:w-72 bg-[#0F172A] text-white flex flex-col justify-between shrink-0 select-none border-r border-slate-800 transition-transform duration-300 ease-in-out overflow-y-auto overscroll-contain h-full max-h-[100dvh] lg:static lg:translate-x-0 lg:w-64 ${
           isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -388,7 +388,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Footer / Current Authorized User Info & Login/Logout Control */}
-      <div className="p-4 border-t border-slate-800 bg-slate-900/70 space-y-3">
+      <div className="p-4 border-t border-slate-800 bg-slate-900/90 space-y-3 shrink-0 pb-14 sm:pb-8">
         {isLoggedIn ? (
           <>
             <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
