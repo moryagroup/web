@@ -426,13 +426,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </>
         ) : (
-          <div className="p-3 bg-slate-800/90 rounded-xl border border-slate-700 text-center space-y-1">
+          <div className="p-3 bg-slate-800/90 rounded-xl border border-amber-500/40 text-center space-y-2">
             <p className="text-xs text-amber-300 font-bold flex items-center justify-center gap-1">
               <Lock className="w-3.5 h-3.5" /> पाहुणा मोड (Guest Mode)
             </p>
             <p className="text-[10px] text-slate-400">
-              हिशोब पाहण्यासाठी मुख्य पेजवरील लॉगिन वापरा.
+              आर्थिक नोंदी व हिशोब पाहण्यासाठी लॉगिन करा.
             </p>
+            <button
+              onClick={() => {
+                onOpenLogin();
+                onClose?.();
+              }}
+              className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>लॉगिन करा (Login)</span>
+            </button>
           </div>
         )}
 

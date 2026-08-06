@@ -138,16 +138,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </p>
             </div>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-3 self-stretch md:self-auto shrink-0">
-            <button
-              onClick={onOpenLogin}
-              className="w-full sm:w-auto px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>सदस्य / ॲडमिन लॉगइन (Login)</span>
-            </button>
-          </div>
         </div>
 
         {/* Income, Expense & Net Balance Summary Cards (Positioned directly below the Middle Login option) */}
