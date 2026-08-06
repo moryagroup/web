@@ -9,6 +9,7 @@ import {
   CurrentUser,
   EventGalleryImage,
 } from '../types';
+import { HeaderStats } from './HeaderStats';
 import { EventGallerySection } from './EventGallerySection';
 import { hasFullFinancialAccess, isBadgedMember } from '../utils/rbac';
 import {
@@ -33,6 +34,8 @@ interface DashboardViewProps {
   members: Member[];
   currentUser: CurrentUser;
   gallery: EventGalleryImage[];
+  selectedYear: string;
+  setSelectedYear: (year: string) => void;
   groupLogo?: string;
   onSaveGallery: (gallery: EventGalleryImage[]) => void;
   onNavigate: (tab: string) => void;
@@ -48,6 +51,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   members,
   currentUser,
   gallery,
+  selectedYear,
+  setSelectedYear,
   groupLogo,
   onSaveGallery,
   onNavigate,
@@ -97,8 +102,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   if (!isLoggedIn) {
     return (
-      <div className="space-y-6 my-4">
-        {/* Guest Public Welcome Banner */}
+      <div className="space-y-6 my-2">
+        {/* Guest Public Welcome Banner with Middle Login Option */}
         <div className="bg-gradient-to-r from-[#0F172A] via-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-md border border-slate-700/80 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-center gap-4">
             <div className="relative group shrink-0">
@@ -137,13 +142,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex flex-col sm:flex-row items-center gap-3 self-stretch md:self-auto shrink-0">
             <button
               onClick={onOpenLogin}
-              className="w-full sm:w-auto px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
             >
               <LogIn className="w-4 h-4" />
               <span>सदस्य / ॲडमिन लॉगइन (Login)</span>
             </button>
           </div>
         </div>
+
+        {/* Income, Expense & Net Balance Summary Cards (Positioned directly below the Middle Login option) */}
+        <HeaderStats
+          summary={summary}
+          selectedYear={selectedYear}
+          setSelectedYear={setSelectedYear}
+          currentUser={currentUser}
+          onLogout={onLogout}
+        />
 
         {/* Event Photo Gallery */}
         <EventGallerySection
@@ -157,7 +171,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }
 
   return (
-    <div className="space-y-6 my-4">
+    <div className="space-y-6 my-2">
+      {/* Income, Expense & Net Balance Summary Cards */}
+      <HeaderStats
+        summary={summary}
+        selectedYear={selectedYear}
+        setSelectedYear={setSelectedYear}
+        currentUser={currentUser}
+        onLogout={onLogout}
+      />
       {/* Quick Action Cards & Greeting */}
       <div className="bg-gradient-to-r from-[#0F172A] via-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-md border border-slate-700/80 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex items-center gap-4">
