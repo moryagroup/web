@@ -28,6 +28,12 @@ export const isTreasurerRole = (role?: string): boolean => {
   return ['खजिनदार', 'उपखजिनदार'].includes(trimmed);
 };
 
+export const isCoreMemberRole = (role?: string): boolean => {
+  if (!role) return false;
+  const trimmed = role.trim();
+  return ['अध्यक्ष', 'खजिनदार', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(trimmed);
+};
+
 export const hasAdminPermissions = (role?: string): boolean => {
   if (!role) return false;
   return ['ॲडमिन', 'Admin', 'अध्यक्ष', 'खजिनदार', 'उपखजिनदार'].includes(role.trim());

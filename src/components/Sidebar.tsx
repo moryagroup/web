@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { CurrentUser, Member } from '../types';
 import moryaLogo from '../assets/morya_logo.jpg';
-import { hasFullFinancialAccess, hasAdminPermissions, isBadgedMember } from '../utils/rbac';
+import { hasFullFinancialAccess, hasAdminPermissions, isBadgedMember, isCoreMemberRole } from '../utils/rbac';
 import { ImageCropModal } from './ImageCropModal';
 import { LogoLightboxModal } from './LogoLightboxModal';
 import {
@@ -21,6 +21,9 @@ import {
   Upload,
   Maximize2,
   X,
+  CalendarRange,
+  History,
+  PieChart,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -123,6 +126,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Users,
     },
     {
+      id: 'month-wise-reports',
+      label: '१. महिन्यानिहाय व्यवहार',
+      icon: CalendarRange,
+      color: 'text-amber-400',
+      isCoreOnly: true,
+    },
+    {
+      id: 'all-years-data',
+      label: '२. सर्व वर्षांचा हिशोब',
+      icon: History,
+      color: 'text-indigo-400',
+      isCoreOnly: true,
+    },
+    {
+      id: 'core-summary',
+      label: '३. जमा, खर्च व शिल्लक',
+      icon: PieChart,
+      color: 'text-emerald-400',
+      isCoreOnly: true,
+    },
+    {
       id: 'profile',
       label: 'माझे प्रोफाइल (Profile)',
       icon: UserCheck,
@@ -132,6 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
   const canSeeSubscriptions = isBadgedMember(currentUser.role) && isLoggedIn;
+  const isCoreMember = isLoggedIn && isCoreMemberRole(currentUser.role);
 
   const visibleMenuItems = menuItems.filter((item) => {
     if (!isLoggedIn) {
@@ -140,6 +165,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }
     }
     if (item.id === 'member-subscriptions' && !canSeeSubscriptions) {
+      return false;
+    }
+    if (item.isCoreOnly && !isCoreMember) {
       return false;
     }
     return true;

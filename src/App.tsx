@@ -36,6 +36,9 @@ import { IncomeHistory } from './components/IncomeHistory';
 import { ExpenseHistory } from './components/ExpenseHistory';
 import { MemberSubscriptionsView } from './components/MemberSubscriptionsView';
 import { ProfileView } from './components/ProfileView';
+import { MonthWiseReportsView } from './components/MonthWiseReportsView';
+import { AllYearsDataView } from './components/AllYearsDataView';
+import { CoreSummaryView } from './components/CoreSummaryView';
 import { LoginModal } from './components/LoginModal';
 import { isBadgedMember } from './utils/rbac';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
@@ -350,6 +353,37 @@ export default function App() {
                   onOpenLogin={() => setIsLoginModalOpen(true)}
                 />
               ))}
+
+            {activeTab === 'month-wise-reports' && (
+              <MonthWiseReportsView
+                incomes={incomes}
+                expenses={expenses}
+                financialYear={selectedYear}
+                currentUser={currentUser}
+                onOpenLogin={() => setIsLoginModalOpen(true)}
+              />
+            )}
+
+            {activeTab === 'all-years-data' && (
+              <AllYearsDataView
+                incomes={incomes}
+                expenses={expenses}
+                currentUser={currentUser}
+                onOpenLogin={() => setIsLoginModalOpen(true)}
+              />
+            )}
+
+            {activeTab === 'core-summary' && (
+              <CoreSummaryView
+                summary={summary}
+                incomes={incomes}
+                expenses={expenses}
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
+                currentUser={currentUser}
+                onOpenLogin={() => setIsLoginModalOpen(true)}
+              />
+            )}
 
             {activeTab === 'profile' && (
               <ProfileView
