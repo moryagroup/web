@@ -140,50 +140,87 @@ export const StatementExportView: React.FC<StatementExportViewProps> = ({
         ).toLocaleDateString('mr-IN')}`;
 
   // Export CSV / Excel file
-  const exportToExcelCSV = () => {
-    const rows = [
-      ['अ क्र.', 'दिनांक', 'व्यवहार प्रकार', 'वर्गवारी / शीर्षक', 'कारण / तपशील', 'जमा रक्कम (₹)', 'खर्च रक्कम (₹)', 'व्यक्ति/पेयी नाव', 'पावती/पावती क्र.', 'व्यवहार पद्धत'],
-    ];
+  const exportToExcelCSV = async () => {
+    try {
+      const escapeCsv = (val: any) => {
+        if (val === undefined || val === null) return '""';
+        const str = String(val).replace(/"/g, '""');
+        return `"${str}"`;
+      };
 
-    filteredData.unifiedList.forEach((item, index) => {
-      rows.push([
-        (index + 1).toString(),
-        item.dateStr,
-        item.type,
-        `"${item.category.replace(/"/g, '""')}"`,
-        `"${item.reason.replace(/"/g, '""')}"`,
-        item.type === 'जमा' ? item.amount.toString() : '0',
-        item.type === 'खर्च' ? item.amount.toString() : '0',
-        `"${item.personName.replace(/"/g, '""')}"`,
-        item.receiptNumber || '-',
-        item.paymentMethod,
-      ]);
-    });
+      const rows = [
+        ['अ क्र.', 'दिनांक', 'व्यवहार प्रकार', 'वर्गवारी / शीर्षक', 'कारण / तपशील', 'जमा रक्कम (₹)', 'खर्च रक्कम (₹)', 'व्यक्ति/पेयी नाव', 'पावती/पावती क्र.', 'व्यवहार पद्धत'],
+      ];
 
-    // Summary totals row
-    rows.push([]);
-    rows.push(['', '', 'एकूण जमा (Total Deposit)', '', '', totalIncome.toString(), '', '', '', '']);
-    rows.push(['', '', 'एकूण खर्च (Total Approved Expense)', '', '', '', totalExpense.toString(), '', '', '']);
-    rows.push(['', '', 'निव्वळ शिल्लक बचत (Net Balance)', '', '', '', '', netBalance.toString(), '', '']);
+      filteredData.unifiedList.forEach((item, index) => {
+        rows.push([
+          (index + 1).toString(),
+          item.dateStr,
+          item.type,
+          escapeCsv(item.category),
+          escapeCsv(item.reason),
+          item.type === 'जमा' ? item.amount.toString() : '0',
+          item.type === 'खर्च' ? item.amount.toString() : '0',
+          escapeCsv(item.personName),
+          escapeCsv(item.receiptNumber || '-'),
+          escapeCsv(item.paymentMethod),
+        ]);
+      });
 
-    const csvContent = '\uFEFF' + rows.map((e) => e.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    const filename = `MoryaGroup_Statement_${filterMode === 'YEAR' ? selectedYear : 'Custom'}_${Date.now()}.csv`;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      // Summary totals row
+      rows.push([]);
+      rows.push(['', '', 'एकूण जमा (Total Deposit)', '', '', totalIncome.toString(), '', '', '', '']);
+      rows.push(['', '', 'एकूण खर्च (Total Approved Expense)', '', '', '', totalExpense.toString(), '', '', '']);
+      rows.push(['', '', 'निव्वळ शिल्लक बचत (Net Balance)', '', '', '', '', netBalance.toString(), '', '']);
+
+      const csvString = rows.map((r) => r.join(',')).join('\r\n');
+      const csvContent = '\uFEFF' + csvString;
+
+      const filename = `MoryaGroup_Statement_${filterMode === 'YEAR' ? selectedYear : 'Custom'}_${Date.now()}.csv`;
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+      // Try Native Web Share API first for mobile phones/apps
+      if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'text/csv' })] })) {
+        try {
+          const file = new File([blob], filename, { type: 'text/csv' });
+          await navigator.share({
+            files: [file],
+            title: `मोरया ग्रुप हिशोब स्टेटमेंट (${selectedYear})`,
+            text: `मोरया ग्रुप मित्र मंडळ - अधिकृत हिशोब पत्रक (${statementPeriodText})`,
+          });
+          return;
+        } catch {
+          // ignore share cancel and proceed to standard download
+        }
+      }
+
+      // Standard browser download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (document.body.contains(link)) document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 1000);
+    } catch (err) {
+      console.error('Excel export error:', err);
+      alert('Excel/CSV डाऊनलोड करताना त्रुटी आली.');
+    }
   };
 
   // Trigger PDF / Print Window
   const handlePrintPDF = () => {
     setShowPrintModal(true);
     setTimeout(() => {
-      window.print();
-    }, 500);
+      try {
+        window.print();
+      } catch (e) {
+        console.warn('Window print fallback:', e);
+      }
+    }, 400);
   };
 
   return (
