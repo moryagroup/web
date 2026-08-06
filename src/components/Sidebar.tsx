@@ -51,6 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onUpdateGroupLogo,
   onResetData,
   onOpenLogin,
+  onLogout,
   isOpen = false,
   onClose,
 }) => {
@@ -425,23 +426,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </>
         ) : (
-          <div className="p-3 bg-slate-800/90 rounded-xl border border-amber-500/40 text-center space-y-2">
+          <div className="p-3 bg-slate-800/90 rounded-xl border border-slate-700 text-center space-y-1">
             <p className="text-xs text-amber-300 font-bold flex items-center justify-center gap-1">
               <Lock className="w-3.5 h-3.5" /> पाहुणा मोड (Guest Mode)
             </p>
             <p className="text-[10px] text-slate-400">
-              आर्थिक नोंदी पाहण्यासाठी किंवा जोडण्यासाठी लॉगिन करा.
+              हिशोब पाहण्यासाठी मुख्य पेजवरील लॉगिन वापरा.
             </p>
-            <button
-              onClick={() => {
-                onOpenLogin();
-                onClose?.();
-              }}
-              className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>लॉगिन करा (Login)</span>
-            </button>
           </div>
         )}
 

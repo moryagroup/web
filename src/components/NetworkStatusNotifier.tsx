@@ -22,8 +22,8 @@ export const NetworkStatusNotifier: React.FC = () => {
     });
 
     return () => {
-      if (listener && typeof listener.then === 'function') {
-        listener.then((l: any) => l.remove());
+      if (listener && typeof (listener as any).then === 'function') {
+        (listener as any).then((l: any) => l.remove());
       } else if (listener && (listener as any).remove) {
         (listener as any).remove();
       }

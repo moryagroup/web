@@ -29,33 +29,18 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({
 
   if (!isLoggedIn) {
     return (
-      <header className="bg-slate-900 text-white border-b border-slate-800 p-4 lg:p-5 shadow-md shrink-0">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black text-lg shadow-md shrink-0">
-              🚩
-            </div>
-            <div>
-              <h1 className="text-base sm:text-lg font-black text-amber-400">
-                श्री मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
-              </h1>
-              <p className="text-xs text-slate-300">
-                हडपसर गोंधळनगर, पुणे — सार्वजनिक उत्सव व उपक्रम फोटो दालन
-              </p>
-            </div>
+      <header className="hidden md:block bg-slate-900 text-white border-b border-slate-800 p-4 lg:p-5 shadow-md shrink-0">
+        <div className="flex items-center gap-3 max-w-7xl mx-auto">
+          <div className="w-10 h-10 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black text-lg shadow-md shrink-0">
+            🚩
           </div>
-
-          <div className="flex items-center gap-3 self-stretch sm:self-auto justify-end">
-            <span className="text-xs text-slate-400 font-medium hidden md:inline">
-              हिशोब पाहण्यासाठी सदस्य लॉगइन आवश्यक:
-            </span>
-            <button
-              onClick={onOpenLogin}
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>सदस्य / ॲडमिन लॉगइन (Login)</span>
-            </button>
+          <div>
+            <h1 className="text-base sm:text-lg font-black text-amber-400">
+              मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
+            </h1>
+            <p className="text-xs text-slate-300">
+              हडपसर गोंधळनगर, पुणे — सार्वजनिक उत्सव व उपक्रम फोटो दालन
+            </p>
           </div>
         </div>
       </header>
@@ -80,7 +65,7 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                वैयक्तिक जमा व खर्च हिशोब खाते • श्री मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
+                वैयक्तिक जमा व खर्च हिशोब खाते • मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
               </p>
             </div>
           </div>

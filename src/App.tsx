@@ -216,13 +216,8 @@ export default function App() {
             </button>
 
             <div className="flex items-center gap-2">
-              <img
-                src={groupLogo || moryaLogo}
-                alt="Logo"
-                className="w-7 h-7 object-contain rounded-full border border-amber-500/80 shadow-sm"
-              />
               <div>
-                <h1 className="text-xs font-black text-amber-400 truncate max-w-[150px] sm:max-w-none">
+                <h1 className="text-xs font-black text-amber-400 truncate max-w-[180px] sm:max-w-none">
                   मोरया ग्रुप मित्र मंडळ
                 </h1>
                 <p className="text-[9px] text-slate-400 font-bold leading-none">हडपसर गोंधळनगर</p>
@@ -231,7 +226,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            {currentUser.isLoggedIn !== false ? (
+            {currentUser.isLoggedIn !== false && (
               <button
                 onClick={() => {
                   setActiveTab('profile');
@@ -246,13 +241,6 @@ export default function App() {
                 <span className="text-[11px] font-bold text-amber-300 max-w-[65px] truncate sm:max-w-none">
                   {currentUser.name.split(' ')[0]}
                 </span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsLoginModalOpen(true)}
-                className="bg-amber-500 text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl shadow cursor-pointer active:scale-95 transition-transform"
-              >
-                लॉगिन
               </button>
             )}
           </div>

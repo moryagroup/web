@@ -107,7 +107,7 @@ export const LogoLightboxModal: React.FC<LogoLightboxModalProps> = ({
         className="p-4 bg-slate-900/80 border-t border-slate-800 text-center text-xs text-slate-400 font-medium relative z-10"
         onClick={(e) => e.stopPropagation()}
       >
-        श्री मोरया ग्रुप मित्र मंडळ (ट्रस्ट), हडपसर गोंधळनगर, पुणे - ४११०२८
+        मोरया ग्रुप मित्र मंडळ (ट्रस्ट), हडपसर गोंधळनगर, पुणे - ४११०२८
       </div>
     </div>
   );

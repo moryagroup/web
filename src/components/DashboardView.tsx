@@ -126,7 +126,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="text-xs text-amber-400 font-bold">• हडपसर गोंधळनगर</span>
               </div>
               <h2 className="text-xl md:text-2xl font-black mt-1 text-white">
-                श्री मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
+                मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
               </h2>
               <p className="text-xs text-slate-300 mt-1 max-w-xl">
                 मंडळाच्या गणेशोत्सव, विसर्जन मिरवणूक, भव्य महाप्रसाद, रक्तदान शिबीर, क्रीडा स्पर्धा व सामाजिक उपक्रमांचे डिजिटल फोटो दालन.

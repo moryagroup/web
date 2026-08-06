@@ -307,11 +307,11 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
 
   const handleSendMailLink = () => {
     if (!shareModalMember) return;
-    const subject = encodeURIComponent('श्री मोरया ग्रुप - पासवर्ड व खाते माहिती');
+    const subject = encodeURIComponent('मोरया ग्रुप मित्र मंडळ - पासवर्ड व खाते माहिती');
     const body = encodeURIComponent(
-      `नमस्कार ${shareModalMember.fullName},\n\nश्री मोरया ग्रुप मित्र मंडळ डिजिटल प्रणालीमध्ये तुमचा खात्याचा पासवर्ड: ${
+      `नमस्कार ${shareModalMember.fullName},\n\nमोरया ग्रुप मित्र मंडळ डिजिटल प्रणालीमध्ये तुमचा खात्याचा पासवर्ड: ${
         sharePasswordVal || '(अजून सेट केलेला नाही)'
-      }\n\nपासवर्ड बदलण्यासाठी किंवा लॉग इन करण्यासाठी खालील रिसेट लिंकवर क्लिक करा:\n${shareResetLink}\n\nधन्यवाद,\nश्री मोरया ग्रुप मित्र मंडळ (ट्रस्ट)\nहडपसर गोंधळनगर, पुणे`
+      }\n\nपासवर्ड बदलण्यासाठी किंवा लॉग इन करण्यासाठी खालील रिसेट लिंकवर क्लिक करा:\n${shareResetLink}\n\nधन्यवाद,\nमोरया ग्रुप मित्र मंडळ (ट्रस्ट)\nहडपसर गोंधळनगर, पुणे`
     );
     window.open(`mailto:${shareEmailVal}?subject=${subject}&body=${body}`, '_blank');
     setShareSentNotice(true);

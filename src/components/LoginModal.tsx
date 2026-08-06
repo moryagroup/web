@@ -142,9 +142,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   const handleSendEmailLink = () => {
-    const subject = encodeURIComponent('श्री मोरया ग्रुप - पासवर्ड रिसेट लिंक (Password Reset Link)');
+    const subject = encodeURIComponent('मोरया ग्रुप मित्र मंडळ - पासवर्ड रिसेट लिंक (Password Reset Link)');
     const body = encodeURIComponent(
-      `नमस्कार ${selectedMember?.fullName || 'सभासद'},\n\nश्री मोरया ग्रुप मित्र मंडळ (ट्रस्ट) डिजिटल प्रणालीचा पासवर्ड बदलण्यासाठी किंवा रिसेट करण्यासाठी खालील लिंकवर क्लिक करा:\n\n${resetLink}\n\nधन्यवाद,\nश्री मोरया ग्रुप मित्र मंडळ (ट्रस्ट)\nहडपसर गोंधळनगर, पुणे`
+      `नमस्कार ${selectedMember?.fullName || 'सभासद'},\n\nमोरया ग्रुप मित्र मंडळ (ट्रस्ट) डिजिटल प्रणालीचा पासवर्ड बदलण्यासाठी किंवा रिसेट करण्यासाठी खालील लिंकवर क्लिक करा:\n\n${resetLink}\n\nधन्यवाद,\nमोरया ग्रुप मित्र मंडळ (ट्रस्ट)\nहडपसर गोंधळनगर, पुणे`
     );
     window.open(`mailto:${targetEmail}?subject=${subject}&body=${body}`, '_blank');
     setResetSuccessMessage(true);
