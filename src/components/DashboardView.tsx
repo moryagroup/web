@@ -66,30 +66,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const isFullAccess = hasFullFinancialAccess(currentUser.role);
   const isBadged = isBadgedMember(currentUser.role);
 
-  const currentMember = members.find(
+  const currentMember = (Array.isArray(members) ? members : []).find(
     (m) =>
-      m.fullName.trim() === currentUser.name.trim() ||
-      (currentUser.phone && m.phone === currentUser.phone)
+      m &&
+      (((m.fullName || '').trim() === (currentUser?.name || '').trim()) ||
+        (currentUser?.phone && m.phone === currentUser.phone))
   );
+  const memberPhoto = currentMember?.photoUrl;
 
   const displayIncomes = isFullAccess
     ? incomes
-    : incomes.filter(
+    : (Array.isArray(incomes) ? incomes : []).filter(
         (i) =>
-          (currentMember && i.linkedMemberId === currentMember.id) ||
-          i.depositorName.trim() === currentUser.name.trim() ||
-          (i.createdBy && i.createdBy.includes(currentUser.name))
+          i &&
+          ((currentMember && i.linkedMemberId === currentMember.id) ||
+            (i.depositorName || '').trim() === (currentUser?.name || '').trim() ||
+            (currentUser?.phone && i.phone === currentUser.phone))
       );
 
   const displayExpenses = isFullAccess
     ? expenses
-    : expenses.filter(
+    : (Array.isArray(expenses) ? expenses : []).filter(
         (e) =>
-          (e.createdBy && e.createdBy.includes(currentUser.name)) ||
-          e.recipientName.trim() === currentUser.name.trim()
+          e &&
+          ((currentMember && e.linkedMemberId === currentMember.id) ||
+            (e.recipientName || '').trim() === (currentUser?.name || '').trim() ||
+            (currentUser?.phone && e.phone === currentUser.phone))
       );
-
-  // Combine & sort recent transactions
   const recentIncomes = displayIncomes.slice(0, 5);
   const recentExpenses = displayExpenses.slice(0, 5);
 

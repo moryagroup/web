@@ -36,7 +36,9 @@ const STORAGE_KEYS = {
 export const getStoredIncomes = (): IncomeTransaction[] => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.INCOMES);
-    return data ? JSON.parse(data) : INITIAL_INCOMES;
+    if (!data) return INITIAL_INCOMES;
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : INITIAL_INCOMES;
   } catch {
     return INITIAL_INCOMES;
   }
@@ -49,7 +51,9 @@ export const saveIncomes = (incomes: IncomeTransaction[]) => {
 export const getStoredExpenses = (): ExpenseTransaction[] => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.EXPENSES);
-    return data ? JSON.parse(data) : INITIAL_EXPENSES;
+    if (!data) return INITIAL_EXPENSES;
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : INITIAL_EXPENSES;
   } catch {
     return INITIAL_EXPENSES;
   }
@@ -62,7 +66,9 @@ export const saveExpenses = (expenses: ExpenseTransaction[]) => {
 export const getStoredMembers = (): Member[] => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.MEMBERS);
-    return data ? JSON.parse(data) : INITIAL_MEMBERS;
+    if (!data) return INITIAL_MEMBERS;
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : INITIAL_MEMBERS;
   } catch {
     return INITIAL_MEMBERS;
   }
@@ -75,7 +81,9 @@ export const saveMembers = (members: Member[]) => {
 export const getStoredOccasions = (): OccasionEvent[] => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.OCCASIONS);
-    return data ? JSON.parse(data) : INITIAL_OCCASIONS;
+    if (!data) return INITIAL_OCCASIONS;
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : INITIAL_OCCASIONS;
   } catch {
     return INITIAL_OCCASIONS;
   }
@@ -88,7 +96,9 @@ export const saveOccasions = (occasions: OccasionEvent[]) => {
 export const getCustomIncomeTypes = (): string[] => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.CUSTOM_INCOME_TYPES);
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
@@ -125,7 +135,9 @@ export const saveUser = (user: CurrentUser) => {
 export const getStoredEventGallery = (): EventGalleryImage[] => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.GALLERY);
-    return data ? JSON.parse(data) : INITIAL_EVENT_GALLERY;
+    if (!data) return INITIAL_EVENT_GALLERY;
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : INITIAL_EVENT_GALLERY;
   } catch {
     return INITIAL_EVENT_GALLERY;
   }
@@ -158,7 +170,9 @@ export const saveGroupLogo = (logoUrl: string) => {
 export const getStoredSuggestions = (): MemberSuggestion[] => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.SUGGESTIONS);
-    return data ? JSON.parse(data) : INITIAL_SUGGESTIONS;
+    if (!data) return INITIAL_SUGGESTIONS;
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : INITIAL_SUGGESTIONS;
   } catch {
     return INITIAL_SUGGESTIONS;
   }
@@ -186,30 +200,33 @@ export const calculateFinancialSummary = (
   incomes: IncomeTransaction[],
   expenses: ExpenseTransaction[]
 ): FinancialYearSummary => {
+  const safeIncomes = Array.isArray(incomes) ? incomes : [];
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+
   // Total Income: sum of all income transactions
-  const totalIncome = incomes.reduce((sum, item) => sum + item.amount, 0);
+  const totalIncome = safeIncomes.reduce((sum, item) => sum + (item?.amount || 0), 0);
 
   // Total Expenses: sum of approved expenses
-  const approvedExpenses = expenses.filter((e) => e.approvalStatus === 'मंजूर');
-  const approvedExpensesTotal = approvedExpenses.reduce((sum, item) => sum + item.amount, 0);
+  const approvedExpenses = safeExpenses.filter((e) => e && e.approvalStatus === 'मंजूर');
+  const approvedExpensesTotal = approvedExpenses.reduce((sum, item) => sum + (item?.amount || 0), 0);
 
   // All expenses (including pending)
-  const totalExpense = expenses.reduce((sum, item) => sum + item.amount, 0);
+  const totalExpense = safeExpenses.reduce((sum, item) => sum + (item?.amount || 0), 0);
 
   // Net Balance: Total Income - Approved Expenses
   const netBalance = totalIncome - approvedExpensesTotal;
 
   // Total Subscriptions Collected (strictly where incomeType === 'सभासद वर्गणी')
-  const totalSubscriptionsCollected = incomes
-    .filter((i) => i.incomeType === 'सभासद वर्गणी')
-    .reduce((sum, i) => sum + i.amount, 0);
+  const totalSubscriptionsCollected = safeIncomes
+    .filter((i) => i && i.incomeType === 'सभासद वर्गणी')
+    .reduce((sum, i) => sum + (i?.amount || 0), 0);
 
   // Total Donations & Sponsorships collected
-  const totalDonationsCollected = incomes
-    .filter((i) => i.incomeType !== 'सभासद वर्गणी')
-    .reduce((sum, i) => sum + i.amount, 0);
+  const totalDonationsCollected = safeIncomes
+    .filter((i) => i && i.incomeType !== 'सभासद वर्गणी')
+    .reduce((sum, i) => sum + (i?.amount || 0), 0);
 
-  const pendingExpensesCount = expenses.filter((e) => e.approvalStatus === 'प्रलंबित').length;
+  const pendingExpensesCount = safeExpenses.filter((e) => e && e.approvalStatus === 'प्रलंबित').length;
 
   return {
     totalIncome,
