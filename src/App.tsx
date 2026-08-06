@@ -327,6 +327,7 @@ export default function App() {
                 onAddIncome={handleAddIncome}
                 onAddCustomIncomeType={handleAddCustomIncomeType}
                 onSuccessNavigate={() => setActiveTab('income-history')}
+                onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />
             )}
@@ -339,6 +340,7 @@ export default function App() {
                 financialYear={selectedYear}
                 onAddExpense={handleAddExpense}
                 onSuccessNavigate={() => setActiveTab('expense-history')}
+                onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />
             )}
@@ -351,6 +353,7 @@ export default function App() {
                 currentUser={currentUser}
                 onUpdateIncome={handleUpdateIncome}
                 onDeleteIncome={handleDeleteIncome}
+                onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />
             )}
@@ -363,6 +366,7 @@ export default function App() {
                 onApproveExpense={handleApproveExpense}
                 onUpdateExpense={handleUpdateExpense}
                 onDeleteExpense={handleDeleteExpense}
+                onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />
             )}
@@ -376,6 +380,7 @@ export default function App() {
                   onAddMember={handleAddMember}
                   onUpdateMember={handleUpdateMember}
                   onDeleteMember={handleDeleteMember}
+                  onNavigate={(tab) => setActiveTab(tab)}
                   onOpenLogin={handleOpenLogin}
                 />
               ) : (
@@ -400,6 +405,7 @@ export default function App() {
                 expenses={expenses}
                 financialYear={selectedYear}
                 currentUser={currentUser}
+                onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />
             )}
@@ -409,6 +415,7 @@ export default function App() {
                 incomes={incomes}
                 expenses={expenses}
                 currentUser={currentUser}
+                onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />
             )}
@@ -421,6 +428,7 @@ export default function App() {
                 selectedYear={selectedYear}
                 setSelectedYear={setSelectedYear}
                 currentUser={currentUser}
+                onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />
             )}
@@ -432,6 +440,7 @@ export default function App() {
                 members={members}
                 onAddSuggestion={handleAddSuggestion}
                 onUpdateSuggestion={handleUpdateSuggestion}
+                onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />
             )}
@@ -445,6 +454,7 @@ export default function App() {
                 onUpdateGroupLogo={handleUpdateGroupLogo}
                 onUpdateMember={handleUpdateMember}
                 onUpdateCurrentUser={(updated) => setCurrentUser(updated)}
+                onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={handleOpenLogin}
               />
             )}

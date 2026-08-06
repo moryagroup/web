@@ -10,7 +10,7 @@ import {
 } from '../types';
 import { hasFullFinancialAccess } from '../utils/rbac';
 import { RbacGuard } from './RbacGuard';
-import { ArrowUpRight, CheckCircle2, Upload, AlertCircle, ShieldCheck } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, Upload, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 
 interface ExpenseFormProps {
   occasions: OccasionEvent[];
@@ -19,6 +19,7 @@ interface ExpenseFormProps {
   financialYear: string;
   onAddExpense: (expense: ExpenseTransaction) => void;
   onSuccessNavigate?: () => void;
+  onNavigate?: (tab: string) => void;
   onOpenLogin?: () => void;
 }
 
@@ -29,6 +30,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
   financialYear,
   onAddExpense,
   onSuccessNavigate,
+  onNavigate,
   onOpenLogin,
 }) => {
   const todayStr = new Date().toISOString().split('T')[0];
@@ -170,6 +172,17 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 bg-white rounded-2xl shadow-sm border border-slate-200 my-4">
+      {onNavigate && (
+        <button
+          type="button"
+          onClick={() => onNavigate('dashboard')}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-slate-700 rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer mb-3 active:scale-95 shrink-0"
+          title="मुख्य डॅशबोर्डवर परत जा (Exit)"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>← मुख्य पानावर जा (Exit)</span>
+        </button>
+      )}
       <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold">

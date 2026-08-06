@@ -14,6 +14,7 @@ import {
   Lock,
   Pencil,
   Trash2,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface ExpenseHistoryProps {
@@ -23,6 +24,7 @@ interface ExpenseHistoryProps {
   onApproveExpense: (expenseId: string, approverName: string, approverRole: any) => void;
   onUpdateExpense?: (updatedExpense: ExpenseTransaction) => void;
   onDeleteExpense?: (expenseId: string) => void;
+  onNavigate?: (tab: string) => void;
   onOpenLogin?: () => void;
 }
 
@@ -33,6 +35,7 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
   onApproveExpense,
   onUpdateExpense,
   onDeleteExpense,
+  onNavigate,
   onOpenLogin,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -141,6 +144,17 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
       {/* Header Banner */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3">
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('dashboard')}
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl border border-slate-700 font-bold text-xs shadow-xs transition-all cursor-pointer shrink-0 active:scale-95 flex items-center gap-1"
+              title="मुख्य डॅशबोर्डवर परत जा (Exit)"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">← मुख्य पान</span>
+            </button>
+          )}
           <div className="w-12 h-12 bg-rose-100 text-rose-700 rounded-xl flex items-center justify-center font-bold">
             <ArrowUpRight className="w-7 h-7" />
           </div>

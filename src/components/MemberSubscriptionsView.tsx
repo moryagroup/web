@@ -21,6 +21,7 @@ import {
   Share2,
   CheckCircle2,
   AlertCircle,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface MemberSubscriptionsViewProps {
@@ -30,6 +31,7 @@ interface MemberSubscriptionsViewProps {
   onAddMember: (newMember: Member) => void;
   onUpdateMember: (updatedMember: Member) => void;
   onDeleteMember: (memberId: string) => void;
+  onNavigate?: (tab: string) => void;
   onOpenLogin?: (memberId?: string, type?: 'admin' | 'member') => void;
 }
 
@@ -50,6 +52,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
   onAddMember,
   onUpdateMember,
   onDeleteMember,
+  onNavigate,
   onOpenLogin,
 }) => {
   const isLoggedIn = currentUser.isLoggedIn !== false;
@@ -359,6 +362,17 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       {/* Top Banner & Control Bar */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3">
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('dashboard')}
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl border border-slate-700 font-bold text-xs shadow-xs transition-all cursor-pointer shrink-0 active:scale-95 flex items-center gap-1"
+              title="मुख्य डॅशबोर्डवर परत जा (Exit)"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">← मुख्य पान</span>
+            </button>
+          )}
           <div className="w-12 h-12 bg-amber-100 text-amber-800 rounded-xl flex items-center justify-center font-bold">
             <Users className="w-7 h-7" />
           </div>

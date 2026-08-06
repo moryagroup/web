@@ -15,6 +15,7 @@ import {
   Share2,
   Pencil,
   Trash2,
+  ArrowLeft,
 } from 'lucide-react';
 import { NativeService } from '../services/nativeService';
 
@@ -25,6 +26,7 @@ interface IncomeHistoryProps {
   currentUser?: CurrentUser;
   onUpdateIncome?: (updatedIncome: IncomeTransaction) => void;
   onDeleteIncome?: (incomeId: string) => void;
+  onNavigate?: (tab: string) => void;
   onOpenLogin?: () => void;
 }
 
@@ -35,6 +37,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   currentUser,
   onUpdateIncome,
   onDeleteIncome,
+  onNavigate,
   onOpenLogin,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -140,6 +143,17 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
       {/* Top Banner & Quick Metrics */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3">
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('dashboard')}
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl border border-slate-700 font-bold text-xs shadow-xs transition-all cursor-pointer shrink-0 active:scale-95 flex items-center gap-1"
+              title="मुख्य डॅशबोर्डवर परत जा (Exit)"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">← मुख्य पान</span>
+            </button>
+          )}
           <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center font-bold">
             <ArrowDownLeft className="w-7 h-7" />
           </div>

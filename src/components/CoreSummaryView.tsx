@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   PieChart,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface CoreSummaryViewProps {
@@ -20,6 +21,7 @@ interface CoreSummaryViewProps {
   selectedYear: string;
   setSelectedYear: (year: string) => void;
   currentUser: CurrentUser;
+  onNavigate?: (tab: string) => void;
   onOpenLogin?: () => void;
 }
 
@@ -30,6 +32,7 @@ export const CoreSummaryView: React.FC<CoreSummaryViewProps> = ({
   selectedYear,
   setSelectedYear,
   currentUser,
+  onNavigate,
   onOpenLogin,
 }) => {
   const isLoggedIn = currentUser.isLoggedIn !== false;
@@ -69,6 +72,17 @@ export const CoreSummaryView: React.FC<CoreSummaryViewProps> = ({
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-6 rounded-3xl shadow-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('dashboard')}
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl border border-slate-700 font-bold text-xs shadow-xs transition-all cursor-pointer shrink-0 active:scale-95 flex items-center gap-1"
+              title="मुख्य डॅशबोर्डवर परत जा (Exit)"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">← मुख्य पान</span>
+            </button>
+          )}
           <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold shrink-0">
             <PieChart className="w-6 h-6" />
           </div>

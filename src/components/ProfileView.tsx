@@ -26,6 +26,7 @@ import {
   Upload,
   RotateCcw,
   Maximize2,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface ProfileViewProps {
@@ -35,7 +36,8 @@ interface ProfileViewProps {
   groupLogo?: string;
   onUpdateGroupLogo?: (logoUrl: string) => void;
   onUpdateMember: (updatedMember: Member) => void;
-  onUpdateCurrentUser: (user: CurrentUser) => void;
+  onUpdateCurrentUser: (updatedUser: CurrentUser) => void;
+  onNavigate?: (tab: string) => void;
   onOpenLogin: (memberId?: string, type?: 'admin' | 'member') => void;
 }
 
@@ -47,6 +49,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onUpdateGroupLogo,
   onUpdateMember,
   onUpdateCurrentUser,
+  onNavigate,
   onOpenLogin,
 }) => {
   // Find current member profile from members list, or default
@@ -256,6 +259,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
+      {onNavigate && (
+        <button
+          type="button"
+          onClick={() => onNavigate('dashboard')}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-slate-700 rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer mb-2 active:scale-95 shrink-0"
+          title="मुख्य डॅशबोर्डवर परत जा (Exit)"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>← मुख्य पानावर जा (Exit)</span>
+        </button>
+      )}
       {/* Top Banner / Welcome Header */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden border border-slate-800">
         <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-6">
