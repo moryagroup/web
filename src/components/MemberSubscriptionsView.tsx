@@ -420,16 +420,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
         </div>
       </div>
 
-      {/* Rule Highlight Box */}
-      <div className="bg-amber-50/90 border border-amber-200 p-4 rounded-2xl text-amber-900 text-xs flex items-start gap-3">
-        <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-        <div>
-          <p className="font-bold text-sm">पदाधिकारी क्रमवारी नियम:</p>
-          <p className="mt-0.5 text-amber-800">
-            यादीमध्ये प्रथम पदाधिकारी क्रमाने सर्व पदधारकांची नावे (<strong>अध्यक्ष → उपाध्यक्ष → कार्याध्यक्ष → सचिव → उपसचिव → खजिनदार → उपखजिनदार</strong>) दर्शविली जातात, त्यानंतर सर्व इतर <strong>सभासद</strong> दाखवले जातात.
-          </p>
-        </div>
-      </div>
+
 
       {/* Members Grid / Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
