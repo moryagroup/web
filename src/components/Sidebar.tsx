@@ -25,6 +25,7 @@ import {
   History,
   PieChart,
   MessageSquarePlus,
+  FileDown,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -145,6 +146,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: '३. जमा, खर्च व शिल्लक',
       icon: PieChart,
       color: 'text-emerald-400',
+      isCoreOnly: true,
+    },
+    {
+      id: 'statement-export',
+      label: '४. स्टेटमेंट (PDF & Excel)',
+      icon: FileDown,
+      color: 'text-purple-400',
       isCoreOnly: true,
     },
     {

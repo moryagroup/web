@@ -42,6 +42,7 @@ import { ProfileView } from './components/ProfileView';
 import { MonthWiseReportsView } from './components/MonthWiseReportsView';
 import { AllYearsDataView } from './components/AllYearsDataView';
 import { CoreSummaryView } from './components/CoreSummaryView';
+import { StatementExportView } from './components/StatementExportView';
 import { SuggestionsView } from './components/SuggestionsView';
 import { LoginModal } from './components/LoginModal';
 import { isBadgedMember } from './utils/rbac';
@@ -434,6 +435,18 @@ export default function App() {
                 selectedYear={selectedYear}
                 setSelectedYear={setSelectedYear}
                 currentUser={currentUser}
+                onNavigate={(tab) => setActiveTab(tab)}
+                onOpenLogin={() => setIsLoginModalOpen(true)}
+              />
+            )}
+
+            {activeTab === 'statement-export' && (
+              <StatementExportView
+                incomes={incomes}
+                expenses={expenses}
+                financialYear={selectedYear}
+                currentUser={currentUser}
+                groupLogo={groupLogo}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />
