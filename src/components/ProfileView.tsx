@@ -271,7 +271,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </button>
       )}
       {/* Top Banner / Welcome Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden border border-slate-800">
+      <div className="bg-gradient-to-r from-amber-950 via-rose-950 to-orange-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden border border-amber-500/40">
         <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-6">
           <div className="relative shrink-0 group">
             <img

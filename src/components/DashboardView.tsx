@@ -171,7 +171,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         onLogout={onLogout}
       />
       {/* Quick Action Cards & Greeting */}
-      <div className="bg-gradient-to-r from-[#0F172A] via-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-md border border-slate-700/80 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="bg-gradient-to-r from-amber-950 via-rose-950 to-orange-950 text-white p-6 rounded-3xl shadow-xl border border-amber-500/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex items-center gap-4">
           <div className="relative group shrink-0">
             <img

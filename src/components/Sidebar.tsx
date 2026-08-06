@@ -253,13 +253,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[300px] sm:w-72 bg-[#0F172A] text-white flex flex-col justify-between shrink-0 select-none border-r border-slate-800 transition-transform duration-300 ease-in-out overflow-y-auto overscroll-contain h-full max-h-[100dvh] lg:static lg:translate-x-0 lg:w-64 ${
+        className={`fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[300px] sm:w-72 bg-gradient-to-b from-[#1C0A00] via-[#2A0E00] to-[#140600] text-white flex flex-col justify-between shrink-0 select-none border-r border-amber-900/60 transition-transform duration-300 ease-in-out overflow-y-auto overscroll-contain h-full max-h-[100dvh] lg:static lg:translate-x-0 lg:w-64 ${
           isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         <div>
           {/* Mandal Branding Header */}
-          <div className="p-4 border-b border-slate-800 bg-slate-900/60 flex flex-col items-center text-center relative">
+          <div className="p-4 border-b border-amber-900/60 bg-amber-950/40 flex flex-col items-center text-center relative">
             {/* Mobile Close Drawer Button */}
             {onClose && (
               <button

@@ -222,7 +222,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-[#F1F5F9] font-sans text-slate-800 overflow-hidden antialiased select-none">
+    <div className="flex h-screen bg-gradient-to-br from-amber-50/80 via-orange-50/40 to-amber-100/60 font-sans text-slate-800 overflow-hidden antialiased select-none">
       {/* Sidebar / Mobile Drawer Component */}
       <Sidebar
         activeTab={activeTab}
@@ -243,23 +243,23 @@ export default function App() {
       {/* Main Workspace Canvas */}
       <main className="flex-1 flex flex-col overflow-hidden w-full">
         {/* Mobile Top Navigation Header */}
-        <header className="lg:hidden bg-[#0F172A] text-white px-4 py-2.5 border-b border-slate-800 flex items-center justify-between shrink-0 z-30 shadow-md">
+        <header className="lg:hidden bg-gradient-to-r from-amber-950 via-rose-950 to-orange-950 text-white px-4 py-2.5 border-b border-amber-500/40 flex items-center justify-between shrink-0 z-30 shadow-md">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 rounded-xl bg-slate-800 text-amber-400 hover:bg-slate-700 border border-slate-700 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+              className="p-2 rounded-xl bg-amber-900/80 text-amber-300 hover:bg-amber-800 border border-amber-500/40 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
               aria-label="Toggle navigation menu"
             >
               <Menu className="w-5 h-5" />
-              <span className="text-xs font-bold text-slate-200">मेन्यू</span>
+              <span className="text-xs font-bold text-amber-200">मेन्यू</span>
             </button>
 
             <div className="flex items-center gap-2">
               <div>
-                <h1 className="text-xs font-black text-amber-400 truncate max-w-[180px] sm:max-w-none">
-                  मोरया ग्रुप मित्र मंडळ
+                <h1 className="text-xs font-black text-amber-400 truncate max-w-[180px] sm:max-w-none flex items-center gap-1">
+                  🚩 मोरया ग्रुप मित्र मंडळ
                 </h1>
-                <p className="text-[9px] text-slate-400 font-bold leading-none">हडपसर गोंधळनगर</p>
+                <p className="text-[9px] text-amber-200/80 font-bold leading-none">हडपसर गोंधळनगर</p>
               </div>
             </div>
           </div>
