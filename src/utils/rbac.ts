@@ -24,7 +24,8 @@ export const hasFullFinancialAccess = (role?: string): boolean => {
 
 export const isTreasurerRole = (role?: string): boolean => {
   if (!role) return false;
-  return ['खजिनदार', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(role.trim());
+  const trimmed = role.trim();
+  return ['खजिनदार', 'उपखजिनदार'].includes(trimmed);
 };
 
 export const hasAdminPermissions = (role?: string): boolean => {

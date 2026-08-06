@@ -19,11 +19,11 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({
   currentUser,
   onLogout,
 }) => {
-  const isLoggedIn = currentUser.isLoggedIn !== false;
+  const isLoggedIn = Boolean(currentUser && currentUser.isLoggedIn === true);
   const isTreasurer = isLoggedIn && isTreasurerRole(currentUser.role);
 
-  // Show Income, Expense & Net Balance summary window ONLY to Treasurer (खजिनदार), Vice Treasurer (उपखजिनदार) and Admin
-  if (!isTreasurer) {
+  // Show Income, Expense & Net Balance summary window ONLY to Treasurer (खजिनदार) and Vice Treasurer (उपखजिनदार)
+  if (!isLoggedIn || !isTreasurer) {
     return null;
   }
 
