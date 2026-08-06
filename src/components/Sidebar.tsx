@@ -342,9 +342,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <h1 className="text-sm font-black text-amber-400 leading-snug tracking-wide">
             मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
           </h1>
-          <p className="text-[10px] text-orange-200/90 font-bold mt-0.5">
-            हडपसर गोंधळनगर
-          </p>
           <span className="mt-1 px-2 py-0.5 bg-slate-800 text-slate-400 rounded-full text-[9px] font-medium border border-slate-700">
             आर्थिक जमा व खर्च व्यवस्थापन
           </span>

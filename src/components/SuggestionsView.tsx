@@ -89,10 +89,14 @@ export const SuggestionsView: React.FC<SuggestionsViewProps> = ({
     });
   }, [suggestions, filterCategory]);
 
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [successNotice, setSuccessNotice] = useState<string | null>(null);
+
   const handleSubmitSuggestion = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim()) return;
+    if (!title.trim() || !description.trim() || isSubmitting) return;
 
+    setIsSubmitting(true);
     const newSug: MemberSuggestion = {
       id: 'sug-' + Date.now(),
       suggestionNo: 'SUG-2026-' + Math.floor(100 + Math.random() * 900),
@@ -112,6 +116,10 @@ export const SuggestionsView: React.FC<SuggestionsViewProps> = ({
     setTitle('');
     setDescription('');
     setShowAddModal(false);
+    setIsSubmitting(false);
+
+    setSuccessNotice('आपली सूचना यशस्वीरित्या पाठवली आहे.');
+    setTimeout(() => setSuccessNotice(null), 4000);
   };
 
   const handleSendReply = (e: React.FormEvent) => {
@@ -180,6 +188,13 @@ export const SuggestionsView: React.FC<SuggestionsViewProps> = ({
             </p>
           </div>
         </div>
+
+        {successNotice && (
+          <div className="p-4 bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 rounded-2xl flex items-center gap-3 font-bold text-sm shadow-lg animate-in fade-in duration-200">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <span>{successNotice}</span>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2 self-stretch md:self-auto shrink-0">
           {isAdmin && (

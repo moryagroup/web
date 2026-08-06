@@ -110,6 +110,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       };
       reader.readAsDataURL(file);
     }
+    e.target.value = '';
+  };
 
   const handleCropComplete = (croppedUrl: string) => {
     if (onUpdateGroupLogo) {
@@ -295,54 +297,30 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {/* Top Banner / Welcome Header */}
       <div className="bg-gradient-to-r from-amber-950 via-rose-950 to-orange-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden border border-amber-500/40">
         <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-6">
-          <div className="relative shrink-0 group">
-            <img
-              src={groupLogo || moryaLogo}
-              alt="मोरया ग्रुप लोगो"
-              onClick={() => setIsLightboxOpen(true)}
-              title="मोठा लोगो पहा (WhatsApp Style)"
-              className="w-24 h-24 sm:w-28 sm:h-28 object-contain rounded-full border-4 border-amber-400/90 shadow-2xl bg-slate-950 p-1 cursor-pointer transition-transform group-hover:scale-105"
-            />
-            <button
-              type="button"
-              onClick={() => setIsLightboxOpen(true)}
-              title="मोठा लोगो पहा"
-              className="absolute top-1 right-1 bg-slate-900/80 hover:bg-slate-800 text-amber-400 p-1.5 rounded-full border border-slate-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-            >
-              <Maximize2 className="w-3.5 h-3.5" />
-            </button>
-            {isAdmin ? (
-              <button
-                type="button"
-                onClick={() => profileLogoInputRef.current?.click()}
-                title="मंडळ लोगो बदला (ॲडमिन - क्रॉप पर्यायासह)"
-                className="absolute bottom-1 right-1 bg-amber-500 hover:bg-amber-400 text-slate-950 p-2 rounded-full border-2 border-slate-900 shadow-xl cursor-pointer transition-transform hover:scale-110 flex items-center justify-center"
-              >
-                <Camera className="w-4 h-4" />
-              </button>
-            ) : (
-              <span className="absolute bottom-1 right-1 bg-emerald-500 text-white p-1 rounded-full border-2 border-slate-900 shadow">
-                <ShieldCheck className="w-4 h-4" />
-              </span>
-            )}
-            {/* Hidden file inputs */}
-            <input type="file" ref={profileLogoInputRef} accept="image/*" className="hidden" onChange={handleProfileLogoChange} />
-          </div>
-
-          {/* Member Profile Photo (separate from logo) */}
-          <div className="relative group cursor-pointer shrink-0" onClick={() => memberPhotoInputRef.current?.click()} title="मेमेंबर फोटो बदला (Click to Change Photo)">
+          {/* Main Member Profile Photo */}
+          <div className="relative group cursor-pointer shrink-0" onClick={() => memberPhotoInputRef.current?.click()} title="सभासद फोटो बदला / जोडा (Click to Change Member Photo)">
             {currentProfile.photoUrl ? (
-              <img src={currentProfile.photoUrl} alt={currentProfile.fullName} className="w-16 h-16 object-cover rounded-full border-2 border-amber-400 p-0.5 bg-slate-950" />
+              <img
+                src={currentProfile.photoUrl}
+                alt={currentProfile.fullName}
+                className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-full border-4 border-amber-400 shadow-2xl bg-slate-950 p-0.5 transition-transform group-hover:scale-105"
+              />
             ) : (
-              <div className="w-16 h-16 rounded-full border-2 border-amber-400/90 bg-amber-500/20 flex flex-col items-center justify-center text-amber-300 font-black">
-                <User className="w-7 h-7 text-amber-400" />
-                <span className="text-[8px] font-bold text-amber-200">फोटो जोडा</span>
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-amber-400/90 bg-amber-500/20 flex flex-col items-center justify-center text-amber-300 font-black shadow-2xl transition-transform group-hover:scale-105">
+                <User className="w-12 h-12 text-amber-400" />
+                <span className="text-[9px] font-bold text-amber-200 mt-1">फोटो जोडा</span>
               </div>
             )}
-            <div className="absolute -bottom-1 -right-1 bg-amber-500 hover:bg-amber-400 text-slate-950 p-1 rounded-full border border-amber-300 shadow-md group-hover:scale-110 transition-transform">
-              <Camera className="w-3.5 h-3.5" />
+            <div className="absolute bottom-1 right-1 bg-amber-500 hover:bg-amber-400 text-slate-950 p-2 rounded-full border-2 border-slate-900 shadow-xl group-hover:scale-110 transition-transform">
+              <Camera className="w-4 h-4" />
             </div>
-            <input type="file" ref={memberPhotoInputRef} accept="image/*" className="hidden" onChange={handleMemberPhotoChange} />
+            <input
+              type="file"
+              ref={memberPhotoInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={handleMemberPhotoChange}
+            />
           </div>
 
 
@@ -873,4 +851,3 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     </div>
   );
 };
-}
