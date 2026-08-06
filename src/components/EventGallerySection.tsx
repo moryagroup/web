@@ -46,6 +46,7 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
+  const isAdmin = isLoggedIn && ['ॲडमिन', 'Admin'].includes(currentUser.role?.trim() || '');
 
   // Add / Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,6 +57,10 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
   const [formImageUrl, setFormImageUrl] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formYear, setFormYear] = useState('२०२५-२६');
+
+  // Inline description edit state for Lightbox
+  const [isEditingInlineDesc, setIsEditingInlineDesc] = useState(false);
+  const [inlineDescText, setInlineDescText] = useState('');
 
   // Preview tab in modal: 'upload' | 'url'
   const [inputTab, setInputTab] = useState<'upload' | 'url'>('upload');
@@ -80,9 +85,10 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
     setIsModalOpen(true);
   };
 
-  const openEditModal = (item: EventGalleryImage, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!isLoggedIn) {
+  const openEditModal = (item: EventGalleryImage, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!isAdmin) {
+      alert('फोटोचे वर्णन किंवा बदल करण्याचे अधिकार केवळ ॲडमिन (Admin) यांनाच आहेत. कृपया ॲडमिन लॉगिन करा.');
       if (onOpenLogin) onOpenLogin();
       return;
     }
@@ -426,17 +432,80 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
               )}
             </div>
 
-            {/* Bottom Caption Info */}
-            <div className="p-4 bg-slate-950 border-t border-slate-800 text-white space-y-1">
-              <h3 className="text-base font-black text-amber-400">
-                {filteredGallery[lightboxIndex].title}
-              </h3>
-              {filteredGallery[lightboxIndex].description && (
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  {filteredGallery[lightboxIndex].description}
-                </p>
+            {/* Bottom Caption Info with Admin Description Edit Option */}
+            <div className="p-4 bg-slate-950 border-t border-slate-800 text-white space-y-2">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                  <h3 className="text-base font-black text-amber-400">
+                    {filteredGallery[lightboxIndex].title}
+                  </h3>
+                </div>
+
+                {isAdmin && !isEditingInlineDesc && (
+                  <button
+                    onClick={() => {
+                      setInlineDescText(filteredGallery[lightboxIndex].description || '');
+                      setIsEditingInlineDesc(true);
+                    }}
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow flex items-center gap-1.5 cursor-pointer shrink-0 transition-all active:scale-95"
+                    title="ॲडमिन: फोटोचे वर्णन बदला"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>वर्णन बदला (Edit Description)</span>
+                  </button>
+                )}
+              </div>
+
+              {isEditingInlineDesc ? (
+                <div className="bg-slate-900 p-3 rounded-xl border border-amber-500/50 space-y-2 mt-1">
+                  <label className="block text-[11px] font-bold text-amber-300">
+                    ॲडमिन: फोटोचे नवीन वर्णन प्रविष्ट करा
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={inlineDescText}
+                    onChange={(e) => setInlineDescText(e.target.value)}
+                    placeholder="उदा. गणेशोत्सव महाप्रसाद वाटप कार्यक्रम गोंधळनगर..."
+                    className="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-amber-100 text-xs font-medium focus:ring-2 focus:ring-amber-500 outline-none"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => setIsEditingInlineDesc(false)}
+                      className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-lg cursor-pointer"
+                    >
+                      रद्द करा
+                    </button>
+                    <button
+                      onClick={() => {
+                        const targetId = filteredGallery[lightboxIndex].id;
+                        const updated = gallery.map((item) =>
+                          item.id === targetId ? { ...item, description: inlineDescText.trim() } : item
+                        );
+                        onSaveGallery(updated);
+                        setIsEditingInlineDesc(false);
+                      }}
+                      className="px-4 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-lg cursor-pointer flex items-center gap-1"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>साठवा (Save Description)</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  {filteredGallery[lightboxIndex].description ? (
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      {filteredGallery[lightboxIndex].description}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">
+                      (या फोटोचे वर्णन जोडलेले नाही. ॲडमिन हे वर्णन बदलू शकतात.)
+                    </p>
+                  )}
+                </div>
               )}
-              <div className="flex items-center gap-4 text-[11px] text-slate-400 pt-1">
+
+              <div className="flex items-center gap-4 text-[11px] text-slate-400 pt-1 border-t border-slate-900">
                 {filteredGallery[lightboxIndex].dateStr && (
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5 text-amber-400" />
