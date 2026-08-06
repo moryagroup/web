@@ -293,7 +293,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 }`}
               >
                 <ShieldCheck className="w-4 h-4 text-amber-400" />
-                <span>👑 ॲडमिन (Admin)</span>
+                <span>⚡ ॲडमिन (Admin)</span>
               </button>
               <button
                 onClick={() => setLoginType('member')}

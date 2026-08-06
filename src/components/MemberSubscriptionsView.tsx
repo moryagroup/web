@@ -52,8 +52,9 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
   onDeleteMember,
   onOpenLogin,
 }) => {
-  const isAdmin = hasAdminPermissions(currentUser.role);
   const isLoggedIn = currentUser.isLoggedIn !== false;
+  const isStrictAdmin = isLoggedIn && (currentUser.role === 'ॲडमिन' || currentUser.role === 'Admin');
+  const isAdmin = isStrictAdmin;
   const isBadged = isBadgedMember(currentUser.role) && isLoggedIn;
 
   // Search state

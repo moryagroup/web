@@ -13,7 +13,6 @@ import {
   Users,
   RotateCcw,
   ShieldCheck,
-  Crown,
   Lock,
   LogIn,
   LogOut,
@@ -368,15 +367,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onChange={(e) => handleUserSelect(e.target.value)}
               className="w-full bg-slate-800 text-slate-100 text-xs font-bold rounded-xl border border-slate-700 p-2 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
             >
-              <option value="ADMIN_ACCOUNT">👑 ॲडमिन (सिस्टम ॲडमिन)</option>
+              <option value="ADMIN_ACCOUNT">⚡ ॲडमिन (सिस्टम ॲडमिन)</option>
 
               <optgroup label="पदाधिकारी (Office Bearers)">
                 {members
                   .filter((m) => m.designation && m.designation !== 'सभासद')
                   .map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.designation === 'अध्यक्ष' || m.designation === 'कार्याध्यक्ष' ? '👑' : '🏅'}{' '}
-                      {m.fullName} ({m.designation})
+                      🏅 {m.fullName} ({m.designation})
                     </option>
                   ))}
               </optgroup>
