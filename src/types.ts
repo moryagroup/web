@@ -165,3 +165,20 @@ export interface FinancialYearSummary {
   pendingExpensesCount: number;
   approvedExpensesTotal: number;
 }
+
+export interface MemberSuggestion {
+  id: string;
+  suggestionNo: string;
+  memberId?: string;
+  memberName: string;
+  memberPhone?: string;
+  memberRole?: string;
+  category: string;
+  title: string;
+  description: string;
+  status: 'नवीन' | 'प्रक्रियेत' | 'स्वीकृत' | 'पूर्ण';
+  recipientRoles: string[];
+  adminReply?: string;
+  repliedBy?: string;
+  createdAt: string;
+}

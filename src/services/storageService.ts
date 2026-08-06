@@ -6,6 +6,7 @@ import {
   CurrentUser,
   FinancialYearSummary,
   EventGalleryImage,
+  MemberSuggestion,
 } from '../types';
 import {
   INITIAL_INCOMES,
@@ -14,6 +15,7 @@ import {
   INITIAL_OCCASIONS,
   DEFAULT_USER,
   INITIAL_EVENT_GALLERY,
+  INITIAL_SUGGESTIONS,
 } from '../mockData';
 
 export { DEFAULT_USER };
@@ -28,6 +30,7 @@ const STORAGE_KEYS = {
   USER: 'morya_mandal_user_v2',
   GALLERY: 'morya_mandal_gallery_v1',
   LOGO: 'morya_mandal_group_logo_v1',
+  SUGGESTIONS: 'morya_mandal_suggestions_v1',
 };
 
 export const getStoredIncomes = (): IncomeTransaction[] => {
@@ -152,6 +155,19 @@ export const saveGroupLogo = (logoUrl: string) => {
   }
 };
 
+export const getStoredSuggestions = (): MemberSuggestion[] => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.SUGGESTIONS);
+    return data ? JSON.parse(data) : INITIAL_SUGGESTIONS;
+  } catch {
+    return INITIAL_SUGGESTIONS;
+  }
+};
+
+export const saveSuggestions = (suggestions: MemberSuggestion[]) => {
+  localStorage.setItem(STORAGE_KEYS.SUGGESTIONS, JSON.stringify(suggestions));
+};
+
 export const resetToDemoData = () => {
   localStorage.removeItem(STORAGE_KEYS.INCOMES);
   localStorage.removeItem(STORAGE_KEYS.EXPENSES);
@@ -162,6 +178,7 @@ export const resetToDemoData = () => {
   localStorage.removeItem(STORAGE_KEYS.USER);
   localStorage.removeItem(STORAGE_KEYS.GALLERY);
   localStorage.removeItem(STORAGE_KEYS.LOGO);
+  localStorage.removeItem(STORAGE_KEYS.SUGGESTIONS);
 };
 
 // Calculation helpers

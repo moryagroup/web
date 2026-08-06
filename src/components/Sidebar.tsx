@@ -24,6 +24,7 @@ import {
   CalendarRange,
   History,
   PieChart,
+  MessageSquarePlus,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -145,6 +146,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: PieChart,
       color: 'text-emerald-400',
       isCoreOnly: true,
+    },
+    {
+      id: 'suggestions',
+      label: 'सूचना व सुचवणी',
+      icon: MessageSquarePlus,
+      color: 'text-sky-400',
     },
     {
       id: 'profile',

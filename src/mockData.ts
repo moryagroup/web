@@ -1,4 +1,4 @@
-import { Member, OccasionEvent, IncomeTransaction, ExpenseTransaction, CurrentUser, EventGalleryImage } from './types';
+import { Member, OccasionEvent, IncomeTransaction, ExpenseTransaction, CurrentUser, EventGalleryImage, MemberSuggestion } from './types';
 
 export const INITIAL_MEMBERS: Member[] = [
   // 6 Office Bearers (पदाधिकारी)
@@ -628,5 +628,38 @@ export const INITIAL_EVENT_GALLERY: EventGalleryImage[] = [
     imageUrl: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80',
     description: 'स्वातंत्र्यदिनानिमित्त गोंधळनगर परिसरात स्वच्छता व ५१ रोपांचे वृक्षारोपण.',
     year: '२०२५-२६',
+  },
+];
+
+export const INITIAL_SUGGESTIONS: MemberSuggestion[] = [
+  {
+    id: 'sug-101',
+    suggestionNo: 'SUG-2026-001',
+    memberId: 'm-107',
+    memberName: 'महेश शिंदे',
+    memberPhone: '9822010107',
+    memberRole: 'सभासद',
+    category: 'उत्सव नियोजन',
+    title: 'गणेशोत्सव विसर्जन मिरवणुकीत स्थानिक मुलांचे सांस्कृतिक लेझिम पथक स्थापन करणे',
+    description: 'यंदाच्या गणेशोत्सवात गोंधळनगर भागातील शालेय विद्यार्थ्यांसाठी पारंपारिक लेझिम व ढोल पथकाचे मोफत प्रशिक्षण आयोजित करावे.',
+    status: 'नवीन',
+    recipientRoles: ['अध्यक्ष', 'सचिव', 'खजिनदार'],
+    createdAt: '2026-08-04T14:20:00',
+  },
+  {
+    id: 'sug-102',
+    suggestionNo: 'SUG-2026-002',
+    memberId: 'm-108',
+    memberName: 'अमित मोरे',
+    memberPhone: '9822010108',
+    memberRole: 'सभासद',
+    category: 'सामाजिक उपक्रम',
+    title: 'वार्षिक महाप्रसादाच्या दिवशी मोफत नेत्र व आरोग्य तपासणी शिबीर',
+    description: 'महाप्रसादाच्या दिवशी गोंधळनगर येथील ज्येष्ठ नागरिकांसाठी मोफत चष्मा वाटप व मोतीबिंदू तपासणी शिबीर ठेवावे.',
+    status: 'स्वीकृत',
+    recipientRoles: ['अध्यक्ष', 'सचिव', 'खजिनदार'],
+    adminReply: 'सुचवणी अत्यंत योग्य असून कार्यकारिणी बैठकीत मंजूर केली आहे. आरोग्य शिबिराचे नियोजन करण्यात येईल.',
+    repliedBy: 'राकेश पोटे (अध्यक्ष)',
+    createdAt: '2026-08-05T11:15:00',
   },
 ];

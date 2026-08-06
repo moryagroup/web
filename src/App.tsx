@@ -23,6 +23,8 @@ import {
   saveEventGallery,
   getStoredGroupLogo,
   saveGroupLogo,
+  getStoredSuggestions,
+  saveSuggestions,
   calculateFinancialSummary,
   resetToDemoData,
 } from './services/storageService';
@@ -39,6 +41,7 @@ import { ProfileView } from './components/ProfileView';
 import { MonthWiseReportsView } from './components/MonthWiseReportsView';
 import { AllYearsDataView } from './components/AllYearsDataView';
 import { CoreSummaryView } from './components/CoreSummaryView';
+import { SuggestionsView } from './components/SuggestionsView';
 import { LoginModal } from './components/LoginModal';
 import { isBadgedMember } from './utils/rbac';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
@@ -62,6 +65,19 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<CurrentUser>(getStoredUser);
   const [gallery, setGallery] = useState(getStoredEventGallery);
   const [groupLogo, setGroupLogo] = useState<string>(getStoredGroupLogo);
+  const [suggestions, setSuggestions] = useState(getStoredSuggestions);
+
+  const handleAddSuggestion = (newSug: any) => {
+    const updated = [newSug, ...suggestions];
+    setSuggestions(updated);
+    saveSuggestions(updated);
+  };
+
+  const handleUpdateSuggestion = (updatedSug: any) => {
+    const updated = suggestions.map((s) => (s.id === updatedSug.id ? updatedSug : s));
+    setSuggestions(updated);
+    saveSuggestions(updated);
+  };
 
   const handleUpdateGroupLogo = (logoUrl: string) => {
     saveGroupLogo(logoUrl);
@@ -381,6 +397,17 @@ export default function App() {
                 selectedYear={selectedYear}
                 setSelectedYear={setSelectedYear}
                 currentUser={currentUser}
+                onOpenLogin={() => setIsLoginModalOpen(true)}
+              />
+            )}
+
+            {activeTab === 'suggestions' && (
+              <SuggestionsView
+                suggestions={suggestions}
+                currentUser={currentUser}
+                members={members}
+                onAddSuggestion={handleAddSuggestion}
+                onUpdateSuggestion={handleUpdateSuggestion}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />
             )}
