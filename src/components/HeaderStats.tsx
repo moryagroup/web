@@ -1,5 +1,6 @@
 import React from 'react';
 import { FinancialYearSummary, CurrentUser } from '../types';
+import { isTreasurerRole } from '../utils/rbac';
 import { ArrowDownCircle, ArrowUpCircle, Wallet, Calendar, LogOut } from 'lucide-react';
 
 interface HeaderStatsProps {
@@ -19,6 +20,12 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({
   onLogout,
 }) => {
   const isLoggedIn = currentUser.isLoggedIn !== false;
+  const isTreasurer = isLoggedIn && isTreasurerRole(currentUser.role);
+
+  // Show Income, Expense & Net Balance summary window ONLY to Treasurer (खजिनदार), Vice Treasurer (उपखजिनदार) and Admin
+  if (!isTreasurer) {
+    return null;
+  }
 
   const formatCurrency = (amount: number) => {
     return '₹' + amount.toLocaleString('en-IN');
