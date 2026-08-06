@@ -21,6 +21,7 @@ import {
   Camera,
   Upload,
   Maximize2,
+  X,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -35,6 +36,8 @@ interface SidebarProps {
   onResetData: () => void;
   onOpenLogin: (memberId?: string, type?: 'admin' | 'member') => void;
   onLogout: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -48,7 +51,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onUpdateGroupLogo,
   onResetData,
   onOpenLogin,
-  onLogout,
+  isOpen = false,
+  onClose,
 }) => {
   const isAdmin = hasAdminPermissions(currentUser.role) && currentUser.isLoggedIn !== false;
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -130,13 +134,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const canSeeSubscriptions = isBadgedMember(currentUser.role) && isLoggedIn;
 
   const visibleMenuItems = menuItems.filter((item) => {
-    // If not logged in, only show public options (dashboard and profile/login)
     if (!isLoggedIn) {
       if (item.id !== 'dashboard' && item.id !== 'profile') {
         return false;
       }
     }
-    // Member subscriptions tab is only accessible to executive officers / badged members
     if (item.id === 'member-subscriptions' && !canSeeSubscriptions) {
       return false;
     }
@@ -146,7 +148,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const handleUserSelect = (val: string) => {
     const isAdmin = currentUser.role === 'ॲडमिन' && currentUser.isLoggedIn !== false;
 
-    // Admin can switch to any account without password prompt
     if (isAdmin) {
       if (val === 'ADMIN_ACCOUNT') {
         setCurrentUser({
@@ -155,6 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           phone: '९८२२०१०१००',
           isLoggedIn: true,
         });
+        onClose?.();
         return;
       }
 
@@ -170,22 +172,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
           isLoggedIn: true,
         });
       }
+      onClose?.();
       return;
     }
 
-    // Non-Admin: MUST prompt for password if target account has a password!
     if (val === 'ADMIN_ACCOUNT') {
       onOpenLogin('ADMIN_ACCOUNT', 'admin');
+      onClose?.();
       return;
     }
 
     const foundMember = members.find((m) => m.id === val);
     if (foundMember) {
       if (foundMember.password && foundMember.password.trim() !== '') {
-        // Target member HAS a password -> Open LoginModal for password verification!
         onOpenLogin(foundMember.id, 'member');
       } else {
-        // No password set on target member -> allow direct switch
         setCurrentUser({
           name: foundMember.fullName,
           role: (foundMember.designation as any) || 'सभासद',
@@ -197,19 +198,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
         });
       }
     }
+    onClose?.();
   };
 
-  // Build current user select value
   const selectedValue =
     currentUser.role === 'ॲडमिन'
       ? 'ADMIN_ACCOUNT'
       : members.find((m) => m.fullName === currentUser.name)?.id || 'ADMIN_ACCOUNT';
 
   return (
-    <aside className="w-64 bg-[#0F172A] text-white flex flex-col justify-between shrink-0 select-none border-r border-slate-800">
-      <div>
-        {/* Mandal Branding Header */}
-        <div className="p-4 border-b border-slate-800 bg-slate-900/60 flex flex-col items-center text-center">
+    <>
+      {/* Mobile Drawer Overlay Backdrop */}
+      {isOpen && (
+        <div
+          onClick={onClose}
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-[82vw] max-w-[290px] sm:w-72 bg-[#0F172A] text-white flex flex-col justify-between shrink-0 select-none border-r border-slate-800 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:w-64 ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        <div>
+          {/* Mandal Branding Header */}
+          <div className="p-4 border-b border-slate-800 bg-slate-900/60 flex flex-col items-center text-center relative">
+            {/* Mobile Close Drawer Button */}
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="absolute top-3 right-3 p-1 rounded-full bg-slate-800 text-slate-400 hover:text-white lg:hidden cursor-pointer border border-slate-700 active:scale-95 transition-all"
+                title="मेन्यू बंद करा"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           <div className="relative mb-2 group">
             <img
               src={groupLogo || moryaLogo}
@@ -297,6 +323,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   } else {
                     setActiveTab(item.id);
                   }
+                  onClose?.();
                 }}
                 className={`w-full flex items-center justify-between p-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                   isActive
@@ -366,7 +393,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <div className="p-2.5 bg-slate-800/90 rounded-xl border border-slate-700/80 space-y-2">
               <div
-                onClick={() => setActiveTab('profile')}
+                onClick={() => {
+                  setActiveTab('profile');
+                  onClose?.();
+                }}
                 className="flex items-center gap-2 overflow-hidden cursor-pointer hover:bg-slate-700/50 p-1 rounded-lg transition-colors"
                 title="प्रोफाइल पहा"
               >
@@ -383,7 +413,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               <button
-                onClick={onLogout}
+                onClick={() => {
+                  onLogout();
+                  onClose?.();
+                }}
                 className="w-full py-1.5 bg-rose-900/60 hover:bg-rose-800 text-rose-200 font-bold text-xs rounded-lg border border-rose-700/50 flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5 text-rose-300" />
@@ -400,7 +433,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               आर्थिक नोंदी पाहण्यासाठी किंवा जोडण्यासाठी लॉगिन करा.
             </p>
             <button
-              onClick={onOpenLogin}
+              onClick={() => {
+                onOpenLogin();
+                onClose?.();
+              }}
               className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-1.5 cursor-pointer transition-all"
             >
               <LogIn className="w-4 h-4" />
@@ -410,7 +446,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         <button
-          onClick={onResetData}
+          onClick={() => {
+            onResetData();
+            onClose?.();
+          }}
           className="w-full pt-1 flex items-center justify-center gap-1.5 py-1 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 rounded transition-colors"
           title="डेमो डेटा रिसेट करा"
         >
@@ -436,5 +475,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onChangeLogoClick={() => logoInputRef.current?.click()}
       />
     </aside>
-  );
+  </>
+);
 };

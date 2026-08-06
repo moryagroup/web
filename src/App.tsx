@@ -39,6 +39,8 @@ import { ProfileView } from './components/ProfileView';
 import { LoginModal } from './components/LoginModal';
 import { isBadgedMember } from './utils/rbac';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
+import { Menu } from 'lucide-react';
+import moryaLogo from './assets/morya_logo.jpg';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -46,6 +48,7 @@ export default function App() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
   const [loginModalMemberId, setLoginModalMemberId] = useState<string | undefined>(undefined);
   const [loginModalType, setLoginModalType] = useState<'admin' | 'member'>('member');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   // Application persistent states
   const [incomes, setIncomes] = useState<IncomeTransaction[]>(getStoredIncomes);
@@ -181,7 +184,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-[#F1F5F9] font-sans text-slate-800 overflow-hidden antialiased select-none">
-      {/* Sidebar Component */}
+      {/* Sidebar / Mobile Drawer Component */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -194,10 +197,67 @@ export default function App() {
         onResetData={handleResetData}
         onOpenLogin={handleOpenLogin}
         onLogout={handleLogout}
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
       />
 
       {/* Main Workspace Canvas */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden w-full">
+        {/* Mobile Top Navigation Header */}
+        <header className="lg:hidden bg-[#0F172A] text-white px-4 py-2.5 border-b border-slate-800 flex items-center justify-between shrink-0 z-30 shadow-md">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 rounded-xl bg-slate-800 text-amber-400 hover:bg-slate-700 border border-slate-700 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+              aria-label="Toggle navigation menu"
+            >
+              <Menu className="w-5 h-5" />
+              <span className="text-xs font-bold text-slate-200">मेन्यू</span>
+            </button>
+
+            <div className="flex items-center gap-2">
+              <img
+                src={groupLogo || moryaLogo}
+                alt="Logo"
+                className="w-7 h-7 object-contain rounded-full border border-amber-500/80 shadow-sm"
+              />
+              <div>
+                <h1 className="text-xs font-black text-amber-400 truncate max-w-[150px] sm:max-w-none">
+                  मोरया ग्रुप मित्र मंडळ
+                </h1>
+                <p className="text-[9px] text-slate-400 font-bold leading-none">हडपसर गोंधळनगर</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {currentUser.isLoggedIn !== false ? (
+              <button
+                onClick={() => {
+                  setActiveTab('profile');
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-xl cursor-pointer hover:bg-amber-500/20 transition-colors"
+                title="माझे प्रोफाइल पहा"
+              >
+                <div className="w-5 h-5 bg-amber-500 text-slate-950 font-black rounded-md flex items-center justify-center text-[10px]">
+                  {currentUser.name.substring(0, 1)}
+                </div>
+                <span className="text-[11px] font-bold text-amber-300 max-w-[65px] truncate sm:max-w-none">
+                  {currentUser.name.split(' ')[0]}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsLoginModalOpen(true)}
+                className="bg-amber-500 text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl shadow cursor-pointer active:scale-95 transition-transform"
+              >
+                लॉगिन
+              </button>
+            )}
+          </div>
+        </header>
+
         {/* Header Summary Cards */}
         <HeaderStats
           summary={summary}
