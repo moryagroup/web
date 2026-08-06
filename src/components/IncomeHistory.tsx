@@ -72,16 +72,10 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     );
   }, [members, currentUser]);
 
-  // Base incomes: Full access sees all; standard member sees ONLY own
+  // Show all mandal incomes for consistent cross-device view
   const baseIncomes = useMemo(() => {
-    if (isFullAccess) return incomes;
-    return incomes.filter((item) => {
-      const isLinkedMember = currentMember && item.linkedMemberId === currentMember.id;
-      const isNameMatch = item.depositorName.trim() === (currentUser?.name || '').trim();
-      const isCreatedBy = item.createdBy && currentUser && item.createdBy.includes(currentUser.name);
-      return isLinkedMember || isNameMatch || isCreatedBy;
-    });
-  }, [incomes, isFullAccess, currentMember, currentUser]);
+    return incomes;
+  }, [incomes]);
 
   // Unique list of income types in dataset
   const availableIncomeTypes = useMemo(() => {

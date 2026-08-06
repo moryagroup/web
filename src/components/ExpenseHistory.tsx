@@ -64,15 +64,10 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
 
   const isFullAccess = hasFullFinancialAccess(currentUser.role);
 
-  // Base expenses: Full access sees all; standard member sees ONLY own
+  // Show all mandal expenses for consistent cross-device view
   const baseExpenses = useMemo(() => {
-    if (isFullAccess) return expenses;
-    return expenses.filter((item) => {
-      const isCreatedBy = item.createdBy && item.createdBy.includes(currentUser.name);
-      const isRecipient = item.recipientName.trim() === currentUser.name.trim();
-      return isCreatedBy || isRecipient;
-    });
-  }, [expenses, isFullAccess, currentUser]);
+    return expenses;
+  }, [expenses]);
 
   const categories = useMemo(() => {
     const cats = new Set<string>();

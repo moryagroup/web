@@ -74,25 +74,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   );
   const memberPhoto = currentMember?.photoUrl;
 
-  const displayIncomes = isFullAccess
-    ? incomes
-    : (Array.isArray(incomes) ? incomes : []).filter(
-        (i) =>
-          i &&
-          ((currentMember && i.linkedMemberId === currentMember.id) ||
-            (i.depositorName || '').trim() === (currentUser?.name || '').trim() ||
-            (currentUser?.phone && i.phone === currentUser.phone))
-      );
-
-  const displayExpenses = isFullAccess
-    ? expenses
-    : (Array.isArray(expenses) ? expenses : []).filter(
-        (e) =>
-          e &&
-          ((currentMember && e.linkedMemberId === currentMember.id) ||
-            (e.recipientName || '').trim() === (currentUser?.name || '').trim() ||
-            (currentUser?.phone && e.phone === currentUser.phone))
-      );
+  const displayIncomes = Array.isArray(incomes) ? incomes : [];
+  const displayExpenses = Array.isArray(expenses) ? expenses : [];
   const recentIncomes = displayIncomes.slice(0, 5);
   const recentExpenses = displayExpenses.slice(0, 5);
 
@@ -317,7 +300,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <ArrowDownLeft className="w-5 h-5" />
                 </div>
                 <h3 className="font-bold text-slate-800 text-base">
-                  {isFullAccess ? 'अलीकडील जमा नोंदी' : 'तुमच्या अलीकडील जमा नोंदी'}
+                  अलीकडील जमा नोंदी
                 </h3>
               </div>
               <button
@@ -325,7 +308,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>
-                  {isFullAccess ? `सर्व जमा (${incomes.length})` : `माझ्या जमा नोंदी (${displayIncomes.length})`}
+                  सर्व जमा ({incomes.length})
                 </span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
@@ -373,7 +356,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <ArrowUpRight className="w-5 h-5" />
                 </div>
                 <h3 className="font-bold text-slate-800 text-base">
-                  {isFullAccess ? 'अलीकडील खर्च नोंदी' : 'तुमच्या अलीकडील खर्च नोंदी'}
+                  अलीकडील खर्च नोंदी
                 </h3>
               </div>
               <button
@@ -381,7 +364,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 className="text-xs font-bold text-rose-700 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>
-                  {isFullAccess ? `सर्व खर्च (${expenses.length})` : `माझ्या खर्च नोंदी (${displayExpenses.length})`}
+                  सर्व खर्च ({expenses.length})
                 </span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
