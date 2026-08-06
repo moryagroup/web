@@ -597,8 +597,13 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                   <option value="कार्याध्यक्ष">कार्याध्यक्ष</option>
                   <option value="उपाध्यक्ष">उपाध्यक्ष</option>
                   <option value="सचिव">सचिव</option>
+                  <option value="उपसचिव">उपसचिव</option>
                   <option value="खजिनदार">खजिनदार</option>
                   <option value="उपखजिनदार">उपखजिनदार</option>
+                  <option value="संघटक">संघटक</option>
+                  <option value="सहसंघटक">सहसंघटक</option>
+                  <option value="सल्लागार">सल्लागार</option>
+                  <option value="कायदा सल्लागार">कायदा सल्लागार</option>
                   <option value="इतर">इतर (कस्टम पद जोडा)</option>
                 </select>
               </div>
@@ -804,8 +809,13 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                   <option value="कार्याध्यक्ष">कार्याध्यक्ष</option>
                   <option value="उपाध्यक्ष">उपाध्यक्ष</option>
                   <option value="सचिव">सचिव</option>
+                  <option value="उपसचिव">उपसचिव</option>
                   <option value="खजिनदार">खजिनदार</option>
                   <option value="उपखजिनदार">उपखजिनदार</option>
+                  <option value="संघटक">संघटक</option>
+                  <option value="सहसंघटक">सहसंघटक</option>
+                  <option value="सल्लागार">सल्लागार</option>
+                  <option value="कायदा सल्लागार">कायदा सल्लागार</option>
                   <option value="इतर">इतर (कस्टम पद)</option>
                 </select>
               </div>
