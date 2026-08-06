@@ -25,6 +25,8 @@ import {
   LogIn,
   Lock,
   Maximize2,
+  User,
+  Camera,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -172,23 +174,52 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       />
       {/* Quick Action Cards & Greeting */}
       <div className="bg-gradient-to-r from-amber-950 via-rose-950 to-orange-950 text-white p-6 rounded-3xl shadow-xl border border-amber-500/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="flex items-center gap-4">
-          <div className="relative group shrink-0">
-            <img
-              src={groupLogo || moryaLogo}
-              alt="मोरया ग्रुप मित्र मंडळ (ट्रस्ट) लोगो"
-              onClick={() => setIsLightboxOpen(true)}
-              title="मोठा लोगो पहा (WhatsApp Style)"
-              className="w-20 h-20 object-contain rounded-full border-2 border-amber-400 p-0.5 bg-slate-950 shadow-xl cursor-pointer transition-transform group-hover:scale-105"
-            />
-            <button
-              type="button"
-              onClick={() => setIsLightboxOpen(true)}
-              title="मोठा लोगो पहा"
-              className="absolute top-0 right-0 bg-slate-900/80 text-amber-400 p-1 rounded-full border border-slate-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-            >
-              <Maximize2 className="w-3 h-3" />
-            </button>
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+          {/* Logo & Member Photo Combo Container */}
+          <div className="flex items-center gap-3 shrink-0">
+            {/* Group Logo */}
+            <div className="relative group shrink-0" title="मंडळ अधिकृत लोगो">
+              <img
+                src={groupLogo || moryaLogo}
+                alt="मोरया ग्रुप मित्र मंडळ (ट्रस्ट) लोगो"
+                onClick={() => setIsLightboxOpen(true)}
+                title="मोठा लोगो पहा (WhatsApp Style)"
+                className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-full border-2 border-amber-400 p-0.5 bg-slate-950 shadow-xl cursor-pointer transition-transform group-hover:scale-105"
+              />
+              <button
+                type="button"
+                onClick={() => setIsLightboxOpen(true)}
+                title="मोठा लोगो पहा"
+                className="absolute top-0 right-0 bg-slate-900/80 text-amber-400 p-1 rounded-full border border-slate-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              >
+                <Maximize2 className="w-3 h-3" />
+              </button>
+            </div>
+
+            {/* Logged-in Member Profile Photo Badge */}
+            {isLoggedIn && (
+              <div
+                className="relative group cursor-pointer shrink-0"
+                onClick={() => onNavigate('profile')}
+                title="माझा प्रोफाईल फोटो बदला / पहा (Click to Change Profile Photo)"
+              >
+                {memberPhoto ? (
+                  <img
+                    src={memberPhoto}
+                    alt={currentUser.name}
+                    className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-amber-400 p-0.5 bg-slate-950 shadow-xl group-hover:scale-105 transition-transform"
+                  />
+                ) : (
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-amber-400/90 bg-amber-500/20 flex flex-col items-center justify-center text-amber-300 font-black shadow-xl group-hover:scale-105 transition-transform">
+                    <User className="w-7 h-7 text-amber-400" />
+                    <span className="text-[8px] font-bold text-amber-200">फोटो जोडा</span>
+                  </div>
+                )}
+                <div className="absolute -bottom-1 -right-1 bg-amber-500 hover:bg-amber-400 text-slate-950 p-1 rounded-full border border-amber-300 shadow-md group-hover:scale-110 transition-transform">
+                  <Camera className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
