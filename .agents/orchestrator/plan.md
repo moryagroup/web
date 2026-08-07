@@ -1,26 +1,29 @@
-# Project Plan — Morya Group Web Authentication Refactoring
+# Project Plan: Morya Group ERP Web Application
 
-## Phase 0: Survey & Infrastructure Mapping
-- Launch 3 parallel Explorers (`teamwork_preview_explorer`) to inspect:
-  1. `explorer_survey_1`: State management & authentication context (`src/context/`, `src/App.tsx`, `localStorage`, default user state).
-  2. `explorer_survey_2`: Login modal, credentials, role switching, permissions, navigation (`src/components/`, admin views).
-  3. `explorer_survey_3`: Build setup, TypeScript configuration, test infrastructure, package.json scripts.
-- Consolidate explorer findings into `PROJECT.md` (Feature Inventory, Architecture, Code Layout, Milestones).
+## Overview
+Audit, complete, and harden the Morya Group Web Application ERP system into a fully functional, production-ready web application with Firebase Firestore backend (`morya-group-352ad`), real-time `onSnapshot` listeners, Marathi UTF-8 Unicode statement/report exports (PDF print and Excel/CSV), and zero build errors (`npx tsc --noEmit` and `npm run build`).
 
-## Phase 1: E2E Testing Track & Decomposition
-- Create comprehensive E2E test suite covering:
-  - Tier 1: Feature Coverage (Logged Out Guest state, Login modal, Role assignment, Logout, Admin access prompts)
-  - Tier 2: Boundary & Corner Cases (Invalid credentials, state persistence, empty localStorage)
-  - Tier 3: Cross-Feature combinations
-  - Tier 4: Real-World Scenarios
-- Publish `TEST_READY.md`.
+## Phases
+1. **Phase 0: Codebase Survey & Feature Inventory**
+   - Survey project structure, tech stack, components, Firestore integration, report generation, build environment.
+   - Output: `PROJECT.md` at root with Architecture, Feature Inventory, Milestones, and Interface Contracts.
 
-## Phase 2: Milestone Execution (Implementation Track)
-- Milestone 1 (R1): Default Guest Mode Implementation (isLoggedIn: false by default, public vs admin route protection).
-- Milestone 2 (R2): Role-Based Permission & Clean Login Flow (Login modal, role switching for Admin/Treasurer/President/Member, logout cleanup).
-- Milestone 3 (R3): Build Verification & Data Model Preservation (TypeScript compilation, Vite build, GitHub Pages readiness).
+2. **Phase 1: E2E Test Suite Creation & Milestone Decomposition**
+   - E2E Test Track: Create opaque-box test infrastructure and tests for Tiers 1-4.
+   - Partition implementation into distinct milestones (e.g. Core & Auth/Config, Financials: Income & Expense Sync, Directory & Operations: Members/Occasions/Gallery/Suggestions/Settings Sync, Exports & UTF-8 Marathi PDF/Excel Engine).
 
-## Phase 3: Verification & Hardening
-- Pass 100% E2E test suite.
-- Adversarial coverage hardening & Forensic Audit verification (`teamwork_preview_auditor`).
-- Final Handoff to Sentinel.
+3. **Phase 2: Milestone Execution & Real-Time Sync Integration**
+   - Implement real-time Firestore listeners (`onSnapshot`) across all modules.
+   - Implement Marathi UTF-8 PDF & Excel export features.
+   - Run Explorer → Worker → Reviewer → Challenger → Auditor cycle per milestone.
+
+4. **Phase 3: E2E Test Verification, Hardening & Build Audit**
+   - Final Milestone: Pass 100% E2E test suite + Tier 5 Adversarial Coverage Hardening.
+   - Final zero-error verification for `npx tsc --noEmit` and `npm run build`.
+
+## Verification Criteria
+- `npx tsc --noEmit` returns 0 errors.
+- `npm run build` succeeds with 0 errors.
+- Real-time `onSnapshot` listeners operational on all 7 domains (incomes, expenses, members, occasions, gallery, suggestions, settings).
+- Statement/report PDF print and Excel/CSV exports work with proper Marathi UTF-8 Unicode rendering.
+- Forensic Auditor CLEAN verdict on all components.

@@ -822,7 +822,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               सध्या आपण <strong>{currentUser.name}</strong> ({currentUser.role}) खात्याने लॉगिन आहात.
             </p>
             <button
-              onClick={onOpenLogin}
+              onClick={() => onOpenLogin?.()}
               className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs rounded-xl border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
             >
               <Lock className="w-3.5 h-3.5" />

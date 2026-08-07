@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ExpenseTransaction, CurrentUser } from '../types';
 import { hasFullFinancialAccess } from '../utils/rbac';
 import { RbacGuard } from './RbacGuard';
+import { exportToCSV, triggerPDFPrint } from '../utils/exportUtils';
 import {
   Search,
   ArrowUpRight,
@@ -15,6 +16,8 @@ import {
   Pencil,
   Trash2,
   ArrowLeft,
+  FileSpreadsheet,
+  Printer,
 } from 'lucide-react';
 
 interface ExpenseHistoryProps {
@@ -134,6 +137,50 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
     }
   };
 
+  const handleExportCSV = () => {
+    const filename = `MoryaGroup_Expenses_${selectedYear}_${Date.now()}.csv`;
+    const headers = [
+      'अ क्र.',
+      'तारीख',
+      'व्यवहार क्र.',
+      'प्राप्तकर्ता (कोणाला दिले)',
+      'प्राप्तकर्ता प्रकार',
+      'खर्च प्रकार',
+      'कारण / तपशील',
+      'रक्कम (₹)',
+      'पेमेंट पद्धत',
+      'बिल क्र.',
+      'मंजुरी स्थिती',
+      'मंजूर करणारे',
+      'आर्थिक वर्ष',
+    ];
+
+    const rows: (string | number | boolean)[][] = filteredExpenses.map((item, index) => [
+      index + 1,
+      item.expenseDate,
+      item.transactionNo,
+      item.recipientName,
+      item.recipientType,
+      item.expenseCategory,
+      item.reason,
+      item.amount,
+      item.paymentMethod,
+      item.billNumber || '-',
+      item.approvalStatus,
+      item.approvedBy || '-',
+      item.financialYear,
+    ]);
+
+    rows.push([]);
+    rows.push(['', '', 'एकूण मंजूर खर्च (Total Approved Expense)', '', '', '', '', totalFilteredExpenseAmount, '', '', '', '', '']);
+
+    exportToCSV(filename, headers, rows);
+  };
+
+  const handlePrintPDF = () => {
+    triggerPDFPrint(`मोरया ग्रुप खर्च इतिहास अहवाल - ${selectedYear}`);
+  };
+
   return (
     <div className="space-y-6 my-4">
       {/* Header Banner */}
@@ -251,13 +298,26 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
 
       {/* Expense Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+        <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <span className="font-bold text-sm text-slate-700">
             खर्च व्यवहार यादी ({filteredExpenses.length})
           </span>
-          <span className="text-xs text-slate-500">
-            अध्यक्ष / खजिनदार / सचिव यापैकी एकाची मंजुरी आवश्यक
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleExportCSV}
+              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Export CSV / एक्सेल डाउनलोड</span>
+            </button>
+            <button
+              onClick={handlePrintPDF}
+              className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print PDF / पीडीएफ प्रिंट</span>
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">

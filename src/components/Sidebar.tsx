@@ -26,6 +26,8 @@ import {
   PieChart,
   MessageSquarePlus,
   FileDown,
+  Calendar,
+  Settings,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -42,6 +44,8 @@ interface SidebarProps {
   onLogout: () => void;
   isOpen?: boolean;
   onClose?: () => void;
+  onOpenOccasions?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -58,6 +62,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
   isOpen = false,
   onClose,
+  onOpenOccasions,
+  onOpenSettings,
 }) => {
   const isAdmin = hasAdminPermissions(currentUser.role) && currentUser.isLoggedIn !== false;
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -128,6 +134,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Users,
     },
     {
+      id: 'occasions',
+      label: 'उत्सव व्यवस्थापन',
+      icon: Calendar,
+      color: 'text-amber-400',
+    },
+    {
       id: 'month-wise-reports',
       label: '१. महिन्यानिहाय व्यवहार',
       icon: CalendarRange,
@@ -160,6 +172,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'सूचना व सुचवणी',
       icon: MessageSquarePlus,
       color: 'text-sky-400',
+    },
+    {
+      id: 'settings',
+      label: 'सेटिंग्ज (Settings)',
+      icon: Settings,
+      color: 'text-slate-400',
     },
     {
       id: 'profile',
@@ -358,7 +376,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 key={item.id}
                 onClick={() => {
-                  if (isProtected) {
+                  if (item.id === 'occasions') {
+                    if (onOpenOccasions) onOpenOccasions();
+                  } else if (item.id === 'settings') {
+                    if (onOpenSettings) onOpenSettings();
+                  } else if (isProtected) {
                     onOpenLogin();
                   } else {
                     setActiveTab(item.id);

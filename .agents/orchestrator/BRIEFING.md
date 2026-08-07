@@ -1,85 +1,71 @@
-# BRIEFING — 2026-08-05T15:54:50+05:30
+# BRIEFING — 2026-08-06T16:45:39+05:30
 
 ## Mission
-Orchestrate Morya Group web app authentication refactoring (R1: Default Guest Mode, R2: Role-Based Permission & Login Flow, R3: Code Integrity & Build Check)
+Audit, complete, and harden the Morya Group Web Application ERP system into a fully functional, production-ready application.
 
 ## 🔒 My Identity
-- Archetype: project_orchestrator
+- Archetype: Project Orchestrator
 - Roles: orchestrator, user_liaison, human_reporter, successor
 - Working directory: c:\Users\SigmaDesign\Documents\moryagroupweb\.agents\orchestrator
 - Original parent: parent
-- Original parent conversation ID: 4f7e0d85-a99b-4e37-806d-e964d42c76e8
+- Original parent conversation ID: 1632488a-6b62-4ae1-bdd2-6cfecc9b481d
 
 ## 🔒 My Workflow
 - **Pattern**: Project Pattern
-- **Scope document**: c:\Users\SigmaDesign\Documents\moryagroupweb\.agents\orchestrator\PROJECT.md
-1. **Decompose**: Survey codebase via 3 parallel Explorers, build PROJECT.md with Feature Inventory, milestones, and interface contracts.
+- **Scope document**: c:\Users\SigmaDesign\Documents\moryagroupweb\PROJECT.md
+1. **Decompose**: Survey codebase via 3 parallel explorers, build PROJECT.md inventory & architecture, partition into milestones.
 2. **Dispatch & Execute**:
-   - Implementation Track: Explorer -> Worker -> Reviewer -> Challenger -> Auditor loop per milestone.
-   - E2E Testing Track: Opaque-box requirement-driven test suite -> TEST_READY.md.
-3. **On failure**: Retry -> Replace -> Skip -> Redistribute -> Redesign -> Escalate.
-4. **Succession**: Threshold at 20 spawns.
+   - Decompose into milestones, dispatch subagents/sub-orchestrators for implementation & E2E test suite creation.
+   - Run Explorer → Worker → Reviewer → Challenger → Forensic Auditor verification loops per milestone.
+3. **On failure**: Retry → Replace → Skip → Redistribute → Redesign → Escalate.
+4. **Succession**: Threshold 20 spawns.
 - **Work items**:
-  1. Survey phase [done]
-  2. E2E Testing track setup [done — TEST_READY.md published]
-  3. Milestone M1: Default Guest Mode [iteration 2 — fixing edge cases]
-  4. Milestone M2: Role-Based Permission & Login Flow [pending]
-  5. Milestone M3: E2E Test Verification & Build Check [pending]
-- **Current phase**: 1 (Milestone M1 Iteration 2 Explorer)
-- **Current focus**: Waiting for explorer_m1_2 analysis for Iteration 2 fixes.
+  1. Survey codebase & requirements [in-progress]
+  2. Create PROJECT.md and decompose milestones [pending]
+  3. Dispatch subagents for E2E tests & implementation [pending]
+  4. Verify build & export features & Firestore sync [pending]
+- **Current phase**: 0 (Survey & Assessment)
+- **Current focus**: Launching initial 3 survey explorers to analyze codebase structure, Firestore integration, UI pages, export mechanisms, and build setup.
 
 ## 🔒 Key Constraints
 - NEVER write, modify, or create source code files directly.
 - NEVER run build/test commands yourself — require workers to do so.
-- NEVER investigate or explore code directly — dispatch Explorers.
-- Forensic Auditor verdict is a BINARY VETO — INTEGRITY VIOLATION means unconditionally fail milestone.
-- Pass ORIGINAL_REQUEST.md path to every subagent dispatch.
+- NEVER investigate or explore the problem at code level yourself — dispatch Explorers.
+- Binary veto on Forensic Auditor failure/cheating.
+- Mandate TypeScript zero error (`npx tsc --noEmit`) and Vite/Next build zero error (`npm run build`).
 
 ## Current Parent
-- Conversation ID: 4f7e0d85-a99b-4e37-806d-e964d42c76e8
-- Updated: not yet
+- Conversation ID: 1632488a-6b62-4ae1-bdd2-6cfecc9b481d
+- Updated: 2026-08-06T16:45:39+05:30
 
 ## Key Decisions Made
-- Project Orchestrator initialized.
-- Survey completed by 3 Explorers.
-- Created PROJECT.md with Feature Inventory, Milestones, and Interface Contracts.
-- Dispatched E2E Test Writer (`test_writer_e2e`) — E2E test suite (26 tests) completed, `TEST_READY.md` published.
-- Milestone M1 Iteration 1 gate check resulted in FAIL (due to legacy localStorage edge cases and build environment PATH reporting).
-- Dispatched `explorer_m1_2` to design precise fix for Milestone M1 Iteration 2.
+- Initiating initial survey phase with 3 parallel Explorers before milestone decomposition.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
-| explorer_survey_1 | teamwork_preview_explorer | Auth state & localStorage exploration | completed | ff8f43e4-0509-4b2d-aea3-d6f5a9cae883 |
-| explorer_survey_2 | teamwork_preview_explorer | UI & Login modal exploration | completed | 78d4c6aa-dd7a-4a67-8f30-47c8ed85cb26 |
-| explorer_survey_3 | teamwork_preview_explorer | Build setup & test infra exploration | completed | 664637bc-6bfd-4c00-a42f-8b368cbfdc3d |
-| test_writer_e2e | teamwork_preview_test_writer | Create E2E test suite & TEST_READY.md | completed | 09784e4a-3dd0-4129-a7ab-0fef4234ac7e |
-| explorer_m1_1 | teamwork_preview_explorer | Milestone 1 detailed fix analysis | completed | 54af5b04-5be7-4b5e-8199-6c2bd584f498 |
-| worker_m1_1 | teamwork_preview_worker | Milestone 1 Default Guest Mode fix | completed | f3d5937d-0737-412d-a7e9-17dcbea0661e |
-| reviewer_m1_1 | teamwork_preview_reviewer | M1 Code Review 1 | completed (APPROVE) | 638b661b-7220-4713-8e7c-1acd4cca5e32 |
-| reviewer_m1_2 | teamwork_preview_reviewer | M1 Code Review 2 | completed (REQUEST_CHANGES) | d3fc6123-3bd2-4203-8a0b-e72098981af0 |
-| challenger_m1_1 | teamwork_preview_challenger | M1 Stress Test 1 | completed (REJECT) | c316bcd7-0865-41e8-8ff6-bbf8940496fe |
-| challenger_m1_2 | teamwork_preview_challenger | M1 Stress Test 2 | completed (APPROVE) | 12bf47e2-f23d-48f8-8b64-3f83ffb24111 |
-| auditor_m1_1 | teamwork_preview_auditor | M1 Forensic Integrity Audit | completed (CLEAN) | 38c0424e-c887-4eff-83d4-7f615c1cf5da |
-| explorer_m1_2 | teamwork_preview_explorer | M1 Iteration 2 Fix Strategy | in-progress | a5b4dfa5-6221-46ec-a15e-f3722a06ad0a |
+| explorer_survey_1 | teamwork_preview_explorer | Codebase Architecture & Build Survey | completed | b8e49b89-fc87-4946-9129-17b4fb9458a4 |
+| explorer_survey_2 | teamwork_preview_explorer | Firestore Integration & Real-Time Sync Survey | completed | 75c3fd14-5724-4d9c-8043-8dcc045b5347 |
+| explorer_survey_3 | teamwork_preview_explorer | Export Engine & Marathi UTF-8 Survey | completed | 745196e3-6f2b-4df8-b068-9c261556be2d |
+| explorer_m1_1 | teamwork_preview_explorer | M1 TypeScript & ErrorBoundary Analysis | completed | e3b44427-c259-4955-a0c4-4a371d282869 |
+| worker_m1_1 | teamwork_preview_worker | M1 Type & Build Foundation Implementation | completed | 62397ebd-0107-4575-a9b8-2668c4dd5b55 |
+| worker_m2_1 | teamwork_preview_worker | M2 Real-Time Firestore Sync Implementation | in-progress | f98297e5-bb05-4e1b-89d8-8428308191fc |
+| worker_m3_1 | teamwork_preview_worker | M3 Marathi UTF-8 Report Export Implementation | in-progress | 9d62d578-f47c-44c5-addf-40cdcf642605 |
+| worker_m1_rem | teamwork_preview_worker | M1 Remediation (tsconfig exclude + rbac guards) | in-progress | 12ab8684-d83b-4699-ad1c-794625feca57 |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 12 / 20
-- Pending subagents: a5b4dfa5-6221-46ec-a15e-f3722a06ad0a
+- Spawn count: 14 / 20
+- Pending subagents: f98297e5-bb05-4e1b-89d8-8428308191fc, 9d62d578-f47c-44c5-addf-40cdcf642605, 12ab8684-d83b-4699-ad1c-794625feca57
 - Predecessor: none
 - Successor: not yet spawned
 
 ## Active Timers
-- Heartbeat cron: task-15 (every 10 minutes)
+- Heartbeat cron: task-13
 - Safety timer: none
 
 ## Artifact Index
-- c:\Users\SigmaDesign\Documents\moryagroupweb\.agents\ORIGINAL_REQUEST.md — Original User Request
-- c:\Users\SigmaDesign\Documents\moryagroupweb\.agents\orchestrator\DISPATCH.md — Dispatch log
-- c:\Users\SigmaDesign\Documents\moryagroupweb\.agents\orchestrator\progress.md — Progress tracker
-- c:\Users\SigmaDesign\Documents\moryagroupweb\.agents\orchestrator\plan.md — High-level plan
-- c:\Users\SigmaDesign\Documents\moryagroupweb\.agents\orchestrator\PROJECT.md — Master Project Specification
-- c:\Users\SigmaDesign\Documents\moryagroupweb\.agents\orchestrator\GATE_STATUS.md — Milestone M1 Gate Status
-- c:\Users\SigmaDesign\Documents\moryagroupweb\TEST_INFRA.md — Test Infrastructure Documentation
-- c:\Users\SigmaDesign\Documents\moryagroupweb\TEST_READY.md — Test Suite Ready Signal & Coverage
+- c:\Users\SigmaDesign\Documents\moryagroupweb\.agents\ORIGINAL_REQUEST.md — Verbatim user request
+- c:\Users\SigmaDesign\Documents\moryagroupweb\.agents\orchestrator\DISPATCH.md — Agent dispatch record
+- c:\Users\SigmaDesign\Documents\moryagroupweb\.agents\orchestrator\plan.md — Project plan
+- c:\Users\SigmaDesign\Documents\moryagroupweb\.agents\orchestrator\progress.md — Liveness & status tracking

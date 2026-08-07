@@ -30,7 +30,10 @@ export async function runTier2Tests() {
   await group.test('R2.2 - Designation rank for unknown or empty roles defaults gracefully', () => {
     assertEqual(getDesignationRank(undefined), 99, 'undefined designation should return 99');
     assertEqual(getDesignationRank(''), 99, 'empty string designation should return 99');
-    assertEqual(getDesignationRank('अज्ञात पद'), 10, 'unknown designation should return default 10');
+    assertEqual(getDesignationRank('   '), 99, 'whitespace designation should return 99');
+    assertEqual(getDesignationRank('अज्ञात पद'), 99, 'unknown designation should return default 99');
+    assertEqual(getDesignationRank('toString'), 99, 'prototype method name should return default 99');
+    assertEqual(getDesignationRank('__proto__'), 99, '__proto__ string should return default 99');
   });
 
   await group.test('R2.3 - Financial access granted to authorized financial roles', () => {

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { IncomeTransaction, ExpenseTransaction, CurrentUser } from '../types';
 import { isCoreMemberRole } from '../utils/rbac';
 import { RbacGuard } from './RbacGuard';
+import { exportToCSV, triggerPDFPrint } from '../utils/exportUtils';
 import {
   History,
   TrendingUp,
@@ -11,6 +12,8 @@ import {
   CheckCircle2,
   Calendar,
   ArrowLeft,
+  FileSpreadsheet,
+  Printer,
 } from 'lucide-react';
 
 interface AllYearsDataViewProps {
@@ -81,6 +84,59 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
     .reduce((sum, e) => sum + e.amount, 0);
   const grandNetBalance = grandTotalIncome - grandTotalExpense;
 
+  const handleExportCSV = () => {
+    const filename = `MoryaGroup_AllYearsSummary_${Date.now()}.csv`;
+    const headers = [
+      'अ क्र.',
+      'आर्थिक वर्ष',
+      'एकूण जमा (₹)',
+      'वर्गणी जमा (₹)',
+      'देणगी जमा (₹)',
+      'एकूण मंजूर खर्च (₹)',
+      'निव्वळ शिल्लक बचत (₹)',
+      'शिल्लक टक्केवारी (%)',
+      'जमा व्यवहार संख्या',
+      'खर्च व्यवहार संख्या',
+    ];
+
+    const rows: (string | number | boolean)[][] = yearsSummary.map((item, index) => {
+      const margin = item.totalIncome > 0 ? Math.round((item.netBalance / item.totalIncome) * 100) : 0;
+      return [
+        index + 1,
+        item.year,
+        item.totalIncome,
+        item.subTotal,
+        item.donTotal,
+        item.totalExpense,
+        item.netBalance,
+        `${margin}%`,
+        item.incomeCount,
+        item.expenseCount,
+      ];
+    });
+
+    // Grand totals row
+    rows.push([]);
+    rows.push([
+      '',
+      'सर्व वर्षांची एकूण बचत (Grand Total)',
+      grandTotalIncome,
+      '',
+      '',
+      grandTotalExpense,
+      grandNetBalance,
+      '',
+      incomes.length,
+      expenses.filter((e) => e.approvalStatus === 'मंजूर').length,
+    ]);
+
+    exportToCSV(filename, headers, rows);
+  };
+
+  const handlePrintPDF = () => {
+    triggerPDFPrint('मोरया ग्रुप सर्व वर्षांचा हिशोब अहवाल');
+  };
+
   return (
     <div className="space-y-6 my-2">
       {/* Top Banner */}
@@ -114,6 +170,23 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
               मंडळाच्या स्थापनेपासूनच्या सर्व आर्थिक वर्षांची तुलनात्मक जमा, खर्च व शिलकीचा इतिहास.
             </p>
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            onClick={handleExportCSV}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Export CSV / एक्सेल डाउनलोड</span>
+          </button>
+          <button
+            onClick={handlePrintPDF}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Print PDF / पीडीएफ प्रिंट</span>
+          </button>
         </div>
       </div>
 
@@ -151,10 +224,28 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
 
       {/* Financial Year Comparison Table & Cards */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
-        <h3 className="text-base font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-          <TrendingUp className="w-5 h-5 text-indigo-600" />
-          वर्षनिहाय जमा-खर्च तुलनात्मक तक्ता (Year-by-Year Comparison)
-        </h3>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
+          <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-indigo-600" />
+            वर्षनिहाय जमा-खर्च तुलनात्मक तक्ता (Year-by-Year Comparison)
+          </h3>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportCSV}
+              className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Export CSV / एक्सेल डाउनलोड</span>
+            </button>
+            <button
+              onClick={handlePrintPDF}
+              className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print PDF / पीडीएफ प्रिंट</span>
+            </button>
+          </div>
+        </div>
 
         <div className="space-y-4">
           {yearsSummary.map((item) => (

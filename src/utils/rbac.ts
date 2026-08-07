@@ -1,16 +1,16 @@
 export const DESIGNATION_RANKS: Record<string, number> = {
   'अध्यक्ष': 1,
-  'उपाध्यक्ष': 2,
-  'कार्याध्यक्ष': 3,
+  'कार्याध्यक्ष': 2,
+  'उपाध्यक्ष': 3,
   'सचिव': 4,
-  'उपसचिव': 5,
-  'खजिनदार': 6,
-  'उपखजिनदार': 7,
-  'संघटक': 8,
-  'सहसंघटक': 9,
-  'सल्लागार': 10,
-  'कार्या सल्लागार': 11,
-  'सभासद': 12,
+  'खजिनदार': 5,
+  'उपखजिनदार': 6,
+  'सभासद': 7,
+  'उपसचिव': 8,
+  'संघटक': 9,
+  'सहसंघटक': 10,
+  'सल्लागार': 11,
+  'कार्या सल्लागार': 12,
 };
 
 // Authorized roles for full financial & admin access
@@ -53,5 +53,10 @@ export const isBadgedMember = (role?: string): boolean => {
 
 export const getDesignationRank = (designation?: string): number => {
   if (!designation) return 99;
-  return DESIGNATION_RANKS[designation.trim()] || 10;
+  const trimmed = designation.trim();
+  if (trimmed === '') return 99;
+  if (Object.prototype.hasOwnProperty.call(DESIGNATION_RANKS, trimmed)) {
+    return DESIGNATION_RANKS[trimmed];
+  }
+  return 99;
 };

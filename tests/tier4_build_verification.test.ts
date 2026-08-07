@@ -6,7 +6,7 @@ export async function runTier4Tests() {
   const group = new TestGroup('Tier 4: Code Integrity & Build Check (R3)');
 
   // Ensure Node directory is in PATH for child process executions
-  const nodeDir = 'C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Microsoft\\VisualStudio\\NodeJs';
+  const nodeDir = 'C:\\Program Files\\nodejs;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Microsoft\\VisualStudio\\NodeJs';
   const customEnv = {
     ...process.env,
     PATH: `${nodeDir};${process.env.PATH || ''}`,

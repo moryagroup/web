@@ -1,1 +1,73 @@
 @import "tailwindcss";
+
+/* Printable A4 PDF and Browser Print Styling */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide navigation, sidebar, app header, action buttons, filter bars, and modal overlays during printing */
+  aside,
+  header,
+  nav,
+  button,
+  .no-print,
+  .sidebar,
+  .app-header,
+  .action-bar,
+  .filter-bar,
+  .modal-overlay,
+  select,
+  input[type="text"],
+  input[type="date"],
+  input[type="search"] {
+    display: none !important;
+  }
+
+  /* Ensure print content expands to full printable width */
+  main,
+  .print-content,
+  .printable-area {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  /* Optimize print tables */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  th, td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 8px !important;
+    color: #0f172a !important;
+  }
+
+  thead {
+    display: table-header-group;
+    background-color: #f1f5f9 !important;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+}

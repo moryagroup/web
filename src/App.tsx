@@ -5,6 +5,7 @@ import {
   ExpenseTransaction,
   Member,
   OccasionEvent,
+  EventGalleryImage,
   CurrentUser,
 } from './types';
 import {
@@ -31,6 +32,7 @@ import {
   subscribeToGallery,
   subscribeToSuggestions,
   subscribeToGroupLogo,
+  subscribeToCustomIncomeTypes,
   saveIncome,
   deleteIncome,
   saveExpense,
@@ -38,10 +40,12 @@ import {
   saveMember,
   deleteMember,
   saveOccasion,
+  deleteOccasion,
   saveGalleryImage,
   deleteGalleryImage,
   saveSuggestion,
   saveGroupLogo as saveGroupLogoFirestore,
+  saveCustomIncomeTypes,
   resetFirestoreToDemo,
 } from './services/firestoreService';
 
@@ -60,6 +64,8 @@ import { CoreSummaryView } from './components/CoreSummaryView';
 import { StatementExportView } from './components/StatementExportView';
 import { SuggestionsView } from './components/SuggestionsView';
 import { LoginModal } from './components/LoginModal';
+import { OccasionModal } from './components/OccasionModal';
+import { SettingsModal } from './components/SettingsModal';
 import { isBadgedMember } from './utils/rbac';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { Menu } from 'lucide-react';
@@ -68,6 +74,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [selectedYear, setSelectedYear] = useState<string>('२०२६-२७');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+  const [isOccasionModalOpen, setIsOccasionModalOpen] = useState<boolean>(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
   const [loginModalMemberId, setLoginModalMemberId] = useState<string | undefined>(undefined);
   const [loginModalType, setLoginModalType] = useState<'admin' | 'member'>('member');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
@@ -80,7 +88,7 @@ export default function App() {
   const [occasions, setOccasions] = useState<OccasionEvent[]>(getStoredOccasions);
   const [customIncomeTypes, setCustomIncomeTypes] = useState<string[]>(getCustomIncomeTypes);
   const [currentUser, setCurrentUser] = useState<CurrentUser>(getStoredUser);
-  const [gallery, setGalleryState] = useState<any[]>(getStoredEventGallery);
+  const [gallery, setGalleryState] = useState<EventGalleryImage[]>(getStoredEventGallery);
   const [groupLogo, setGroupLogo] = useState<string>(getStoredGroupLogo);
   const [suggestions, setSuggestions] = useState<any[]>(getStoredSuggestions);
 
@@ -102,6 +110,11 @@ export default function App() {
       subscribeToGallery(setGalleryState),
       subscribeToSuggestions(setSuggestions),
       subscribeToGroupLogo(setGroupLogo),
+      subscribeToCustomIncomeTypes((types) => {
+        if (Array.isArray(types)) {
+          setCustomIncomeTypes(types);
+        }
+      }),
     ];
 
     // Seed empty Firestore collections in background
@@ -121,7 +134,6 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
-
   const handleAddSuggestion = (newSug: any) => {
     saveSuggestion(newSug).catch(console.error);
   };
@@ -140,8 +152,6 @@ export default function App() {
     setIsLoginModalOpen(true);
   };
 
-  // (localStorage sync removed — Firestore handles persistence)
-
   // Login Success handler
   const handleLoginSuccess = (user: CurrentUser) => {
     setCurrentUser(user);
@@ -157,7 +167,6 @@ export default function App() {
 
   // Financial Summary Calculation
   const summary = useMemo(() => {
-    // Filter transactions for selected financial year if needed or pass all
     const yearIncomes = incomes.filter((i) => i.financialYear === selectedYear);
     const yearExpenses = expenses.filter((e) => e.financialYear === selectedYear);
     return calculateFinancialSummary(yearIncomes, yearExpenses);
@@ -178,10 +187,56 @@ export default function App() {
     deleteIncome(incomeId).catch(console.error);
   };
 
-  // Add Custom Income Type
+  // Custom Income Types Firestore Sync
   const handleAddCustomIncomeType = (newType: string) => {
-    const updated = saveCustomIncomeType(newType);
+    if (newType && !customIncomeTypes.includes(newType)) {
+      const updated = [...customIncomeTypes, newType];
+      setCustomIncomeTypes(updated);
+      saveCustomIncomeTypes(updated).catch(console.error);
+      saveCustomIncomeType(newType);
+    }
+  };
+
+  const handleDeleteCustomIncomeType = (typeToDelete: string) => {
+    const updated = customIncomeTypes.filter((t) => t !== typeToDelete);
     setCustomIncomeTypes(updated);
+    saveCustomIncomeTypes(updated).catch(console.error);
+  };
+
+  // Gallery Persistence & Real-Time Sync
+  const handleSaveGallery = (newGallery: EventGalleryImage[]) => {
+    const newGalleryArray = Array.isArray(newGallery) ? newGallery : [];
+    const newIds = new Set(newGalleryArray.map((g) => g.id));
+
+    // Delete items no longer present
+    gallery.forEach((g) => {
+      if (!newIds.has(g.id)) {
+        deleteGalleryImage(g.id).catch(console.error);
+      }
+    });
+
+    // Save added or updated items
+    newGalleryArray.forEach((n) => {
+      const existing = gallery.find((g) => g.id === n.id);
+      if (!existing || JSON.stringify(existing) !== JSON.stringify(n)) {
+        saveGalleryImage(n).catch(console.error);
+      }
+    });
+
+    setGalleryState(newGalleryArray);
+  };
+
+  // Occasions Management
+  const handleAddOccasion = (newOccasion: OccasionEvent) => {
+    saveOccasion(newOccasion).catch(console.error);
+  };
+
+  const handleUpdateOccasion = (updatedOccasion: OccasionEvent) => {
+    saveOccasion(updatedOccasion).catch(console.error);
+  };
+
+  const handleDeleteOccasion = (occasionId: string) => {
+    deleteOccasion(occasionId).catch(console.error);
   };
 
   // Add Expense Transaction
@@ -265,6 +320,8 @@ export default function App() {
         onLogout={handleLogout}
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
+        onOpenOccasions={() => setIsOccasionModalOpen(true)}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
       />
 
       {/* Main Workspace Canvas */}
@@ -340,7 +397,7 @@ export default function App() {
                 selectedYear={selectedYear}
                 setSelectedYear={setSelectedYear}
                 groupLogo={groupLogo}
-                onSaveGallery={(newGallery) => setGalleryState(newGallery)}
+                onSaveGallery={handleSaveGallery}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onApproveExpense={handleApproveExpense}
                 onLogout={handleLogout}
@@ -422,7 +479,9 @@ export default function App() {
                   members={members}
                   currentUser={currentUser}
                   gallery={gallery}
-                  onSaveGallery={(newGallery) => setGalleryState(newGallery)}
+                  selectedYear={selectedYear}
+                  setSelectedYear={setSelectedYear}
+                  onSaveGallery={handleSaveGallery}
                   onNavigate={(tab) => setActiveTab(tab)}
                   onApproveExpense={handleApproveExpense}
                   onLogout={handleLogout}
@@ -528,6 +587,31 @@ export default function App() {
         onLoginSuccess={handleLoginSuccess}
         initialSelectedMemberId={loginModalMemberId}
         initialLoginType={loginModalType}
+      />
+
+      {/* Occasion Management Modal */}
+      <OccasionModal
+        isOpen={isOccasionModalOpen}
+        onClose={() => setIsOccasionModalOpen(false)}
+        occasions={occasions}
+        onAddOccasion={handleAddOccasion}
+        onUpdateOccasion={handleUpdateOccasion}
+        onDeleteOccasion={handleDeleteOccasion}
+        currentUser={currentUser}
+        onOpenLogin={handleOpenLogin}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        groupLogo={groupLogo}
+        onUpdateGroupLogo={handleUpdateGroupLogo}
+        customIncomeTypes={customIncomeTypes}
+        onAddCustomIncomeType={handleAddCustomIncomeType}
+        onDeleteCustomIncomeType={handleDeleteCustomIncomeType}
+        currentUser={currentUser}
+        onOpenLogin={handleOpenLogin}
       />
 
       {/* Mobile Network Status Notifier */}

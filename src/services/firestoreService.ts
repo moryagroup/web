@@ -120,10 +120,8 @@ export function subscribeToMembers(
     collection(db, COLS.members),
     (snap) => {
       const data = snap.docs.map((d) => d.data() as Member);
-      if (data.length > 0) {
-        data.sort((a, b) => a.memberCode.localeCompare(b.memberCode));
-        callback(data);
-      }
+      data.sort((a, b) => (a.memberCode || '').localeCompare(b.memberCode || ''));
+      callback(data);
     },
     (err) => console.warn('[Firestore] subscribeToMembers error:', err)
   );
@@ -136,7 +134,7 @@ export function subscribeToOccasions(
     collection(db, COLS.occasions),
     (snap) => {
       const data = snap.docs.map((d) => d.data() as OccasionEvent);
-      if (data.length > 0) callback(data);
+      callback(data);
     },
     (err) => console.warn('[Firestore] subscribeToOccasions error:', err)
   );
@@ -149,7 +147,7 @@ export function subscribeToGallery(
     collection(db, COLS.gallery),
     (snap) => {
       const data = snap.docs.map((d) => d.data() as EventGalleryImage);
-      if (data.length > 0) callback(data);
+      callback(data);
     },
     (err) => console.warn('[Firestore] subscribeToGallery error:', err)
   );
@@ -179,6 +177,23 @@ export function subscribeToGroupLogo(
       if (data?.url) callback(data.url);
     },
     (err) => console.warn('[Firestore] subscribeToGroupLogo error:', err)
+  );
+}
+
+export function subscribeToCustomIncomeTypes(
+  callback: (types: string[]) => void
+): () => void {
+  return onSnapshot(
+    doc(db, COLS.settings, 'customIncomeTypes'),
+    (snap) => {
+      const data = snap.data();
+      if (data?.types && Array.isArray(data.types)) {
+        callback(data.types);
+      } else {
+        callback([]);
+      }
+    },
+    (err) => console.warn('[Firestore] subscribeToCustomIncomeTypes error:', err)
   );
 }
 
@@ -212,6 +227,10 @@ export async function saveOccasion(occasion: OccasionEvent): Promise<void> {
   await setDoc(doc(db, COLS.occasions, occasion.id), occasion);
 }
 
+export async function deleteOccasion(id: string): Promise<void> {
+  await deleteDoc(doc(db, COLS.occasions, id));
+}
+
 export async function saveGalleryImage(image: EventGalleryImage): Promise<void> {
   await setDoc(doc(db, COLS.gallery, image.id), image);
 }
@@ -226,6 +245,10 @@ export async function saveSuggestion(sug: MemberSuggestion): Promise<void> {
 
 export async function saveGroupLogo(url: string): Promise<void> {
   await setDoc(doc(db, COLS.settings, 'groupLogo'), { url });
+}
+
+export async function saveCustomIncomeTypes(types: string[]): Promise<void> {
+  await setDoc(doc(db, COLS.settings, 'customIncomeTypes'), { types });
 }
 
 // ─── Reset to demo data ───────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { IncomeTransaction, ExpenseTransaction, CurrentUser } from '../types';
 import { isCoreMemberRole } from '../utils/rbac';
 import { RbacGuard } from './RbacGuard';
+import { exportToCSV, triggerPDFPrint } from '../utils/exportUtils';
 import {
   FileDown,
   FileSpreadsheet,
@@ -69,7 +70,7 @@ export const StatementExportView: React.FC<StatementExportViewProps> = ({
       exp = exp.filter((e) => e.financialYear === selectedYear);
     } else {
       inc = inc.filter((i) => {
-        const d = i.dateStr;
+        const d = i.transactionDate;
         return d >= fromDate && d <= toDate;
       });
       exp = exp.filter((e) => {
@@ -94,7 +95,7 @@ export const StatementExportView: React.FC<StatementExportViewProps> = ({
       inc.forEach((i) => {
         unifiedList.push({
           id: i.id,
-          dateStr: i.dateStr,
+          dateStr: i.transactionDate,
           type: 'जमा',
           category: i.incomeType,
           reason: i.reason || i.incomeType,
@@ -117,7 +118,7 @@ export const StatementExportView: React.FC<StatementExportViewProps> = ({
           amount: e.amount,
           personName: e.recipientName,
           paymentMethod: e.paymentMethod,
-          receiptNumber: e.receiptNumber || e.invoiceNumber,
+          receiptNumber: e.billNumber,
         });
       });
     }
@@ -140,71 +141,42 @@ export const StatementExportView: React.FC<StatementExportViewProps> = ({
         ).toLocaleDateString('mr-IN')}`;
 
   // Export CSV / Excel file
-  const exportToExcelCSV = async () => {
+  const exportToExcelCSV = () => {
     try {
-      const escapeCsv = (val: any) => {
-        if (val === undefined || val === null) return '""';
-        const str = String(val).replace(/"/g, '""');
-        return `"${str}"`;
-      };
-
-      const rows = [
-        ['अ क्र.', 'दिनांक', 'व्यवहार प्रकार', 'वर्गवारी / शीर्षक', 'कारण / तपशील', 'जमा रक्कम (₹)', 'खर्च रक्कम (₹)', 'व्यक्ति/पेयी नाव', 'पावती/पावती क्र.', 'व्यवहार पद्धत'],
+      const filename = `MoryaGroup_Statement_${filterMode === 'YEAR' ? selectedYear : 'Custom'}_${Date.now()}.csv`;
+      const headers = [
+        'अ क्र.',
+        'दिनांक',
+        'व्यवहार प्रकार',
+        'वर्गवारी / शीर्षक',
+        'कारण / तपशील',
+        'जमा रक्कम (₹)',
+        'खर्च रक्कम (₹)',
+        'व्यक्ति/पेयी नाव',
+        'पावती/पावती क्र.',
+        'व्यवहार पद्धत',
       ];
 
-      filteredData.unifiedList.forEach((item, index) => {
-        rows.push([
-          (index + 1).toString(),
-          item.dateStr,
-          item.type,
-          escapeCsv(item.category),
-          escapeCsv(item.reason),
-          item.type === 'जमा' ? item.amount.toString() : '0',
-          item.type === 'खर्च' ? item.amount.toString() : '0',
-          escapeCsv(item.personName),
-          escapeCsv(item.receiptNumber || '-'),
-          escapeCsv(item.paymentMethod),
-        ]);
-      });
+      const rows: (string | number | boolean)[][] = filteredData.unifiedList.map((item, index) => [
+        index + 1,
+        item.dateStr,
+        item.type,
+        item.category,
+        item.reason,
+        item.type === 'जमा' ? item.amount : 0,
+        item.type === 'खर्च' ? item.amount : 0,
+        item.personName,
+        item.receiptNumber || '-',
+        item.paymentMethod,
+      ]);
 
-      // Summary totals row
+      // Summary totals rows
       rows.push([]);
-      rows.push(['', '', 'एकूण जमा (Total Deposit)', '', '', totalIncome.toString(), '', '', '', '']);
-      rows.push(['', '', 'एकूण खर्च (Total Approved Expense)', '', '', '', totalExpense.toString(), '', '', '']);
-      rows.push(['', '', 'निव्वळ शिल्लक बचत (Net Balance)', '', '', '', '', netBalance.toString(), '', '']);
+      rows.push(['', '', 'एकूण जमा (Total Deposit)', '', '', totalIncome, 0, '', '', '']);
+      rows.push(['', '', 'एकूण खर्च (Total Approved Expense)', '', '', 0, totalExpense, '', '', '']);
+      rows.push(['', '', 'निव्वळ शिल्लक बचत (Net Balance)', '', '', totalIncome - totalExpense, 0, '', '', '']);
 
-      const csvString = rows.map((r) => r.join(',')).join('\r\n');
-      const csvContent = '\uFEFF' + csvString;
-
-      const filename = `MoryaGroup_Statement_${filterMode === 'YEAR' ? selectedYear : 'Custom'}_${Date.now()}.csv`;
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-
-      // Try Native Web Share API first for mobile phones/apps
-      if (navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'text/csv' })] })) {
-        try {
-          const file = new File([blob], filename, { type: 'text/csv' });
-          await navigator.share({
-            files: [file],
-            title: `मोरया ग्रुप हिशोब स्टेटमेंट (${selectedYear})`,
-            text: `मोरया ग्रुप मित्र मंडळ - अधिकृत हिशोब पत्रक (${statementPeriodText})`,
-          });
-          return;
-        } catch {
-          // ignore share cancel and proceed to standard download
-        }
-      }
-
-      // Standard browser download
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        if (document.body.contains(link)) document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 1000);
+      exportToCSV(filename, headers, rows);
     } catch (err) {
       console.error('Excel export error:', err);
       alert('Excel/CSV डाऊनलोड करताना त्रुटी आली.');
@@ -215,11 +187,7 @@ export const StatementExportView: React.FC<StatementExportViewProps> = ({
   const handlePrintPDF = () => {
     setShowPrintModal(true);
     setTimeout(() => {
-      try {
-        window.print();
-      } catch (e) {
-        console.warn('Window print fallback:', e);
-      }
+      triggerPDFPrint(`मोरया ग्रुप हिशोब स्टेटमेंट - ${statementPeriodText}`);
     }, 400);
   };
 
