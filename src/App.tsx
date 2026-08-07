@@ -18,6 +18,12 @@ import {
   getStoredSuggestions,
   getStoredUser,
   saveUser,
+  saveIncomes,
+  saveExpenses,
+  saveMembers,
+  saveOccasions,
+  saveSuggestions,
+  saveGroupLogo,
   DEFAULT_USER,
   getCustomIncomeTypes,
   saveCustomIncomeType,
@@ -61,7 +67,6 @@ import { ProfileView } from './components/ProfileView';
 import { MonthWiseReportsView } from './components/MonthWiseReportsView';
 import { AllYearsDataView } from './components/AllYearsDataView';
 import { CoreSummaryView } from './components/CoreSummaryView';
-import { StatementExportView } from './components/StatementExportView';
 import { SuggestionsView } from './components/SuggestionsView';
 import { LoginModal } from './components/LoginModal';
 import { OccasionModal } from './components/OccasionModal';
@@ -135,14 +140,26 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   const handleAddSuggestion = (newSug: any) => {
+    setSuggestions((prev) => {
+      const updated = [newSug, ...prev.filter((s) => s.id !== newSug.id)];
+      saveSuggestions(updated);
+      return updated;
+    });
     saveSuggestion(newSug).catch(console.error);
   };
 
   const handleUpdateSuggestion = (updatedSug: any) => {
+    setSuggestions((prev) => {
+      const updated = prev.map((s) => (s.id === updatedSug.id ? updatedSug : s));
+      saveSuggestions(updated);
+      return updated;
+    });
     saveSuggestion(updatedSug).catch(console.error);
   };
 
   const handleUpdateGroupLogo = (logoUrl: string) => {
+    setGroupLogo(logoUrl);
+    saveGroupLogo(logoUrl);
     saveGroupLogoFirestore(logoUrl).catch(console.error);
   };
 
@@ -174,16 +191,31 @@ export default function App() {
 
   // Add Income Transaction
   const handleAddIncome = (newIncome: IncomeTransaction) => {
+    setIncomes((prev) => {
+      const updated = [newIncome, ...prev.filter((i) => i.id !== newIncome.id)];
+      saveIncomes(updated);
+      return updated;
+    });
     saveIncome(newIncome).catch(console.error);
   };
 
   // Update Income Transaction (Admin Only)
   const handleUpdateIncome = (updatedIncome: IncomeTransaction) => {
+    setIncomes((prev) => {
+      const updated = prev.map((i) => (i.id === updatedIncome.id ? updatedIncome : i));
+      saveIncomes(updated);
+      return updated;
+    });
     saveIncome(updatedIncome).catch(console.error);
   };
 
   // Delete Income Transaction (Admin Only)
   const handleDeleteIncome = (incomeId: string) => {
+    setIncomes((prev) => {
+      const updated = prev.filter((i) => i.id !== incomeId);
+      saveIncomes(updated);
+      return updated;
+    });
     deleteIncome(incomeId).catch(console.error);
   };
 
@@ -228,29 +260,59 @@ export default function App() {
 
   // Occasions Management
   const handleAddOccasion = (newOccasion: OccasionEvent) => {
+    setOccasions((prev) => {
+      const updated = [newOccasion, ...prev.filter((o) => o.id !== newOccasion.id)];
+      saveOccasions(updated);
+      return updated;
+    });
     saveOccasion(newOccasion).catch(console.error);
   };
 
   const handleUpdateOccasion = (updatedOccasion: OccasionEvent) => {
+    setOccasions((prev) => {
+      const updated = prev.map((o) => (o.id === updatedOccasion.id ? updatedOccasion : o));
+      saveOccasions(updated);
+      return updated;
+    });
     saveOccasion(updatedOccasion).catch(console.error);
   };
 
   const handleDeleteOccasion = (occasionId: string) => {
+    setOccasions((prev) => {
+      const updated = prev.filter((o) => o.id !== occasionId);
+      saveOccasions(updated);
+      return updated;
+    });
     deleteOccasion(occasionId).catch(console.error);
   };
 
   // Add Expense Transaction
   const handleAddExpense = (newExpense: ExpenseTransaction) => {
+    setExpenses((prev) => {
+      const updated = [newExpense, ...prev.filter((e) => e.id !== newExpense.id)];
+      saveExpenses(updated);
+      return updated;
+    });
     saveExpense(newExpense).catch(console.error);
   };
 
   // Update Expense Transaction (Admin Only)
   const handleUpdateExpense = (updatedExpense: ExpenseTransaction) => {
+    setExpenses((prev) => {
+      const updated = prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e));
+      saveExpenses(updated);
+      return updated;
+    });
     saveExpense(updatedExpense).catch(console.error);
   };
 
   // Delete Expense Transaction (Admin Only)
   const handleDeleteExpense = (expenseId: string) => {
+    setExpenses((prev) => {
+      const updated = prev.filter((e) => e.id !== expenseId);
+      saveExpenses(updated);
+      return updated;
+    });
     deleteExpense(expenseId).catch(console.error);
   };
 
@@ -265,21 +327,41 @@ export default function App() {
       approvedByRole: approverRole,
       approvedAt: new Date().toISOString(),
     };
+    setExpenses((prev) => {
+      const newExpenses = prev.map((e) => (e.id === expId ? updated : e));
+      saveExpenses(newExpenses);
+      return newExpenses;
+    });
     saveExpense(updated).catch(console.error);
   };
 
   // Add Member
   const handleAddMember = (newMember: Member) => {
+    setMembers((prev) => {
+      const updated = [...prev.filter((m) => m.id !== newMember.id), newMember];
+      saveMembers(updated);
+      return updated;
+    });
     saveMember(newMember).catch(console.error);
   };
 
   // Update Member
   const handleUpdateMember = (updatedMember: Member) => {
+    setMembers((prev) => {
+      const updated = prev.map((m) => (m.id === updatedMember.id ? updatedMember : m));
+      saveMembers(updated);
+      return updated;
+    });
     saveMember(updatedMember).catch(console.error);
   };
 
   // Delete Member
   const handleDeleteMember = (memberId: string) => {
+    setMembers((prev) => {
+      const updated = prev.filter((m) => m.id !== memberId);
+      saveMembers(updated);
+      return updated;
+    });
     deleteMember(memberId).catch(console.error);
   };
 
@@ -518,18 +600,6 @@ export default function App() {
                 selectedYear={selectedYear}
                 setSelectedYear={setSelectedYear}
                 currentUser={currentUser}
-                onNavigate={(tab) => setActiveTab(tab)}
-                onOpenLogin={() => setIsLoginModalOpen(true)}
-              />
-            )}
-
-            {activeTab === 'statement-export' && (
-              <StatementExportView
-                incomes={incomes}
-                expenses={expenses}
-                financialYear={selectedYear}
-                currentUser={currentUser}
-                groupLogo={groupLogo}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />

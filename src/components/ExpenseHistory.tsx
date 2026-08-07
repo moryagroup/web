@@ -298,26 +298,13 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
 
       {/* Expense Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
           <span className="font-bold text-sm text-slate-700">
             खर्च व्यवहार यादी ({filteredExpenses.length})
           </span>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={handleExportCSV}
-              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Export CSV / एक्सेल डाउनलोड</span>
-            </button>
-            <button
-              onClick={handlePrintPDF}
-              className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Print PDF / पीडीएफ प्रिंट</span>
-            </button>
-          </div>
+          <span className="text-xs text-slate-500">
+            अध्यक्ष / खजिनदार / सचिव यापैकी एकाची मंजुरी आवश्यक
+          </span>
         </div>
 
         <div className="overflow-x-auto">

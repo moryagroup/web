@@ -126,36 +126,20 @@ export const CoreSummaryView: React.FC<CoreSummaryViewProps> = ({
           </div>
         </div>
 
-        {/* Financial Year Selector & Export Actions */}
-        <div className="flex flex-wrap items-center gap-3 self-stretch md:self-auto shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-300 font-bold flex items-center gap-1">
-              <Calendar className="w-4 h-4 text-emerald-400" /> वर्ष:
-            </span>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-slate-800 text-emerald-300 font-bold text-xs rounded-xl border border-slate-700 p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer"
-            >
-              <option value="२०२६-२७">२०२६-२७ (चालू वर्ष)</option>
-              <option value="२०२५-२६">२०२५-२६</option>
-              <option value="२०२४-२५">२०२४-२५</option>
-            </select>
-          </div>
-          <button
-            onClick={handleExportCSV}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+        {/* Financial Year Selector */}
+        <div className="flex items-center gap-2 self-stretch md:self-auto shrink-0">
+          <span className="text-xs text-slate-300 font-bold flex items-center gap-1">
+            <Calendar className="w-4 h-4 text-emerald-400" /> वर्ष:
+          </span>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="bg-slate-800 text-emerald-300 font-bold text-xs rounded-xl border border-slate-700 p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Export CSV / एक्सेल डाउनलोड</span>
-          </button>
-          <button
-            onClick={handlePrintPDF}
-            className="px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Print PDF / पीडीएफ प्रिंट</span>
-          </button>
+            <option value="२०२६-२७">२०२६-२७ (चालू वर्ष)</option>
+            <option value="२०२५-२६">२०२५-२६</option>
+            <option value="२०२४-२५">२०२४-२५</option>
+          </select>
         </div>
       </div>
 

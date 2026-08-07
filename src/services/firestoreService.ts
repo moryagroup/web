@@ -43,25 +43,20 @@ const COLS = {
   settings: 'settings',
 };
 
-// ─── Seed helpers (ensures all initial records exist in Firestore) ───────────
+// ─── Seed helpers (runs once per collection if empty in Firestore) ───────────
 async function seedIfEmpty<T extends { id: string }>(
   colName: string,
   initial: T[]
 ): Promise<void> {
   try {
-    const batch = writeBatch(db);
-    let count = 0;
-    for (const item of initial) {
-      const ref = doc(db, colName, item.id);
-      const docSnap = await getDoc(ref);
-      if (!docSnap.exists()) {
-        batch.set(ref, item);
-        count++;
-      }
-    }
-    if (count > 0) {
+    const snap = await getDocs(collection(db, colName));
+    if (snap.empty) {
+      const batch = writeBatch(db);
+      initial.forEach((item) => {
+        batch.set(doc(db, colName, item.id), item);
+      });
       await batch.commit();
-      console.log(`[Firestore] Seeded ${count} missing items into ${colName}`);
+      console.log(`[Firestore] Initialized ${colName} collection with ${initial.length} items.`);
     }
   } catch (err) {
     console.warn(`[Firestore] Seed skipped for ${colName}:`, err);

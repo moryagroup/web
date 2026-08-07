@@ -197,36 +197,20 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
           </div>
         </div>
 
-        {/* Year Filter & Export Actions */}
-        <div className="flex flex-wrap items-center gap-3 self-stretch md:self-auto shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-300 font-bold flex items-center gap-1">
-              <Calendar className="w-4 h-4 text-amber-400" /> वर्ष:
-            </span>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-slate-800 text-amber-300 font-bold text-xs rounded-xl border border-slate-700 p-2.5 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
-            >
-              <option value="२०२६-२७">२०२६-२७ (चालू वर्ष)</option>
-              <option value="२०२५-२६">२०२५-२६</option>
-              <option value="२०२४-२५">२०२४-२५</option>
-            </select>
-          </div>
-          <button
-            onClick={handleExportCSV}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+        {/* Year Filter */}
+        <div className="flex items-center gap-2 self-stretch md:self-auto shrink-0">
+          <span className="text-xs text-slate-300 font-bold flex items-center gap-1">
+            <Calendar className="w-4 h-4 text-amber-400" /> वर्ष:
+          </span>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="bg-slate-800 text-amber-300 font-bold text-xs rounded-xl border border-slate-700 p-2.5 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Export CSV / एक्सेल डाउनलोड</span>
-          </button>
-          <button
-            onClick={handlePrintPDF}
-            className="px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Print PDF / पीडीएफ प्रिंट</span>
-          </button>
+            <option value="२०२६-२७">२०२६-२७ (चालू वर्ष)</option>
+            <option value="२०२५-२६">२०२५-२६</option>
+            <option value="२०२४-२५">२०२४-२५</option>
+          </select>
         </div>
       </div>
 
@@ -266,28 +250,10 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
 
       {/* Month-wise Cards Breakdown */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
-          <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5 text-amber-600" />
-            महिनानिहाय जमा-खर्च तक्ता ({selectedYear})
-          </h3>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleExportCSV}
-              className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Export CSV / एक्सेल डाउनलोड</span>
-            </button>
-            <button
-              onClick={handlePrintPDF}
-              className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-300 font-bold text-xs rounded-xl flex items-center gap-1 cursor-pointer"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Print PDF / पीडीएफ प्रिंट</span>
-            </button>
-          </div>
-        </div>
+        <h3 className="text-base font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+          <FileSpreadsheet className="w-5 h-5 text-amber-600" />
+          महिनानिहाय जमा-खर्च तक्ता ({selectedYear})
+        </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.keys(monthlyData).length > 0 ? (

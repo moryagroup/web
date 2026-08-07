@@ -161,13 +161,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       isCoreOnly: true,
     },
     {
-      id: 'statement-export',
-      label: '४. स्टेटमेंट (PDF & Excel)',
-      icon: FileDown,
-      color: 'text-purple-400',
-      isCoreOnly: true,
-    },
-    {
       id: 'suggestions',
       label: 'सूचना व सुचवणी',
       icon: MessageSquarePlus,
