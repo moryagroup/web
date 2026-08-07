@@ -539,9 +539,13 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
             <div className="flex gap-2">
               <button
                 onClick={async () => {
-                  await NativeService.triggerHaptic();
-                  const msg = `मोरया ग्रुप मित्र मंडळ पावती\nजमादार: ${selectedIncomeDetail.depositorName}\nरक्कम: ₹${selectedIncomeDetail.amount}\nप्रकार: ${selectedIncomeDetail.incomeType}\nपावती क्र: ${selectedIncomeDetail.transactionNo || 'N/A'}\nतारीख: ${selectedIncomeDetail.transactionDate}`;
-                  await NativeService.shareReceipt('मोरया ग्रुप जमा पावती', msg);
+                  try {
+                    await NativeService.triggerHaptic();
+                    const msg = `मोरया ग्रुप मित्र मंडळ पावती\nजमादार: ${selectedIncomeDetail.depositorName}\nरक्कम: ₹${selectedIncomeDetail.amount}\nप्रकार: ${selectedIncomeDetail.incomeType}\nपावती क्र: ${selectedIncomeDetail.transactionNo || 'N/A'}\nतारीख: ${selectedIncomeDetail.transactionDate}`;
+                    await NativeService.shareReceipt('मोरया ग्रुप जमा पावती', msg);
+                  } catch (e) {
+                    console.warn('Share error:', e);
+                  }
                 }}
                 className="flex-1 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
               >

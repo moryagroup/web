@@ -6,9 +6,11 @@ export const NetworkStatusNotifier: React.FC = () => {
 
   useEffect(() => {
     // Initial status check
-    NativeService.getNetworkStatus().then((status) => {
-      setIsOffline(!status.connected);
-    });
+    NativeService.getNetworkStatus()
+      .then((status) => {
+        setIsOffline(!status.connected);
+      })
+      .catch(console.error);
 
     // Network status listener
     const listener = NativeService.onNetworkChange((status) => {
@@ -23,7 +25,7 @@ export const NetworkStatusNotifier: React.FC = () => {
 
     return () => {
       if (listener && typeof (listener as any).then === 'function') {
-        (listener as any).then((l: any) => l.remove());
+        (listener as any).then((l: any) => l?.remove?.()).catch(console.error);
       } else if (listener && (listener as any).remove) {
         (listener as any).remove();
       }

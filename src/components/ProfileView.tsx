@@ -848,6 +848,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         isAdmin={isAdmin}
         onChangeLogoClick={() => profileLogoInputRef.current?.click()}
       />
+
+      {/* Hidden File Input for Group Logo */}
+      <input
+        type="file"
+        ref={profileLogoInputRef}
+        onChange={handleProfileLogoChange}
+        accept="image/*"
+        className="hidden"
+      />
     </div>
   );
 };
