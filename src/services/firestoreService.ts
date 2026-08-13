@@ -65,9 +65,9 @@ async function seedIfEmpty<T extends { id: string }>(
 
 export async function seedAllCollections(): Promise<void> {
   try {
+    // Purge any legacy remote Firestore incomes and expenses documents
+    await clearAllTransactionsFromFirestore();
     await Promise.all([
-      seedIfEmpty(COLS.incomes, INITIAL_INCOMES),
-      seedIfEmpty(COLS.expenses, INITIAL_EXPENSES),
       seedIfEmpty(COLS.members, INITIAL_MEMBERS),
       seedIfEmpty(COLS.occasions, INITIAL_OCCASIONS),
       seedIfEmpty(COLS.gallery, INITIAL_EVENT_GALLERY),
