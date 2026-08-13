@@ -24,6 +24,7 @@ import {
   saveOccasions,
   saveSuggestions,
   saveGroupLogo,
+  saveEventGallery,
   DEFAULT_USER,
   getCustomIncomeTypes,
   saveCustomIncomeType,
@@ -107,16 +108,35 @@ export default function App() {
     }, 1000);
 
     const unsubscribers = [
-      subscribeToIncomes(setIncomes),
-      subscribeToExpenses(setExpenses),
+      subscribeToIncomes((data) => {
+        setIncomes(data);
+        saveIncomes(data);
+      }),
+      subscribeToExpenses((data) => {
+        setExpenses(data);
+        saveExpenses(data);
+      }),
       subscribeToMembers((data) => {
         setMembers(data);
+        saveMembers(data);
         setIsLoading(false);
       }),
-      subscribeToOccasions(setOccasions),
-      subscribeToGallery(setGalleryState),
-      subscribeToSuggestions(setSuggestions),
-      subscribeToGroupLogo(setGroupLogo),
+      subscribeToOccasions((data) => {
+        setOccasions(data);
+        saveOccasions(data);
+      }),
+      subscribeToGallery((data) => {
+        setGalleryState(data);
+        saveEventGallery(data);
+      }),
+      subscribeToSuggestions((data) => {
+        setSuggestions(data);
+        saveSuggestions(data);
+      }),
+      subscribeToGroupLogo((logo) => {
+        setGroupLogo(logo);
+        saveGroupLogo(logo);
+      }),
       subscribeToCustomIncomeTypes((types) => {
         if (Array.isArray(types)) {
           setCustomIncomeTypes(types);

@@ -81,6 +81,8 @@ export interface Member {
   age?: number; // वय
   password?: string; // सभासद / खात्याचा पासवर्ड
   photoUrl?: string; // Member profile photo URL
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface OccasionEvent {
@@ -90,6 +92,9 @@ export interface OccasionEvent {
   startDate?: string;
   endDate?: string;
   description?: string;
+  bannerUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface EventGalleryImage {
@@ -100,6 +105,8 @@ export interface EventGalleryImage {
   dateStr?: string;
   description?: string;
   year?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface IncomeTransaction {
@@ -123,6 +130,7 @@ export interface IncomeTransaction {
   financialYear: string; // e.g., '2026-2027'
   createdBy: string; // Admin / Treasurer name
   createdAt: string; // Full system timestamp ISO or formatted
+  updatedAt?: string;
 }
 
 export interface ExpenseTransaction {
@@ -150,6 +158,7 @@ export interface ExpenseTransaction {
   approvedAt?: string; // Timestamp when approved
   createdBy: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CurrentUser {
@@ -187,4 +196,18 @@ export interface MemberSuggestion {
   adminReply?: string;
   repliedBy?: string;
   createdAt: string;
+  updatedAt?: string;
+}
+
+export interface StoredImageRecord {
+  id: string;
+  url: string; // Base64 data URL or remote cloud URL
+  entityId?: string; // Reference to member ID, occasion ID, gallery item ID
+  entityType: 'profile' | 'event' | 'gallery' | 'logo' | 'other';
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  uploadedBy?: string;
+  createdAt: string;
+  updatedAt: string;
 }

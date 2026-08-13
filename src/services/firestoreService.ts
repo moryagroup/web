@@ -1,7 +1,7 @@
 /**
  * firestoreService.ts
- * All Firestore read/write operations — replaces localStorage.
- * Provides real-time listeners (onSnapshot) for live cross-device sync.
+ * Production-grade Firestore read/write operations with real-time onSnapshot synchronization.
+ * Persistent cross-device state management without data loss on deployment.
  */
 
 import {
@@ -12,7 +12,6 @@ import {
   onSnapshot,
   getDocs,
   writeBatch,
-  getDoc,
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 import {
@@ -25,8 +24,6 @@ import {
 } from '../types';
 import {
   INITIAL_MEMBERS,
-  INITIAL_INCOMES,
-  INITIAL_EXPENSES,
   INITIAL_OCCASIONS,
   INITIAL_EVENT_GALLERY,
   INITIAL_SUGGESTIONS,
@@ -43,30 +40,35 @@ const COLS = {
   settings: 'settings',
 };
 
-// ─── Seed helpers (runs once per collection if empty in Firestore) ───────────
+// ─── Non-Destructive Seed Helper ─────────────────────────────────────────────
 async function seedIfEmpty<T extends { id: string }>(
   colName: string,
   initial: T[]
 ): Promise<void> {
   try {
     const snap = await getDocs(collection(db, colName));
-    if (snap.empty) {
+    if (snap.empty && initial.length > 0) {
       const batch = writeBatch(db);
+      const timestamp = new Date().toISOString();
       initial.forEach((item) => {
-        batch.set(doc(db, colName, item.id), item);
+        const itemWithTimestamps = {
+          ...item,
+          createdAt: (item as any).createdAt || timestamp,
+          updatedAt: timestamp,
+        };
+        batch.set(doc(db, colName, item.id), itemWithTimestamps);
       });
       await batch.commit();
-      console.log(`[Firestore] Initialized ${colName} collection with ${initial.length} items.`);
+      console.log(`[Firestore] Non-destructive initial seed for ${colName}: ${initial.length} items.`);
     }
   } catch (err) {
-    console.warn(`[Firestore] Seed skipped for ${colName}:`, err);
+    console.warn(`[Firestore] Seed check skipped for ${colName}:`, err);
   }
 }
 
 export async function seedAllCollections(): Promise<void> {
   try {
-    // Purge any legacy remote Firestore incomes and expenses documents
-    await clearAllTransactionsFromFirestore();
+    // Non-destructive seeding: ONLY populates if collection is completely empty
     await Promise.all([
       seedIfEmpty(COLS.members, INITIAL_MEMBERS),
       seedIfEmpty(COLS.occasions, INITIAL_OCCASIONS),
@@ -87,7 +89,7 @@ export function subscribeToIncomes(
     collection(db, COLS.incomes),
     (snap) => {
       const data = snap.docs.map((d) => d.data() as IncomeTransaction);
-      data.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
+      data.sort((a, b) => ((b.updatedAt || b.createdAt) > (a.updatedAt || a.createdAt) ? 1 : -1));
       callback(data);
     },
     (err) => console.warn('[Firestore] subscribeToIncomes error:', err)
@@ -101,7 +103,7 @@ export function subscribeToExpenses(
     collection(db, COLS.expenses),
     (snap) => {
       const data = snap.docs.map((d) => d.data() as ExpenseTransaction);
-      data.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
+      data.sort((a, b) => ((b.updatedAt || b.createdAt) > (a.updatedAt || a.createdAt) ? 1 : -1));
       callback(data);
     },
     (err) => console.warn('[Firestore] subscribeToExpenses error:', err)
@@ -142,6 +144,7 @@ export function subscribeToGallery(
     collection(db, COLS.gallery),
     (snap) => {
       const data = snap.docs.map((d) => d.data() as EventGalleryImage);
+      data.sort((a, b) => ((b.updatedAt || b.createdAt || '') > (a.updatedAt || a.createdAt || '') ? 1 : -1));
       callback(data);
     },
     (err) => console.warn('[Firestore] subscribeToGallery error:', err)
@@ -155,7 +158,7 @@ export function subscribeToSuggestions(
     collection(db, COLS.suggestions),
     (snap) => {
       const data = snap.docs.map((d) => d.data() as MemberSuggestion);
-      data.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
+      data.sort((a, b) => ((b.updatedAt || b.createdAt) > (a.updatedAt || a.createdAt) ? 1 : -1));
       callback(data);
     },
     (err) => console.warn('[Firestore] subscribeToSuggestions error:', err)
@@ -192,10 +195,16 @@ export function subscribeToCustomIncomeTypes(
   );
 }
 
-// ─── Write helpers ───────────────────────────────────────────────────────────
+// ─── Write helpers with Audit Timestamps ─────────────────────────────────────
 
 export async function saveIncome(income: IncomeTransaction): Promise<void> {
-  await setDoc(doc(db, COLS.incomes, income.id), income);
+  const timestamp = new Date().toISOString();
+  const payload: IncomeTransaction = {
+    ...income,
+    createdAt: income.createdAt || timestamp,
+    updatedAt: timestamp,
+  };
+  await setDoc(doc(db, COLS.incomes, income.id), payload);
 }
 
 export async function deleteIncome(id: string): Promise<void> {
@@ -203,7 +212,13 @@ export async function deleteIncome(id: string): Promise<void> {
 }
 
 export async function saveExpense(expense: ExpenseTransaction): Promise<void> {
-  await setDoc(doc(db, COLS.expenses, expense.id), expense);
+  const timestamp = new Date().toISOString();
+  const payload: ExpenseTransaction = {
+    ...expense,
+    createdAt: expense.createdAt || timestamp,
+    updatedAt: timestamp,
+  };
+  await setDoc(doc(db, COLS.expenses, expense.id), payload);
 }
 
 export async function deleteExpense(id: string): Promise<void> {
@@ -211,7 +226,13 @@ export async function deleteExpense(id: string): Promise<void> {
 }
 
 export async function saveMember(member: Member): Promise<void> {
-  await setDoc(doc(db, COLS.members, member.id), member);
+  const timestamp = new Date().toISOString();
+  const payload: Member = {
+    ...member,
+    createdAt: member.createdAt || timestamp,
+    updatedAt: timestamp,
+  };
+  await setDoc(doc(db, COLS.members, member.id), payload);
 }
 
 export async function deleteMember(id: string): Promise<void> {
@@ -219,7 +240,13 @@ export async function deleteMember(id: string): Promise<void> {
 }
 
 export async function saveOccasion(occasion: OccasionEvent): Promise<void> {
-  await setDoc(doc(db, COLS.occasions, occasion.id), occasion);
+  const timestamp = new Date().toISOString();
+  const payload: OccasionEvent = {
+    ...occasion,
+    createdAt: occasion.createdAt || timestamp,
+    updatedAt: timestamp,
+  };
+  await setDoc(doc(db, COLS.occasions, occasion.id), payload);
 }
 
 export async function deleteOccasion(id: string): Promise<void> {
@@ -227,7 +254,13 @@ export async function deleteOccasion(id: string): Promise<void> {
 }
 
 export async function saveGalleryImage(image: EventGalleryImage): Promise<void> {
-  await setDoc(doc(db, COLS.gallery, image.id), image);
+  const timestamp = new Date().toISOString();
+  const payload: EventGalleryImage = {
+    ...image,
+    createdAt: image.createdAt || timestamp,
+    updatedAt: timestamp,
+  };
+  await setDoc(doc(db, COLS.gallery, image.id), payload);
 }
 
 export async function deleteGalleryImage(id: string): Promise<void> {
@@ -235,22 +268,26 @@ export async function deleteGalleryImage(id: string): Promise<void> {
 }
 
 export async function saveSuggestion(sug: MemberSuggestion): Promise<void> {
-  await setDoc(doc(db, COLS.suggestions, sug.id), sug);
+  const timestamp = new Date().toISOString();
+  const payload: MemberSuggestion = {
+    ...sug,
+    createdAt: sug.createdAt || timestamp,
+    updatedAt: timestamp,
+  };
+  await setDoc(doc(db, COLS.suggestions, sug.id), payload);
 }
 
 export async function saveGroupLogo(url: string): Promise<void> {
-  await setDoc(doc(db, COLS.settings, 'groupLogo'), { url });
+  await setDoc(doc(db, COLS.settings, 'groupLogo'), { url, updatedAt: new Date().toISOString() });
 }
 
 export async function saveCustomIncomeTypes(types: string[]): Promise<void> {
-  await setDoc(doc(db, COLS.settings, 'customIncomeTypes'), { types });
+  await setDoc(doc(db, COLS.settings, 'customIncomeTypes'), { types, updatedAt: new Date().toISOString() });
 }
 
-// ─── Reset to demo data ───────────────────────────────────────────────────────
 export async function resetFirestoreToDemo(): Promise<void> {
   const batch = writeBatch(db);
 
-  // Helper to reset a collection
   const resetCol = async (colName: string, items: { id: string }[]) => {
     const snap = await getDocs(collection(db, colName));
     snap.docs.forEach((d) => batch.delete(d.ref));
@@ -258,8 +295,6 @@ export async function resetFirestoreToDemo(): Promise<void> {
   };
 
   await Promise.all([
-    resetCol(COLS.incomes, INITIAL_INCOMES),
-    resetCol(COLS.expenses, INITIAL_EXPENSES),
     resetCol(COLS.members, INITIAL_MEMBERS),
     resetCol(COLS.occasions, INITIAL_OCCASIONS),
     resetCol(COLS.gallery, INITIAL_EVENT_GALLERY),
@@ -269,6 +304,7 @@ export async function resetFirestoreToDemo(): Promise<void> {
   await batch.commit();
 }
 
+// ─── Manual Admin Transaction Wipe Utility (Explicit Admin Action Only) ─────
 export async function clearAllTransactionsFromFirestore(): Promise<void> {
   try {
     const batch = writeBatch(db);
@@ -279,6 +315,7 @@ export async function clearAllTransactionsFromFirestore(): Promise<void> {
     expenseSnap.docs.forEach((d) => batch.delete(d.ref));
 
     await batch.commit();
+    console.log('[Firestore] Explicit admin transaction wipe executed.');
   } catch (err) {
     console.warn('[Firestore] clearAllTransactionsFromFirestore error:', err);
   }

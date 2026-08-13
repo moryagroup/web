@@ -33,26 +33,6 @@ const STORAGE_KEYS = {
   SUGGESTIONS: 'morya_mandal_suggestions_v1',
 };
 
-// Auto-purge legacy cached transaction storage keys across all devices
-(function autoPurgeLegacyStorage() {
-  try {
-    const MIGRATION_VERSION = 'v3_tx_cleared_2026_08_13';
-    const currentVersion = localStorage.getItem('morya_storage_migration_ver');
-    if (currentVersion !== MIGRATION_VERSION) {
-      localStorage.removeItem('morya_mandal_incomes_v1');
-      localStorage.removeItem('morya_mandal_incomes_v2');
-      localStorage.removeItem('morya_mandal_expenses_v1');
-      localStorage.removeItem('morya_mandal_expenses_v2');
-      localStorage.setItem(STORAGE_KEYS.INCOMES, JSON.stringify([]));
-      localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify([]));
-      localStorage.setItem('morya_storage_migration_ver', MIGRATION_VERSION);
-      console.log('[StorageService] Legacy transaction caches successfully purged.');
-    }
-  } catch (err) {
-    console.warn('[StorageService] Auto purge error:', err);
-  }
-})();
-
 export const getStoredIncomes = (): IncomeTransaction[] => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.INCOMES);
