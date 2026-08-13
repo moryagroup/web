@@ -13,6 +13,7 @@ interface SettingsModalProps {
   onDeleteCustomIncomeType?: (type: string) => void;
   currentUser: CurrentUser;
   onOpenLogin?: () => void;
+  onClearAllTransactions?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -25,6 +26,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onDeleteCustomIncomeType,
   currentUser,
   onOpenLogin,
+  onClearAllTransactions,
 }) => {
   const [newType, setNewType] = useState<string>('');
 
@@ -142,6 +144,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               )}
             </div>
           </div>
+
+          {/* Admin Transaction Reset Section */}
+          {onClearAllTransactions && (
+            <div className="pt-4 border-t border-slate-200 space-y-2">
+              <div className="flex items-center gap-2">
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <h4 className="font-bold text-slate-800">सर्व व्यवहार डेटा रीसेट (Clear All Transactions)</h4>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                ही क्रिया सर्व जमा व खर्च व्यवहार डेटा (LocalStorage व Firestore मधील) कायमचा हटवेल.
+              </p>
+              <button
+                onClick={onClearAllTransactions}
+                className="w-full py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>सर्व जमा व खर्च व्यवहार हटवा</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

@@ -28,6 +28,7 @@ import {
   getCustomIncomeTypes,
   saveCustomIncomeType,
   calculateFinancialSummary,
+  clearAllTransactionsFromStorage,
 } from './services/storageService';
 import {
   seedAllCollections,
@@ -53,6 +54,7 @@ import {
   saveGroupLogo as saveGroupLogoFirestore,
   saveCustomIncomeTypes,
   resetFirestoreToDemo,
+  clearAllTransactionsFromFirestore,
 } from './services/firestoreService';
 
 import { Sidebar } from './components/Sidebar';
@@ -71,7 +73,7 @@ import { SuggestionsView } from './components/SuggestionsView';
 import { LoginModal } from './components/LoginModal';
 import { OccasionModal } from './components/OccasionModal';
 import { SettingsModal } from './components/SettingsModal';
-import { isBadgedMember } from './utils/rbac';
+import { isBadgedMember, hasAdminPermissions } from './utils/rbac';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { Menu } from 'lucide-react';
 
@@ -233,6 +235,20 @@ export default function App() {
     const updated = customIncomeTypes.filter((t) => t !== typeToDelete);
     setCustomIncomeTypes(updated);
     saveCustomIncomeTypes(updated).catch(console.error);
+  };
+
+  const handleClearAllTransactions = async () => {
+    if (!hasAdminPermissions(currentUser.role)) {
+      alert('व्यवहार हटवण्याचे अधिकार केवळ ॲडमिन यांनाच आहेत.');
+      return;
+    }
+    if (confirm('तुम्हाला खरोखर सर्व जमा व खर्च व्यवहार कायमचे हटवायचे आहेत का? हे कृत्य परत करता येणार नाही.')) {
+      clearAllTransactionsFromStorage();
+      await clearAllTransactionsFromFirestore();
+      setIncomes([]);
+      setExpenses([]);
+      alert('सर्व जमा व खर्च व्यवहार यशस्वीरित्या हटवण्यात आले आहेत.');
+    }
   };
 
   // Gallery Persistence & Real-Time Sync
@@ -682,6 +698,7 @@ export default function App() {
         onDeleteCustomIncomeType={handleDeleteCustomIncomeType}
         currentUser={currentUser}
         onOpenLogin={handleOpenLogin}
+        onClearAllTransactions={handleClearAllTransactions}
       />
 
       {/* Mobile Network Status Notifier */}

@@ -195,6 +195,11 @@ export const resetToDemoData = () => {
   localStorage.removeItem(STORAGE_KEYS.SUGGESTIONS);
 };
 
+export const clearAllTransactionsFromStorage = () => {
+  localStorage.setItem(STORAGE_KEYS.INCOMES, JSON.stringify([]));
+  localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify([]));
+};
+
 // Calculation helpers
 export const calculateFinancialSummary = (
   incomes: IncomeTransaction[],

@@ -268,3 +268,18 @@ export async function resetFirestoreToDemo(): Promise<void> {
 
   await batch.commit();
 }
+
+export async function clearAllTransactionsFromFirestore(): Promise<void> {
+  try {
+    const batch = writeBatch(db);
+    const incomeSnap = await getDocs(collection(db, COLS.incomes));
+    incomeSnap.docs.forEach((d) => batch.delete(d.ref));
+
+    const expenseSnap = await getDocs(collection(db, COLS.expenses));
+    expenseSnap.docs.forEach((d) => batch.delete(d.ref));
+
+    await batch.commit();
+  } catch (err) {
+    console.warn('[Firestore] clearAllTransactionsFromFirestore error:', err);
+  }
+}
