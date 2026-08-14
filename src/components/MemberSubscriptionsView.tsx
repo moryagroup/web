@@ -538,37 +538,45 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                     </div>
                   </div>
 
-                  <span
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-full shrink-0 ${
-                      subscriptionPaid >= target
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                        : 'bg-amber-100 text-amber-800 border border-amber-300'
-                    }`}
-                  >
-                    {subscriptionPaid >= target ? 'वर्गणी पूर्ण' : 'अपूर्ण'}
-                  </span>
+                  {member.id === 'm-admin' || member.designation === 'ॲडमिन' ? (
+                    <span className="px-2.5 py-1 text-[11px] font-black rounded-full bg-purple-100 text-purple-900 border border-purple-300 shrink-0">
+                      ⚡ ॲडमिन खाते
+                    </span>
+                  ) : (
+                    <span
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-full shrink-0 ${
+                        subscriptionPaid >= target
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-amber-100 text-amber-800 border border-amber-300'
+                      }`}
+                    >
+                      {subscriptionPaid >= target ? 'वर्गणी पूर्ण' : 'अपूर्ण'}
+                    </span>
+                  )}
                 </div>
 
-                {/* Subscription Progress Bar */}
-                <div className="space-y-1.5 mt-3 pt-3 border-t border-slate-100">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span className="text-slate-600">वार्षिक वर्गणी प्रगती:</span>
-                    <span className="text-blue-700">
-                      ₹{subscriptionPaid.toLocaleString('en-IN')} / ₹{target.toLocaleString('en-IN')}
-                    </span>
+                {/* Subscription Progress Bar (Hidden for System Admin) */}
+                {member.id !== 'm-admin' && member.designation !== 'ॲडमिन' && (
+                  <div className="space-y-1.5 mt-3 pt-3 border-t border-slate-100">
+                    <div className="flex justify-between text-xs font-bold">
+                      <span className="text-slate-600">वार्षिक वर्गणी प्रगती:</span>
+                      <span className="text-blue-700">
+                        ₹{subscriptionPaid.toLocaleString('en-IN')} / ₹{target.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-500 ${
+                          subscriptionPaid >= target ? 'bg-emerald-500' : 'bg-blue-600'
+                        }`}
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-right text-slate-400">
+                      {percentage}% पूर्ण | बाकी: ₹{remainingSubscription.toLocaleString('en-IN')}
+                    </p>
                   </div>
-                  <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 ${
-                        subscriptionPaid >= target ? 'bg-emerald-500' : 'bg-blue-600'
-                      }`}
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-right text-slate-400">
-                    {percentage}% पूर्ण | बाकी: ₹{remainingSubscription.toLocaleString('en-IN')}
-                  </p>
-                </div>
+                )}
 
                 {/* Extra Donation Indicator */}
                 {extraDonationPaid > 0 && (

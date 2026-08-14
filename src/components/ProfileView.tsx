@@ -780,73 +780,75 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
         </div>
 
-        {/* Right Side: Financial & Subscription Target Card */}
+        {/* Right Side: Financial & Subscription Target Card (Hidden for System Admin) */}
         <div className="space-y-6">
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-            <h3 className="text-sm font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Wallet className="w-4 h-4 text-emerald-600" />
-              <span>वार्षिक वर्गणी & योगदान (Contribution)</span>
-            </h3>
+          {currentProfile.id !== 'm-admin' && currentProfile.designation !== 'ॲडमिन' && (
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <Wallet className="w-4 h-4 text-emerald-600" />
+                <span>वार्षिक वर्गणी & योगदान (Contribution)</span>
+              </h3>
 
-            <div className="space-y-3 text-xs">
-              <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <span className="font-bold text-slate-600">वार्षिक वर्गणी लक्ष्य:</span>
-                <span className="font-black text-slate-900 text-sm">
-                  ₹{target.toLocaleString('en-IN')}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                <span className="font-bold text-emerald-800">जमा वर्गणी:</span>
-                <span className="font-black text-emerald-900 text-sm">
-                  ₹{subscriptionPaid.toLocaleString('en-IN')}
-                </span>
-              </div>
-
-              {donationPaid > 0 && (
-                <div className="flex justify-between items-center p-3 bg-purple-50 rounded-xl border border-purple-100">
-                  <span className="font-bold text-purple-800">अतिरिक्त देणगी:</span>
-                  <span className="font-black text-purple-900 text-sm">
-                    ₹{donationPaid.toLocaleString('en-IN')}
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="font-bold text-slate-600">वार्षिक वर्गणी लक्ष्य:</span>
+                  <span className="font-black text-slate-900 text-sm">
+                    ₹{target.toLocaleString('en-IN')}
                   </span>
                 </div>
-              )}
 
-              <div className="flex justify-between items-center p-3 bg-amber-50 rounded-xl border border-amber-200">
-                <span className="font-bold text-amber-900">बाकी वर्गणी:</span>
-                <span
-                  className={`font-black text-sm ${
-                    pendingTarget > 0 ? 'text-amber-700' : 'text-emerald-700'
-                  }`}
-                >
-                  {pendingTarget > 0
-                    ? `₹${pendingTarget.toLocaleString('en-IN')}`
-                    : '✅ पूर्ण वर्गणी जमा'}
-                </span>
+                <div className="flex justify-between items-center p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                  <span className="font-bold text-emerald-800">जमा वर्गणी:</span>
+                  <span className="font-black text-emerald-900 text-sm">
+                    ₹{subscriptionPaid.toLocaleString('en-IN')}
+                  </span>
+                </div>
+
+                {donationPaid > 0 && (
+                  <div className="flex justify-between items-center p-3 bg-purple-50 rounded-xl border border-purple-100">
+                    <span className="font-bold text-purple-800">अतिरिक्त देणगी:</span>
+                    <span className="font-black text-purple-900 text-sm">
+                      ₹{donationPaid.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center p-3 bg-amber-50 rounded-xl border border-amber-200">
+                  <span className="font-bold text-amber-900">बाकी वर्गणी:</span>
+                  <span
+                    className={`font-black text-sm ${
+                      pendingTarget > 0 ? 'text-amber-700' : 'text-emerald-700'
+                    }`}
+                  >
+                    {pendingTarget > 0
+                      ? `₹${pendingTarget.toLocaleString('en-IN')}`
+                      : '✅ पूर्ण वर्गणी जमा'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="pt-2 space-y-1">
+                <div className="flex justify-between text-[11px] font-bold text-slate-500">
+                  <span>लक्ष्य पूर्णता:</span>
+                  <span>
+                    {Math.min(100, Math.round((subscriptionPaid / target) * 100))}%
+                  </span>
+                </div>
+                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.round((subscriptionPaid / target) * 100)
+                      )}%`,
+                    }}
+                  />
+                </div>
               </div>
             </div>
-
-            {/* Progress Bar */}
-            <div className="pt-2 space-y-1">
-              <div className="flex justify-between text-[11px] font-bold text-slate-500">
-                <span>लक्ष्य पूर्णता:</span>
-                <span>
-                  {Math.min(100, Math.round((subscriptionPaid / target) * 100))}%
-                </span>
-              </div>
-              <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${Math.min(
-                      100,
-                      Math.round((subscriptionPaid / target) * 100)
-                    )}%`,
-                  }}
-                />
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* Admin Group Logo Setting */}
           {isAdmin && (
