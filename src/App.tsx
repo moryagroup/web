@@ -620,7 +620,6 @@ export default function App() {
     <>
     {isLoading && (
       <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950">
-        <img src={moryaLogo} alt="logo" className="w-20 h-20 rounded-full border-2 border-amber-400 mb-4 animate-pulse" />
         <p className="text-amber-400 font-bold text-lg mb-2">मोरया ग्रुप मित्र मंडळ (ट्रस्ट)</p>
         <p className="text-slate-400 text-sm">डेटा लोड होत आहे...</p>
         <div className="mt-4 w-40 h-1 bg-slate-800 rounded-full overflow-hidden">
