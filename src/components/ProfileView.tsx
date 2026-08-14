@@ -5,6 +5,7 @@ import { getMemberSubscriptionPaid, getMemberExtraDonationPaid } from '../servic
 import { hasAdminPermissions } from '../utils/rbac';
 import { ImageCropModal } from './ImageCropModal';
 import { LogoLightboxModal } from './LogoLightboxModal';
+import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
 import {
   User,
   Calendar,
@@ -71,6 +72,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const [isCropModalOpen, setIsCropModalOpen] = useState<boolean>(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+  const [isPhotoLightboxOpen, setIsPhotoLightboxOpen] = useState<boolean>(false);
 
   const handleProfileLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -298,22 +300,43 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       <div className="bg-gradient-to-r from-amber-950 via-rose-950 to-orange-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden border border-amber-500/40">
         <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-6">
           {/* Main Member Profile Photo */}
-          <div className="relative group cursor-pointer shrink-0" onClick={() => memberPhotoInputRef.current?.click()} title="सभासद फोटो बदला / जोडा (Click to Change Member Photo)">
-            {currentProfile.photoUrl ? (
-              <img
-                src={currentProfile.photoUrl}
-                alt={currentProfile.fullName}
-                className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-full border-4 border-amber-400 shadow-2xl bg-slate-950 p-0.5 transition-transform group-hover:scale-105"
-              />
-            ) : (
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-amber-400/90 bg-amber-500/20 flex flex-col items-center justify-center text-amber-300 font-black shadow-2xl transition-transform group-hover:scale-105">
-                <User className="w-12 h-12 text-amber-400" />
-                <span className="text-[9px] font-bold text-amber-200 mt-1">फोटो जोडा</span>
-              </div>
-            )}
-            <div className="absolute bottom-1 right-1 bg-amber-500 hover:bg-amber-400 text-slate-950 p-2 rounded-full border-2 border-slate-900 shadow-xl group-hover:scale-110 transition-transform">
-              <Camera className="w-4 h-4" />
+          <div className="relative group shrink-0">
+            <div
+              onClick={() => setIsPhotoLightboxOpen(true)}
+              className="cursor-pointer"
+              title="मोठा फोटो पहा (Full Screen View)"
+            >
+              {currentProfile.photoUrl ? (
+                <img
+                  src={currentProfile.photoUrl}
+                  alt={currentProfile.fullName}
+                  className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-full border-4 border-amber-400 shadow-2xl bg-slate-950 p-0.5 transition-transform group-hover:scale-105"
+                />
+              ) : (
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-amber-400/90 bg-amber-500/20 flex flex-col items-center justify-center text-amber-300 font-black shadow-2xl transition-transform group-hover:scale-105">
+                  <User className="w-12 h-12 text-amber-400" />
+                  <span className="text-[9px] font-bold text-amber-200 mt-1">मोठा फोटो पहा</span>
+                </div>
+              )}
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsPhotoLightboxOpen(true)}
+              title="मोठा प्रोफाईल फोटो पहा"
+              className="absolute top-0 right-0 bg-slate-950/80 text-amber-400 p-1.5 rounded-full border border-slate-700 opacity-90 hover:opacity-100 transition-opacity cursor-pointer shadow-md"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => memberPhotoInputRef.current?.click()}
+              title="फोटो बदला / अपलोड करा"
+              className="absolute bottom-0 right-0 bg-amber-500 hover:bg-amber-400 text-slate-950 p-1.5 rounded-full border-2 border-slate-900 shadow-xl cursor-pointer transition-transform hover:scale-110"
+            >
+              <Camera className="w-3.5 h-3.5" />
+            </button>
             <input
               type="file"
               ref={memberPhotoInputRef}
@@ -856,6 +879,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         onChange={handleProfileLogoChange}
         accept="image/*"
         className="hidden"
+      />
+
+      {/* Member Profile Photo Lightbox */}
+      <ProfilePhotoLightboxModal
+        isOpen={isPhotoLightboxOpen}
+        onClose={() => setIsPhotoLightboxOpen(false)}
+        photoUrl={currentProfile.photoUrl}
+        memberName={currentProfile.fullName}
+        memberRole={currentProfile.designation}
+        memberCode={currentProfile.memberCode}
       />
     </div>
   );

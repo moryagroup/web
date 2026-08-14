@@ -3,6 +3,7 @@ import { Member, IncomeTransaction, CurrentUser } from '../types';
 import { getMemberSubscriptionPaid, getMemberExtraDonationPaid } from '../services/storageService';
 import { hasAdminPermissions, getDesignationRank, isBadgedMember } from '../utils/rbac';
 import { isDateInSelectedYear } from '../utils/dateUtils';
+import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
 import {
   Users,
   PlusCircle,
@@ -24,6 +25,7 @@ import {
   AlertCircle,
   ArrowLeft,
   Calendar,
+  User,
 } from 'lucide-react';
 
 interface MemberSubscriptionsViewProps {
@@ -105,6 +107,9 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       </div>
     );
   }
+
+  // Photo Lightbox state
+  const [photoModalMember, setPhotoModalMember] = useState<Member | null>(null);
 
   // Add Member Modal state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -482,30 +487,55 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
             >
               <div>
                 <div className="flex justify-between items-start mb-2 gap-2">
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 font-mono font-bold text-[10px] rounded border border-slate-200">
-                        {member.memberCode}
-                      </span>
-                      {isOfficeBearer ? (
-                        <span className="px-2.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-[11px] rounded-md shadow-xs flex items-center gap-1">
-                          <Award className="w-3 h-3" />
-                          {member.designation}
-                        </span>
+                  <div className="flex items-start gap-3">
+                    {/* Clickable Profile Photo Thumbnail */}
+                    <div
+                      onClick={() => setPhotoModalMember(member)}
+                      className="w-12 h-12 rounded-full border-2 border-amber-400 p-0.5 bg-slate-900 shadow-md cursor-pointer hover:scale-105 transition-transform shrink-0 relative group flex items-center justify-center"
+                      title="मोठा प्रोफाईल फोटो पहा (Click for Full Screen Photo View)"
+                    >
+                      {member.photoUrl ? (
+                        <img
+                          src={member.photoUrl}
+                          alt={member.fullName}
+                          className="w-full h-full object-cover rounded-full"
+                        />
                       ) : (
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-bold text-[10px] rounded-md border border-slate-200">
-                          {member.designation || 'सभासद'}
-                        </span>
+                        <div className="w-full h-full rounded-full bg-amber-500/20 flex items-center justify-center text-amber-300 font-bold text-xs">
+                          {member.fullName.slice(0, 2)}
+                        </div>
                       )}
                     </div>
 
-                    <h3 className="text-base font-black text-slate-800 mt-1.5 flex items-center gap-1.5">
-                      {member.fullName}
-                    </h3>
-                    <p className="text-xs text-slate-500 font-medium mt-0.5">मो: {member.phone}</p>
-                    {member.address && (
-                      <p className="text-[10px] text-slate-400 mt-0.5">{member.address}</p>
-                    )}
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 font-mono font-bold text-[10px] rounded border border-slate-200">
+                          {member.memberCode}
+                        </span>
+                        {isOfficeBearer ? (
+                          <span className="px-2.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-[11px] rounded-md shadow-xs flex items-center gap-1">
+                            <Award className="w-3 h-3" />
+                            {member.designation}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-bold text-[10px] rounded-md border border-slate-200">
+                            {member.designation || 'सभासद'}
+                          </span>
+                        )}
+                      </div>
+
+                      <h3
+                        onClick={() => setPhotoModalMember(member)}
+                        className="text-base font-black text-slate-800 mt-1 flex items-center gap-1.5 cursor-pointer hover:text-amber-600 transition-colors"
+                        title="मोठा प्रोफाईल फोटो पहा"
+                      >
+                        {member.fullName}
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium mt-0.5">मो: {member.phone}</p>
+                      {member.address && (
+                        <p className="text-[10px] text-slate-400 mt-0.5">{member.address}</p>
+                      )}
+                    </div>
                   </div>
 
                   <span
@@ -1167,6 +1197,18 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
             </div>
           </div>
         </div>
+      )}
+
+      {/* Member Profile Photo Lightbox Modal */}
+      {photoModalMember && (
+        <ProfilePhotoLightboxModal
+          isOpen={!!photoModalMember}
+          onClose={() => setPhotoModalMember(null)}
+          photoUrl={photoModalMember.photoUrl}
+          memberName={photoModalMember.fullName}
+          memberRole={photoModalMember.designation}
+          memberCode={photoModalMember.memberCode}
+        />
       )}
     </div>
   );

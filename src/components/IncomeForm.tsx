@@ -314,7 +314,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
                 className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
                 <option value="व्यक्ती / देणगीदार">व्यक्ती / देणगीदार</option>
-                <option value="सभासद">सभासद (Member)</option>
+                <option value="सभासद">सभासद</option>
                 <option value="माजी सभासद">माजी सभासद</option>
                 <option value="संस्था">संस्था</option>
                 <option value="व्यवसाय / दुकान">व्यवसाय / दुकान</option>

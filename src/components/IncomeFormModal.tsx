@@ -247,7 +247,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
                   onChange={(e) => handleDepositorTypeChange(e.target.value as DepositorType)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
                 >
-                  <option value="सभासद">सभासद (Member)</option>
+                  <option value="सभासद">सभासद</option>
                   <option value="माजी सभासद">माजी सभासद</option>
                   <option value="व्यक्ती / देणगीदार">व्यक्ती / देणगीदार</option>
                   <option value="संस्था">संस्था</option>

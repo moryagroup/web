@@ -298,7 +298,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 }`}
               >
                 <ShieldCheck className="w-4 h-4 text-amber-400" />
-                <span>⚡ ॲडमिन (Admin)</span>
+                <span>⚡ ॲडमिन</span>
               </button>
               <button
                 onClick={() => setLoginType('member')}
@@ -320,7 +320,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl text-purple-900 space-y-1">
                     <p className="font-bold flex items-center gap-1.5 text-xs">
                       <ShieldCheck className="w-4 h-4 text-purple-600" />
-                      सुरक्षित ॲडमिन खाते (Full Control)
+                      सुरक्षित ॲडमिन खाते
                     </p>
                     <p className="text-[11px] text-purple-700">
                       नवीन सभासद जोडणे, काढणे, पद बदलणे आणि सर्व आर्थिक नोंदी पाहण्याचे व नियंत्रित करण्याचे पूर्ण अधिकार.
@@ -329,7 +329,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">
-                      ॲडमिन पासवर्ड (Admin Password):
+                      ॲडमिन पासवर्ड:
                     </label>
                     <div className="relative">
                       <Key className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -391,7 +391,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <label className="font-bold text-slate-700">
-                        खात्याचा पासवर्ड / PIN:
+                        खात्याचा पासवर्ड:
                       </label>
                       <button
                         type="button"
@@ -447,7 +447,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   )}
 
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-[11px] space-y-1">
-                    <p className="font-bold">पद-आधारित नियम (RBAC):</p>
+                    <p className="font-bold">पद-आधारित नियम:</p>
                     <p className="text-amber-800">
                       फक्त <strong>अध्यक्ष, खजिनदार, उपखजिनदार</strong> खात्यांना पूर्ण आर्थिक डेटाचा अधिकार असेल.
                     </p>

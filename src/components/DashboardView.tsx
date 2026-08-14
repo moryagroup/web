@@ -13,6 +13,7 @@ import {
 } from '../types';
 import { HeaderStats } from './HeaderStats';
 import { EventGallerySection } from './EventGallerySection';
+import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
 import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions } from '../utils/rbac';
 import {
   ArrowDownLeft,
@@ -70,6 +71,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onUpdateOccasion,
 }) => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isMemberPhotoModalOpen, setIsMemberPhotoModalOpen] = useState(false);
   const isFullAccess = hasFullFinancialAccess(currentUser.role);
   const isBadged = isBadgedMember(currentUser.role);
 
@@ -191,8 +193,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {isLoggedIn && (
             <div
               className="relative group cursor-pointer shrink-0"
-              onClick={() => onNavigate('profile')}
-              title="माझा प्रोफाईल फोटो बदला / पहा (Click to Change Profile Photo)"
+              onClick={() => setIsMemberPhotoModalOpen(true)}
+              title="मोठा प्रोफाईल फोटो पहा (Click for Full Screen View)"
             >
               {memberPhoto ? (
                 <img
@@ -206,7 +208,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <span className="text-[8px] font-bold text-amber-200">फोटो जोडा</span>
                 </div>
               )}
-              <div className="absolute -bottom-1 -right-1 bg-amber-500 hover:bg-amber-400 text-slate-950 p-1 rounded-full border border-amber-300 shadow-md group-hover:scale-110 transition-transform">
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate('profile');
+                }}
+                className="absolute -bottom-1 -right-1 bg-amber-500 hover:bg-amber-400 text-slate-950 p-1 rounded-full border border-amber-300 shadow-md group-hover:scale-110 transition-transform"
+                title="फोटो बदला"
+              >
                 <Camera className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -619,6 +628,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         isOpen={isLightboxOpen}
         logoSrc={groupLogo}
         onClose={() => setIsLightboxOpen(false)}
+      />
+
+      {/* Member Profile Photo Lightbox Modal */}
+      <ProfilePhotoLightboxModal
+        isOpen={isMemberPhotoModalOpen}
+        onClose={() => setIsMemberPhotoModalOpen(false)}
+        photoUrl={memberPhoto}
+        memberName={currentUser.name}
+        memberRole={currentUser.role}
       />
     </div>
   );
