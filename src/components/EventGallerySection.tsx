@@ -58,9 +58,11 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
   const [formDescription, setFormDescription] = useState('');
   const [formYear, setFormYear] = useState('२०२५-२६');
 
-  // Inline description edit state for Lightbox
+  // Inline description & title edit state for Lightbox
   const [isEditingInlineDesc, setIsEditingInlineDesc] = useState(false);
   const [inlineDescText, setInlineDescText] = useState('');
+  const [isEditingInlineTitle, setIsEditingInlineTitle] = useState(false);
+  const [inlineTitleText, setInlineTitleText] = useState('');
 
   // Preview tab in modal: 'upload' | 'url'
   const [inputTab, setInputTab] = useState<'upload' | 'url'>('upload');
@@ -185,12 +187,16 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
 
   // Lightbox Navigation
   const prevLightbox = () => {
+    setIsEditingInlineTitle(false);
+    setIsEditingInlineDesc(false);
     if (lightboxIndex !== null && filteredGallery.length > 0) {
       setLightboxIndex((lightboxIndex - 1 + filteredGallery.length) % filteredGallery.length);
     }
   };
 
   const nextLightbox = () => {
+    setIsEditingInlineTitle(false);
+    setIsEditingInlineDesc(false);
     if (lightboxIndex !== null && filteredGallery.length > 0) {
       setLightboxIndex((lightboxIndex + 1) % filteredGallery.length);
     }
@@ -432,29 +438,87 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
               )}
             </div>
 
-            {/* Bottom Caption Info with Admin Description Edit Option */}
+            {/* Bottom Caption Info with Admin Title & Description Edit Options */}
             <div className="p-4 bg-slate-950 border-t border-slate-800 text-white space-y-2">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div>
-                  <h3 className="text-base font-black text-amber-400">
-                    {filteredGallery[lightboxIndex].title}
-                  </h3>
+              {/* Title Section with Inline Edit */}
+              {isEditingInlineTitle ? (
+                <div className="bg-slate-900 p-3 rounded-xl border border-amber-500/50 space-y-2">
+                  <label className="block text-[11px] font-bold text-amber-300">
+                    ॲडमिन: फोटोचे नवीन शीर्षक (Title) प्रविष्ट करा
+                  </label>
+                  <input
+                    type="text"
+                    value={inlineTitleText}
+                    onChange={(e) => setInlineTitleText(e.target.value)}
+                    placeholder="उदा. श्री गणेश मूर्ती प्रतिष्ठापना सोहळा"
+                    className="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-amber-300 font-bold text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => setIsEditingInlineTitle(false)}
+                      className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-lg cursor-pointer"
+                    >
+                      रद्द करा
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!inlineTitleText.trim()) {
+                          alert('कृपया शीर्षक रिकामे ठेवू नका.');
+                          return;
+                        }
+                        const targetId = filteredGallery[lightboxIndex].id;
+                        const updated = gallery.map((item) =>
+                          item.id === targetId ? { ...item, title: inlineTitleText.trim() } : item
+                        );
+                        onSaveGallery(updated);
+                        setIsEditingInlineTitle(false);
+                      }}
+                      className="px-4 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-lg cursor-pointer flex items-center gap-1"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>शीर्षक साठवा (Save Title)</span>
+                    </button>
+                  </div>
                 </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                  <div>
+                    <h3 className="text-base font-black text-amber-400">
+                      {filteredGallery[lightboxIndex].title}
+                    </h3>
+                  </div>
 
-                {isAdmin && !isEditingInlineDesc && (
-                  <button
-                    onClick={() => {
-                      setInlineDescText(filteredGallery[lightboxIndex].description || '');
-                      setIsEditingInlineDesc(true);
-                    }}
-                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow flex items-center gap-1.5 cursor-pointer shrink-0 transition-all active:scale-95"
-                    title="ॲडमिन: फोटोचे वर्णन बदला"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                    <span>वर्णन बदला (Edit Description)</span>
-                  </button>
-                )}
-              </div>
+                  {isAdmin && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => {
+                          setInlineTitleText(filteredGallery[lightboxIndex].title || '');
+                          setIsEditingInlineTitle(true);
+                        }}
+                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                        title="ॲडमिन: फोटोचे शीर्षक बदला"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>शीर्षक बदला (Edit Title)</span>
+                      </button>
+
+                      {!isEditingInlineDesc && (
+                        <button
+                          onClick={() => {
+                            setInlineDescText(filteredGallery[lightboxIndex].description || '');
+                            setIsEditingInlineDesc(true);
+                          }}
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs rounded-xl border border-slate-700 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                          title="ॲडमिन: फोटोचे वर्णन बदला"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>वर्णन बदला (Edit Description)</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {isEditingInlineDesc ? (
                 <div className="bg-slate-900 p-3 rounded-xl border border-amber-500/50 space-y-2 mt-1">
@@ -539,7 +603,7 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
             <form onSubmit={handleFormSubmit} className="p-5 space-y-4 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 uppercase mb-1">
-                  कार्यक्रमाचे नाव (Event Title) <span className="text-rose-500">*</span>
+                  फोटो / कार्यक्रमाचे शीर्षक (Event Image Title) <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
