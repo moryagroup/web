@@ -39,13 +39,18 @@ interface MemberSubscriptionsViewProps {
 }
 
 const STANDARD_DESIGNATIONS = [
-  'सभासद',
   'अध्यक्ष',
-  'कार्याध्यक्ष',
   'उपाध्यक्ष',
+  'कार्याध्यक्ष',
   'सचिव',
+  'उपसचिव',
   'खजिनदार',
   'उपखजिनदार',
+  'संघटक',
+  'सहसंघटक',
+  'सल्लागार',
+  'कार्या सल्लागार',
+  'सभासद',
 ];
 
 export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = ({

@@ -3,14 +3,16 @@ export const DESIGNATION_RANKS: Record<string, number> = {
   'उपाध्यक्ष': 2,
   'कार्याध्यक्ष': 3,
   'सचिव': 4,
-  'खजिनदार': 5,
-  'उपखजिनदार': 6,
-  'सभासद': 7,
-  'उपसचिव': 8,
-  'संघटक': 9,
-  'सहसंघटक': 10,
-  'सल्लागार': 11,
-  'कार्या सल्लागार': 12,
+  'उपसचिव': 5,
+  'खजिनदार': 6,
+  'उपखजिनदार': 7,
+  'संघटक': 8,
+  'सहसंघटक': 9,
+  'सल्लागार': 10,
+  'कार्या सल्लागार': 11,
+  'ॲडमिन': 12,
+  'Admin': 12,
+  'सभासद': 90,
 };
 
 // Authorized roles for full financial & admin access
@@ -71,4 +73,19 @@ export const getDesignationRank = (designation?: string): number => {
     return DESIGNATION_RANKS[trimmed];
   }
   return 99;
+};
+
+export const sortMembersByDesignation = <T extends { designation?: string; memberCode?: string; fullName?: string }>(
+  membersList: T[]
+): T[] => {
+  if (!Array.isArray(membersList)) return [];
+  return [...membersList].sort((a, b) => {
+    const rankA = getDesignationRank(a.designation);
+    const rankB = getDesignationRank(b.designation);
+    if (rankA !== rankB) return rankA - rankB;
+    if (a.memberCode && b.memberCode) {
+      return a.memberCode.localeCompare(b.memberCode, 'mr-IN', { numeric: true });
+    }
+    return (a.fullName || '').localeCompare(b.fullName || '', 'mr-IN');
+  });
 };

@@ -8,7 +8,7 @@ import {
   CurrentUser,
   Member,
 } from '../types';
-import { hasFullFinancialAccess } from '../utils/rbac';
+import { hasFullFinancialAccess, sortMembersByDesignation } from '../utils/rbac';
 import { getFinancialYearFromDate } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { ArrowUpRight, CheckCircle2, Upload, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
@@ -291,9 +291,9 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
                   onChange={(e) => setRecipientName(e.target.value)}
                   className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none"
                 >
-                  {members.map((m) => (
+                  {sortMembersByDesignation(members).map((m) => (
                     <option key={m.id} value={m.fullName}>
-                      {m.fullName} ({m.memberCode})
+                      {m.fullName} ({m.memberCode} - {m.designation || 'सभासद'})
                     </option>
                   ))}
                 </select>

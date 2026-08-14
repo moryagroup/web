@@ -8,7 +8,7 @@ import {
   OccasionEvent,
   CurrentUser,
 } from '../types';
-import { hasFullFinancialAccess } from '../utils/rbac';
+import { hasFullFinancialAccess, sortMembersByDesignation } from '../utils/rbac';
 import { getFinancialYearFromDate } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft } from 'lucide-react';
@@ -334,9 +334,9 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
                   onChange={(e) => handleMemberSelect(e.target.value)}
                   className="w-full p-2.5 bg-emerald-50/50 border border-emerald-300 rounded-lg text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 >
-                  {members.map((m) => (
+                  {sortMembersByDesignation(members).map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.fullName} ({m.memberCode}) - मो: {m.phone}
+                      {m.fullName} ({m.memberCode} - {m.designation || 'सभासद'})
                     </option>
                   ))}
                 </select>

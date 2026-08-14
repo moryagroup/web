@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { OccasionEvent, EventTask, Member, CurrentUser } from '../types';
 import { Calendar, Plus, Edit2, Trash2, X, Check, AlertCircle, CheckCircle2, UserCheck, ListChecks } from 'lucide-react';
-import { hasAdminPermissions } from '../utils/rbac';
+import { hasAdminPermissions, sortMembersByDesignation } from '../utils/rbac';
 
 interface OccasionModalProps {
   isOpen: boolean;
@@ -371,7 +371,7 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                             onChange={(e) => handleUpdateTaskRow(task.id, 'assignedMemberId', e.target.value)}
                             className="w-full p-1.5 border border-slate-300 rounded-md font-bold text-slate-800"
                           >
-                            {members.map((m) => (
+                            {sortMembersByDesignation(members).map((m) => (
                               <option key={m.id} value={m.id}>
                                 {m.memberCode} - {m.fullName} ({m.designation || 'सभासद'})
                               </option>
