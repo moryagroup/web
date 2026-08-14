@@ -1,0 +1,327 @@
+/**
+ * supabaseService.ts
+ * Production-grade Supabase Database, CDN Image Storage, and Real-Time WebSocket Service
+ * for Morya Group ERP Web App.
+ */
+
+import { supabase, isSupabaseConfigured } from './supabaseClient';
+import {
+  Member,
+  IncomeTransaction,
+  ExpenseTransaction,
+  OccasionEvent,
+  EventGalleryImage,
+  MemberSuggestion,
+} from '../types';
+import {
+  INITIAL_MEMBERS,
+  INITIAL_OCCASIONS,
+} from '../mockData';
+
+const BUCKET_NAME = 'morya-assets';
+
+// ─── Image Storage Helpers (Uploads to Supabase CDN Bucket 'morya-assets') ──
+
+export async function uploadImageToSupabaseStorage(
+  file: File | Blob,
+  folder: 'profiles' | 'logos' | 'occasions' | 'gallery' | 'bills',
+  fileName: string
+): Promise<string> {
+  if (!isSupabaseConfigured) {
+    throw new Error('Supabase project URL and Key are required for CDN uploads.');
+  }
+
+  const cleanFileName = `${folder}/${Date.now()}_${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .upload(cleanFileName, file, {
+      cacheControl: '360000',
+      upsert: true,
+    });
+
+  if (error) {
+    console.error('[Supabase Storage] Upload error:', error);
+    throw error;
+  }
+
+  const { data: publicUrlData } = supabase.storage
+    .from(BUCKET_NAME)
+    .getPublicUrl(data.path);
+
+  return publicUrlData.publicUrl;
+}
+
+// ─── Members Table CRUD ─────────────────────────────────────────────────────
+
+export async function fetchMembersFromSupabase(): Promise<Member[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase.from('members').select('*');
+  if (error) {
+    console.error('[Supabase] fetchMembers error:', error);
+    return [];
+  }
+  return (data || []).map((row) => ({
+    id: row.id,
+    memberCode: row.member_code,
+    fullName: row.full_name,
+    designation: row.designation,
+    phone: row.phone,
+    annualTargetAmount: Number(row.annual_target_amount || 6000),
+    address: row.address,
+    isActive: row.is_active,
+    birthDate: row.birth_date,
+    email: row.email,
+    age: row.age ? Number(row.age) : undefined,
+    photoUrl: row.photo_url,
+    password: row.password,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+}
+
+export async function saveMemberToSupabase(member: Member): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  const row = {
+    id: member.id,
+    member_code: member.memberCode,
+    full_name: member.fullName,
+    designation: member.designation,
+    phone: member.phone,
+    annual_target_amount: member.annualTargetAmount,
+    address: member.address,
+    is_active: member.isActive,
+    birth_date: member.birthDate,
+    email: member.email,
+    age: member.age,
+    photo_url: member.photoUrl,
+    password: member.password,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from('members').upsert(row);
+  if (error) console.error('[Supabase] saveMember error:', error);
+}
+
+export async function deleteMemberFromSupabase(id: string): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from('members').delete().eq('id', id);
+  if (error) console.error('[Supabase] deleteMember error:', error);
+}
+
+// ─── Incomes Table CRUD ─────────────────────────────────────────────────────
+
+export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase.from('incomes').select('*').order('created_at', { ascending: false });
+  if (error) {
+    console.error('[Supabase] fetchIncomes error:', error);
+    return [];
+  }
+  return (data || []).map((row) => ({
+    id: row.id,
+    transactionNo: row.transaction_no,
+    financialYear: row.financial_year,
+    incomeType: row.income_type,
+    depositorName: row.depositor_name,
+    depositorType: row.depositor_type,
+    linkedMemberId: row.linked_member_id,
+    amount: Number(row.amount),
+    transactionDate: row.transaction_date,
+    paymentMethod: row.payment_method,
+    paymentReference: row.payment_reference,
+    receiptNumber: row.receipt_number,
+    reason: row.reason,
+    notes: row.notes,
+    createdBy: row.recorded_by || 'ॲडमिन',
+    createdAt: row.created_at || new Date().toISOString(),
+    updatedAt: row.updated_at,
+  }));
+}
+
+export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  const row = {
+    id: income.id,
+    transaction_no: income.transactionNo,
+    financial_year: income.financialYear,
+    income_type: income.incomeType,
+    depositor_name: income.depositorName,
+    depositor_type: income.depositorType,
+    linked_member_id: income.linkedMemberId || null,
+    amount: income.amount,
+    transaction_date: income.transactionDate,
+    payment_method: income.paymentMethod,
+    payment_reference: income.paymentReference || null,
+    receipt_number: income.receiptNumber || null,
+    reason: income.reason,
+    notes: income.notes || null,
+    recorded_by: income.createdBy || 'ॲडमिन',
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from('incomes').upsert(row);
+  if (error) console.error('[Supabase] saveIncome error:', error);
+}
+
+export async function deleteIncomeFromSupabase(id: string): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from('incomes').delete().eq('id', id);
+  if (error) console.error('[Supabase] deleteIncome error:', error);
+}
+
+// ─── Expenses Table CRUD ────────────────────────────────────────────────────
+
+export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase.from('expenses').select('*').order('created_at', { ascending: false });
+  if (error) {
+    console.error('[Supabase] fetchExpenses error:', error);
+    return [];
+  }
+  return (data || []).map((row) => ({
+    id: row.id,
+    transactionNo: row.transaction_no,
+    financialYear: row.financial_year,
+    expenseCategory: row.expense_category,
+    recipientType: 'व्यक्ती' as const,
+    recipientName: row.recipient_name,
+    linkedMemberId: row.linked_member_id,
+    amount: Number(row.amount),
+    expenseDate: row.expense_date,
+    paymentMethod: row.payment_method,
+    billNumber: row.bill_number,
+    reason: row.reason,
+    approvalStatus: row.approval_status || 'प्रलंबित',
+    approvedBy: row.approved_by,
+    approvedByRole: row.approved_by_role,
+    approvedAt: row.approved_at,
+    createdBy: row.recorded_by || 'ॲडमिन',
+    createdAt: row.created_at || new Date().toISOString(),
+    updatedAt: row.updated_at,
+  }));
+}
+
+export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  const row = {
+    id: expense.id,
+    transaction_no: expense.transactionNo,
+    financial_year: expense.financialYear,
+    expense_category: expense.expenseCategory,
+    recipient_name: expense.recipientName,
+    linked_member_id: expense.linkedMemberId || null,
+    amount: expense.amount,
+    expense_date: expense.expenseDate,
+    payment_method: expense.paymentMethod,
+    bill_number: expense.billNumber || null,
+    reason: expense.reason,
+    approval_status: expense.approvalStatus,
+    approved_by: expense.approvedBy || null,
+    approved_by_role: expense.approvedByRole || null,
+    approved_at: expense.approvedAt || null,
+    recorded_by: expense.createdBy || 'ॲडमिन',
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from('expenses').upsert(row);
+  if (error) console.error('[Supabase] saveExpense error:', error);
+}
+
+export async function deleteExpenseFromSupabase(id: string): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from('expenses').delete().eq('id', id);
+  if (error) console.error('[Supabase] deleteExpense error:', error);
+}
+
+export async function clearAllTransactionsFromSupabase(): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  await supabase.from('incomes').delete().neq('id', 'NONE');
+  await supabase.from('expenses').delete().neq('id', 'NONE');
+}
+
+// ─── Occasions Table CRUD ───────────────────────────────────────────────────
+
+export async function fetchOccasionsFromSupabase(): Promise<OccasionEvent[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase.from('occasions').select('*');
+  if (error) {
+    console.error('[Supabase] fetchOccasions error:', error);
+    return [];
+  }
+  return (data || []).map((row) => ({
+    id: row.id,
+    name: row.title || 'कार्यक्रम',
+    year: '२०२६-२७',
+    description: row.description,
+    bannerUrl: row.banner_url,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+}
+
+export async function saveOccasionToSupabase(occasion: OccasionEvent): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  const row = {
+    id: occasion.id,
+    title: occasion.name,
+    description: occasion.description || '',
+    event_date: occasion.startDate || new Date().toISOString().split('T')[0],
+    location: 'हडपसर, पुणे',
+    banner_url: occasion.bannerUrl || null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from('occasions').upsert(row);
+  if (error) console.error('[Supabase] saveOccasion error:', error);
+}
+
+export async function deleteOccasionFromSupabase(id: string): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from('occasions').delete().eq('id', id);
+  if (error) console.error('[Supabase] deleteOccasion error:', error);
+}
+
+// ─── Real-Time WebSocket Subscriptions ──────────────────────────────────────
+
+export function subscribeToSupabaseRealtime(onDataChanged: () => void): () => void {
+  if (!isSupabaseConfigured) return () => {};
+
+  const channel = supabase
+    .channel('morya-erp-db-changes')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public' },
+      () => {
+        console.log('[Supabase Realtime] Change detected on database! Refreshing UI...');
+        onDataChanged();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+// ─── Non-Destructive Startup Seeder ─────────────────────────────────────────
+
+export async function seedSupabaseIfEmpty(): Promise<void> {
+  if (!isSupabaseConfigured) return;
+
+  try {
+    const { count: memberCount } = await supabase.from('members').select('*', { count: 'exact', head: true });
+    if (!memberCount || memberCount === 0) {
+      console.log('[Supabase Seed] Seeding initial members dataset...');
+      for (const m of INITIAL_MEMBERS) {
+        await saveMemberToSupabase(m);
+      }
+    }
+
+    const { count: occasionCount } = await supabase.from('occasions').select('*', { count: 'exact', head: true });
+    if (!occasionCount || occasionCount === 0) {
+      console.log('[Supabase Seed] Seeding initial occasions dataset...');
+      for (const o of INITIAL_OCCASIONS) {
+        await saveOccasionToSupabase(o);
+      }
+    }
+  } catch (err) {
+    console.warn('[Supabase Seed] Seed error:', err);
+  }
+}

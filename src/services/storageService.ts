@@ -21,77 +21,23 @@ import {
 export { DEFAULT_USER };
 
 const STORAGE_KEYS = {
-  INCOMES: 'morya_mandal_incomes_v3',
-  EXPENSES: 'morya_mandal_expenses_v3',
-  MEMBERS: 'morya_mandal_members_v2',
-  OCCASIONS: 'morya_mandal_occasions_v2',
-  CUSTOM_INCOME_TYPES: 'morya_mandal_custom_income_types_v1',
-  CUSTOM_EXPENSE_TYPES: 'morya_mandal_custom_expense_types_v1',
   USER: 'morya_mandal_user_v2',
-  GALLERY: 'morya_mandal_gallery_v1',
+  CUSTOM_INCOME_TYPES: 'morya_mandal_custom_income_types_v1',
   LOGO: 'morya_mandal_group_logo_v1',
-  SUGGESTIONS: 'morya_mandal_suggestions_v1',
 };
 
-export const getStoredIncomes = (): IncomeTransaction[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.INCOMES);
-    if (!data) return INITIAL_INCOMES;
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : INITIAL_INCOMES;
-  } catch {
-    return INITIAL_INCOMES;
-  }
-};
+// Initial data getters (used for initial state before Supabase DB loads)
+export const getStoredIncomes = (): IncomeTransaction[] => INITIAL_INCOMES;
+export const saveIncomes = (_incomes: IncomeTransaction[]) => {};
 
-export const saveIncomes = (incomes: IncomeTransaction[]) => {
-  localStorage.setItem(STORAGE_KEYS.INCOMES, JSON.stringify(incomes));
-};
+export const getStoredExpenses = (): ExpenseTransaction[] => INITIAL_EXPENSES;
+export const saveExpenses = (_expenses: ExpenseTransaction[]) => {};
 
-export const getStoredExpenses = (): ExpenseTransaction[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.EXPENSES);
-    if (!data) return INITIAL_EXPENSES;
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : INITIAL_EXPENSES;
-  } catch {
-    return INITIAL_EXPENSES;
-  }
-};
+export const getStoredMembers = (): Member[] => INITIAL_MEMBERS;
+export const saveMembers = (_members: Member[]) => {};
 
-export const saveExpenses = (expenses: ExpenseTransaction[]) => {
-  localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
-};
-
-export const getStoredMembers = (): Member[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.MEMBERS);
-    if (!data) return INITIAL_MEMBERS;
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : INITIAL_MEMBERS;
-  } catch {
-    return INITIAL_MEMBERS;
-  }
-};
-
-export const saveMembers = (members: Member[]) => {
-  localStorage.setItem(STORAGE_KEYS.MEMBERS, JSON.stringify(members));
-};
-
-export const getStoredOccasions = (): OccasionEvent[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.OCCASIONS);
-    if (!data) return INITIAL_OCCASIONS;
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : INITIAL_OCCASIONS;
-  } catch {
-    return INITIAL_OCCASIONS;
-  }
-};
-
-export const saveOccasions = (occasions: OccasionEvent[]) => {
-  localStorage.setItem(STORAGE_KEYS.OCCASIONS, JSON.stringify(occasions));
-};
+export const getStoredOccasions = (): OccasionEvent[] => INITIAL_OCCASIONS;
+export const saveOccasions = (_occasions: OccasionEvent[]) => {};
 
 export const getCustomIncomeTypes = (): string[] => {
   try {
@@ -132,20 +78,8 @@ export const saveUser = (user: CurrentUser) => {
   localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 };
 
-export const getStoredEventGallery = (): EventGalleryImage[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.GALLERY);
-    if (!data) return INITIAL_EVENT_GALLERY;
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : INITIAL_EVENT_GALLERY;
-  } catch {
-    return INITIAL_EVENT_GALLERY;
-  }
-};
-
-export const saveEventGallery = (gallery: EventGalleryImage[]) => {
-  localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(gallery));
-};
+export const getStoredEventGallery = (): EventGalleryImage[] => INITIAL_EVENT_GALLERY;
+export const saveEventGallery = (_gallery: EventGalleryImage[]) => {};
 
 export const getStoredGroupLogo = (): string => {
   try {
@@ -167,40 +101,16 @@ export const saveGroupLogo = (logoUrl: string) => {
   }
 };
 
-export const getStoredSuggestions = (): MemberSuggestion[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.SUGGESTIONS);
-    if (!data) return INITIAL_SUGGESTIONS;
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : INITIAL_SUGGESTIONS;
-  } catch {
-    return INITIAL_SUGGESTIONS;
-  }
-};
-
-export const saveSuggestions = (suggestions: MemberSuggestion[]) => {
-  localStorage.setItem(STORAGE_KEYS.SUGGESTIONS, JSON.stringify(suggestions));
-};
+export const getStoredSuggestions = (): MemberSuggestion[] => INITIAL_SUGGESTIONS;
+export const saveSuggestions = (_suggestions: MemberSuggestion[]) => {};
 
 export const resetToDemoData = () => {
-  localStorage.removeItem(STORAGE_KEYS.INCOMES);
-  localStorage.removeItem(STORAGE_KEYS.EXPENSES);
-  localStorage.removeItem(STORAGE_KEYS.MEMBERS);
-  localStorage.removeItem(STORAGE_KEYS.OCCASIONS);
-  localStorage.removeItem(STORAGE_KEYS.CUSTOM_INCOME_TYPES);
-  localStorage.removeItem(STORAGE_KEYS.CUSTOM_EXPENSE_TYPES);
   localStorage.removeItem(STORAGE_KEYS.USER);
-  localStorage.removeItem(STORAGE_KEYS.GALLERY);
-  localStorage.removeItem(STORAGE_KEYS.LOGO);
-  localStorage.removeItem(STORAGE_KEYS.SUGGESTIONS);
 };
 
-export const clearAllTransactionsFromStorage = () => {
-  localStorage.setItem(STORAGE_KEYS.INCOMES, JSON.stringify([]));
-  localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify([]));
-};
+export const clearAllTransactionsFromStorage = () => {};
 
-// Calculation helpers
+// Financial Calculation Helpers
 export const calculateFinancialSummary = (
   incomes: IncomeTransaction[],
   expenses: ExpenseTransaction[]
@@ -208,25 +118,16 @@ export const calculateFinancialSummary = (
   const safeIncomes = Array.isArray(incomes) ? incomes : [];
   const safeExpenses = Array.isArray(expenses) ? expenses : [];
 
-  // Total Income: sum of all income transactions
   const totalIncome = safeIncomes.reduce((sum, item) => sum + (item?.amount || 0), 0);
-
-  // Total Expenses: sum of approved expenses
   const approvedExpenses = safeExpenses.filter((e) => e && e.approvalStatus === 'मंजूर');
   const approvedExpensesTotal = approvedExpenses.reduce((sum, item) => sum + (item?.amount || 0), 0);
-
-  // All expenses (including pending)
   const totalExpense = safeExpenses.reduce((sum, item) => sum + (item?.amount || 0), 0);
-
-  // Net Balance: Total Income - Approved Expenses
   const netBalance = totalIncome - approvedExpensesTotal;
 
-  // Total Subscriptions Collected (strictly where incomeType === 'सभासद वर्गणी')
   const totalSubscriptionsCollected = safeIncomes
     .filter((i) => i && i.incomeType === 'सभासद वर्गणी')
     .reduce((sum, i) => sum + (i?.amount || 0), 0);
 
-  // Total Donations & Sponsorships collected
   const totalDonationsCollected = safeIncomes
     .filter((i) => i && i.incomeType !== 'सभासद वर्गणी')
     .reduce((sum, i) => sum + (i?.amount || 0), 0);
@@ -244,14 +145,12 @@ export const calculateFinancialSummary = (
   };
 };
 
-// Calculate subscription paid by a specific member (strictly incomeType === 'सभासद वर्गणी')
 export const getMemberSubscriptionPaid = (memberId: string, incomes: IncomeTransaction[]): number => {
   return incomes
     .filter((i) => i.linkedMemberId === memberId && i.incomeType === 'सभासद वर्गणी')
     .reduce((sum, i) => sum + i.amount, 0);
 };
 
-// Calculate extra donations paid by a specific member (incomeType !== 'सभासद वर्गणी')
 export const getMemberExtraDonationPaid = (memberId: string, incomes: IncomeTransaction[]): number => {
   return incomes
     .filter((i) => i.linkedMemberId === memberId && i.incomeType !== 'सभासद वर्गणी')

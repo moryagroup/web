@@ -74,6 +74,24 @@ import {
   cloudSaveCustomIncomeTypes,
   cloudClearAllTransactions,
 } from './services/cloudDatabaseService';
+import {
+  fetchMembersFromSupabase,
+  saveMemberToSupabase,
+  deleteMemberFromSupabase,
+  fetchIncomesFromSupabase,
+  saveIncomeToSupabase,
+  deleteIncomeFromSupabase,
+  fetchExpensesFromSupabase,
+  saveExpenseToSupabase,
+  deleteExpenseFromSupabase,
+  fetchOccasionsFromSupabase,
+  saveOccasionToSupabase,
+  deleteOccasionFromSupabase,
+  clearAllTransactionsFromSupabase,
+  subscribeToSupabaseRealtime,
+  seedSupabaseIfEmpty,
+} from './services/supabaseService';
+import { isSupabaseConfigured } from './services/supabaseClient';
 
 import { Sidebar } from './components/Sidebar';
 import { HeaderStats } from './components/HeaderStats';
@@ -177,35 +195,65 @@ export default function App() {
       }),
     ];
 
-    // Central Cloud Database Real-Time Subscription (Laptop <-> Mobile Sync)
+    // Central Cloud & Supabase Real-Time Subscriptions (Laptop <-> Mobile Sync)
+    const loadSupabaseData = async () => {
+      if (isSupabaseConfigured) {
+        try {
+          await seedSupabaseIfEmpty();
+          const [m, inc, exp, occ] = await Promise.all([
+            fetchMembersFromSupabase(),
+            fetchIncomesFromSupabase(),
+            fetchExpensesFromSupabase(),
+            fetchOccasionsFromSupabase(),
+          ]);
+          if (m && m.length > 0) setMembers(m);
+          if (inc && inc.length > 0) setIncomes(inc);
+          if (exp && exp.length > 0) setExpenses(exp);
+          if (occ && occ.length > 0) setOccasions(occ);
+        } catch (err) {
+          console.warn('[Supabase] Initial load error:', err);
+        }
+      }
+    };
+
+    loadSupabaseData();
+
+    const unsubSupabaseRealtime = subscribeToSupabaseRealtime(async () => {
+      if (isSupabaseConfigured) {
+        const [m, inc, exp, occ] = await Promise.all([
+          fetchMembersFromSupabase(),
+          fetchIncomesFromSupabase(),
+          fetchExpensesFromSupabase(),
+          fetchOccasionsFromSupabase(),
+        ]);
+        if (m && m.length > 0) setMembers(m);
+        if (inc) setIncomes(inc);
+        if (exp) setExpenses(exp);
+        if (occ && occ.length > 0) setOccasions(occ);
+      }
+    });
+
     const unsubCloud = subscribeToCloudDatabase((cloudDb) => {
       if (Array.isArray(cloudDb.incomes)) {
         setIncomes(cloudDb.incomes);
-        saveIncomes(cloudDb.incomes);
       }
       if (Array.isArray(cloudDb.expenses)) {
         setExpenses(cloudDb.expenses);
-        saveExpenses(cloudDb.expenses);
       }
       if (Array.isArray(cloudDb.members) && cloudDb.members.length > 0) {
         setMembers(cloudDb.members);
-        saveMembers(cloudDb.members);
       }
       if (Array.isArray(cloudDb.occasions) && cloudDb.occasions.length > 0) {
         setOccasions(cloudDb.occasions);
-        saveOccasions(cloudDb.occasions);
       }
       if (Array.isArray(cloudDb.gallery) && cloudDb.gallery.length > 0) {
         setGalleryState(cloudDb.gallery);
-        saveEventGallery(cloudDb.gallery);
       }
       if (Array.isArray(cloudDb.suggestions)) {
         setSuggestions(cloudDb.suggestions);
-        saveSuggestions(cloudDb.suggestions);
       }
       if (cloudDb.settings?.groupLogo !== undefined) {
         setGroupLogo(cloudDb.settings.groupLogo);
-        saveGroupLogo(cloudDb.settings.groupLogo);
       }
       if (Array.isArray(cloudDb.settings?.customIncomeTypes)) {
         setCustomIncomeTypes(cloudDb.settings.customIncomeTypes);
@@ -213,13 +261,10 @@ export default function App() {
       setIsLoading(false);
     });
 
-    // Seed empty Firestore collections in background
-    seedAllCollections().catch((err) => console.warn('Background seed error:', err));
-
     return () => {
       clearTimeout(timer);
-      unsubscribers.forEach((u) => u());
       unsubCloud();
+      unsubSupabaseRealtime();
     };
   }, []);
 
@@ -286,35 +331,26 @@ export default function App() {
 
   // Add Income Transaction
   const handleAddIncome = (newIncome: IncomeTransaction) => {
-    setIncomes((prev) => {
-      const updated = [newIncome, ...prev.filter((i) => i.id !== newIncome.id)];
-      saveIncomes(updated);
-      return updated;
-    });
+    setIncomes((prev) => [newIncome, ...prev.filter((i) => i.id !== newIncome.id)]);
     saveIncome(newIncome).catch(console.error);
     cloudSaveIncome(newIncome).catch(console.error);
+    saveIncomeToSupabase(newIncome).catch(console.error);
   };
 
   // Update Income Transaction (Admin Only)
   const handleUpdateIncome = (updatedIncome: IncomeTransaction) => {
-    setIncomes((prev) => {
-      const updated = prev.map((i) => (i.id === updatedIncome.id ? updatedIncome : i));
-      saveIncomes(updated);
-      return updated;
-    });
+    setIncomes((prev) => prev.map((i) => (i.id === updatedIncome.id ? updatedIncome : i)));
     saveIncome(updatedIncome).catch(console.error);
     cloudSaveIncome(updatedIncome).catch(console.error);
+    saveIncomeToSupabase(updatedIncome).catch(console.error);
   };
 
   // Delete Income Transaction (Admin Only)
   const handleDeleteIncome = (incomeId: string) => {
-    setIncomes((prev) => {
-      const updated = prev.filter((i) => i.id !== incomeId);
-      saveIncomes(updated);
-      return updated;
-    });
+    setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
     deleteIncome(incomeId).catch(console.error);
     cloudDeleteIncome(incomeId).catch(console.error);
+    deleteIncomeFromSupabase(incomeId).catch(console.error);
   };
 
   // Custom Income Types Firestore Sync
@@ -347,6 +383,7 @@ export default function App() {
     clearAllTransactionsFromStorage();
     await clearAllTransactionsFromFirestore();
     await cloudClearAllTransactions();
+    await clearAllTransactionsFromSupabase();
     setIncomes([]);
     setExpenses([]);
     alert('सर्व जमा व खर्च व्यवहार यशस्वीरित्या हटवण्यात आले आहेत.');
@@ -379,66 +416,48 @@ export default function App() {
 
   // Occasions Management
   const handleAddOccasion = (newOccasion: OccasionEvent) => {
-    setOccasions((prev) => {
-      const updated = [newOccasion, ...prev.filter((o) => o.id !== newOccasion.id)];
-      saveOccasions(updated);
-      return updated;
-    });
+    setOccasions((prev) => [newOccasion, ...prev.filter((o) => o.id !== newOccasion.id)]);
     saveOccasion(newOccasion).catch(console.error);
     cloudSaveOccasion(newOccasion).catch(console.error);
+    saveOccasionToSupabase(newOccasion).catch(console.error);
   };
 
   const handleUpdateOccasion = (updatedOccasion: OccasionEvent) => {
-    setOccasions((prev) => {
-      const updated = prev.map((o) => (o.id === updatedOccasion.id ? updatedOccasion : o));
-      saveOccasions(updated);
-      return updated;
-    });
+    setOccasions((prev) => prev.map((o) => (o.id === updatedOccasion.id ? updatedOccasion : o)));
     saveOccasion(updatedOccasion).catch(console.error);
     cloudSaveOccasion(updatedOccasion).catch(console.error);
+    saveOccasionToSupabase(updatedOccasion).catch(console.error);
   };
 
   const handleDeleteOccasion = (occasionId: string) => {
-    setOccasions((prev) => {
-      const updated = prev.filter((o) => o.id !== occasionId);
-      saveOccasions(updated);
-      return updated;
-    });
+    setOccasions((prev) => prev.filter((o) => o.id !== occasionId));
     deleteOccasion(occasionId).catch(console.error);
     cloudDeleteOccasion(occasionId).catch(console.error);
+    deleteOccasionFromSupabase(occasionId).catch(console.error);
   };
 
   // Add Expense Transaction
   const handleAddExpense = (newExpense: ExpenseTransaction) => {
-    setExpenses((prev) => {
-      const updated = [newExpense, ...prev.filter((e) => e.id !== newExpense.id)];
-      saveExpenses(updated);
-      return updated;
-    });
+    setExpenses((prev) => [newExpense, ...prev.filter((e) => e.id !== newExpense.id)]);
     saveExpense(newExpense).catch(console.error);
     cloudSaveExpense(newExpense).catch(console.error);
+    saveExpenseToSupabase(newExpense).catch(console.error);
   };
 
   // Update Expense Transaction (Admin Only)
   const handleUpdateExpense = (updatedExpense: ExpenseTransaction) => {
-    setExpenses((prev) => {
-      const updated = prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e));
-      saveExpenses(updated);
-      return updated;
-    });
+    setExpenses((prev) => prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e)));
     saveExpense(updatedExpense).catch(console.error);
     cloudSaveExpense(updatedExpense).catch(console.error);
+    saveExpenseToSupabase(updatedExpense).catch(console.error);
   };
 
   // Delete Expense Transaction (Admin Only)
   const handleDeleteExpense = (expenseId: string) => {
-    setExpenses((prev) => {
-      const updated = prev.filter((e) => e.id !== expenseId);
-      saveExpenses(updated);
-      return updated;
-    });
+    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
     deleteExpense(expenseId).catch(console.error);
     cloudDeleteExpense(expenseId).catch(console.error);
+    deleteExpenseFromSupabase(expenseId).catch(console.error);
   };
 
   // Approve Expense
@@ -452,45 +471,34 @@ export default function App() {
       approvedByRole: approverRole,
       approvedAt: new Date().toISOString(),
     };
-    setExpenses((prev) => {
-      const newExpenses = prev.map((e) => (e.id === expId ? updated : e));
-      saveExpenses(newExpenses);
-      return newExpenses;
-    });
+    setExpenses((prev) => prev.map((e) => (e.id === expId ? updated : e)));
     saveExpense(updated).catch(console.error);
     cloudSaveExpense(updated).catch(console.error);
+    saveExpenseToSupabase(updated).catch(console.error);
   };
 
   // Add Member
   const handleAddMember = (newMember: Member) => {
-    setMembers((prev) => {
-      const updated = [...prev.filter((m) => m.id !== newMember.id), newMember];
-      saveMembers(updated);
-      return updated;
-    });
+    setMembers((prev) => [...prev.filter((m) => m.id !== newMember.id), newMember]);
     saveMember(newMember).catch(console.error);
     cloudSaveMember(newMember).catch(console.error);
+    saveMemberToSupabase(newMember).catch(console.error);
   };
 
   // Update Member
   const handleUpdateMember = (updatedMember: Member) => {
-    setMembers((prev) => {
-      const updated = prev.map((m) => (m.id === updatedMember.id ? updatedMember : m));
-      saveMembers(updated);
-      return updated;
-    });
+    setMembers((prev) => prev.map((m) => (m.id === updatedMember.id ? updatedMember : m)));
     saveMember(updatedMember).catch(console.error);
     cloudSaveMember(updatedMember).catch(console.error);
+    saveMemberToSupabase(updatedMember).catch(console.error);
   };
 
   // Delete Member
   const handleDeleteMember = (memberId: string) => {
-    setMembers((prev) => {
-      const updated = prev.filter((m) => m.id !== memberId);
-      saveMembers(updated);
-      return updated;
-    });
+    setMembers((prev) => prev.filter((m) => m.id !== memberId));
     deleteMember(memberId).catch(console.error);
+    cloudDeleteMember(memberId).catch(console.error);
+    deleteMemberFromSupabase(memberId).catch(console.error);
   };
 
   // Reset to Demo Data
