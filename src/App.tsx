@@ -57,6 +57,23 @@ import {
   resetFirestoreToDemo,
   clearAllTransactionsFromFirestore,
 } from './services/firestoreService';
+import {
+  subscribeToCloudDatabase,
+  cloudSaveIncome,
+  cloudDeleteIncome,
+  cloudSaveExpense,
+  cloudDeleteExpense,
+  cloudSaveMember,
+  cloudDeleteMember,
+  cloudSaveOccasion,
+  cloudDeleteOccasion,
+  cloudSaveGalleryImage,
+  cloudDeleteGalleryImage,
+  cloudSaveSuggestion,
+  cloudSaveGroupLogo,
+  cloudSaveCustomIncomeTypes,
+  cloudClearAllTransactions,
+} from './services/cloudDatabaseService';
 
 import { Sidebar } from './components/Sidebar';
 import { HeaderStats } from './components/HeaderStats';
@@ -109,40 +126,90 @@ export default function App() {
 
     const unsubscribers = [
       subscribeToIncomes((data) => {
-        setIncomes(data);
-        saveIncomes(data);
+        if (data && data.length > 0) {
+          setIncomes(data);
+          saveIncomes(data);
+        }
       }),
       subscribeToExpenses((data) => {
-        setExpenses(data);
-        saveExpenses(data);
+        if (data && data.length > 0) {
+          setExpenses(data);
+          saveExpenses(data);
+        }
       }),
       subscribeToMembers((data) => {
-        setMembers(data);
-        saveMembers(data);
-        setIsLoading(false);
+        if (data && data.length > 0) {
+          setMembers(data);
+          saveMembers(data);
+          setIsLoading(false);
+        }
       }),
       subscribeToOccasions((data) => {
-        setOccasions(data);
-        saveOccasions(data);
+        if (data && data.length > 0) {
+          setOccasions(data);
+          saveOccasions(data);
+        }
       }),
       subscribeToGallery((data) => {
-        setGalleryState(data);
-        saveEventGallery(data);
+        if (data && data.length > 0) {
+          setGalleryState(data);
+          saveEventGallery(data);
+        }
       }),
       subscribeToSuggestions((data) => {
-        setSuggestions(data);
-        saveSuggestions(data);
+        if (data && data.length > 0) {
+          setSuggestions(data);
+          saveSuggestions(data);
+        }
       }),
       subscribeToGroupLogo((logo) => {
-        setGroupLogo(logo);
-        saveGroupLogo(logo);
+        if (logo) {
+          setGroupLogo(logo);
+          saveGroupLogo(logo);
+        }
       }),
       subscribeToCustomIncomeTypes((types) => {
-        if (Array.isArray(types)) {
+        if (Array.isArray(types) && types.length > 0) {
           setCustomIncomeTypes(types);
         }
       }),
     ];
+
+    // Central Cloud Database Real-Time Subscription (Laptop <-> Mobile Sync)
+    const unsubCloud = subscribeToCloudDatabase((cloudDb) => {
+      if (Array.isArray(cloudDb.incomes)) {
+        setIncomes(cloudDb.incomes);
+        saveIncomes(cloudDb.incomes);
+      }
+      if (Array.isArray(cloudDb.expenses)) {
+        setExpenses(cloudDb.expenses);
+        saveExpenses(cloudDb.expenses);
+      }
+      if (Array.isArray(cloudDb.members) && cloudDb.members.length > 0) {
+        setMembers(cloudDb.members);
+        saveMembers(cloudDb.members);
+      }
+      if (Array.isArray(cloudDb.occasions) && cloudDb.occasions.length > 0) {
+        setOccasions(cloudDb.occasions);
+        saveOccasions(cloudDb.occasions);
+      }
+      if (Array.isArray(cloudDb.gallery) && cloudDb.gallery.length > 0) {
+        setGalleryState(cloudDb.gallery);
+        saveEventGallery(cloudDb.gallery);
+      }
+      if (Array.isArray(cloudDb.suggestions)) {
+        setSuggestions(cloudDb.suggestions);
+        saveSuggestions(cloudDb.suggestions);
+      }
+      if (cloudDb.settings?.groupLogo !== undefined) {
+        setGroupLogo(cloudDb.settings.groupLogo);
+        saveGroupLogo(cloudDb.settings.groupLogo);
+      }
+      if (Array.isArray(cloudDb.settings?.customIncomeTypes)) {
+        setCustomIncomeTypes(cloudDb.settings.customIncomeTypes);
+      }
+      setIsLoading(false);
+    });
 
     // Seed empty Firestore collections in background
     seedAllCollections().catch((err) => console.warn('Background seed error:', err));
@@ -150,6 +217,7 @@ export default function App() {
     return () => {
       clearTimeout(timer);
       unsubscribers.forEach((u) => u());
+      unsubCloud();
     };
   }, []);
 
@@ -168,6 +236,7 @@ export default function App() {
       return updated;
     });
     saveSuggestion(newSug).catch(console.error);
+    cloudSaveSuggestion(newSug).catch(console.error);
   };
 
   const handleUpdateSuggestion = (updatedSug: any) => {
@@ -177,12 +246,14 @@ export default function App() {
       return updated;
     });
     saveSuggestion(updatedSug).catch(console.error);
+    cloudSaveSuggestion(updatedSug).catch(console.error);
   };
 
   const handleUpdateGroupLogo = (logoUrl: string) => {
     setGroupLogo(logoUrl);
     saveGroupLogo(logoUrl);
     saveGroupLogoFirestore(logoUrl).catch(console.error);
+    cloudSaveGroupLogo(logoUrl).catch(console.error);
   };
 
   const handleOpenLogin = (memberId?: string, type: 'admin' | 'member' = 'member') => {
@@ -219,6 +290,7 @@ export default function App() {
       return updated;
     });
     saveIncome(newIncome).catch(console.error);
+    cloudSaveIncome(newIncome).catch(console.error);
   };
 
   // Update Income Transaction (Admin Only)
@@ -229,6 +301,7 @@ export default function App() {
       return updated;
     });
     saveIncome(updatedIncome).catch(console.error);
+    cloudSaveIncome(updatedIncome).catch(console.error);
   };
 
   // Delete Income Transaction (Admin Only)
@@ -239,6 +312,7 @@ export default function App() {
       return updated;
     });
     deleteIncome(incomeId).catch(console.error);
+    cloudDeleteIncome(incomeId).catch(console.error);
   };
 
   // Custom Income Types Firestore Sync
@@ -248,6 +322,7 @@ export default function App() {
       setCustomIncomeTypes(updated);
       saveCustomIncomeTypes(updated).catch(console.error);
       saveCustomIncomeType(newType);
+      cloudSaveCustomIncomeTypes(updated).catch(console.error);
     }
   };
 
@@ -255,6 +330,7 @@ export default function App() {
     const updated = customIncomeTypes.filter((t) => t !== typeToDelete);
     setCustomIncomeTypes(updated);
     saveCustomIncomeTypes(updated).catch(console.error);
+    cloudSaveCustomIncomeTypes(updated).catch(console.error);
   };
 
   const handleClearAllTransactions = async () => {
@@ -265,6 +341,7 @@ export default function App() {
     if (confirm('तुम्हाला खरोखर सर्व जमा व खर्च व्यवहार कायमचे हटवायचे आहेत का? हे कृत्य परत करता येणार नाही.')) {
       clearAllTransactionsFromStorage();
       await clearAllTransactionsFromFirestore();
+      await cloudClearAllTransactions();
       setIncomes([]);
       setExpenses([]);
       alert('सर्व जमा व खर्च व्यवहार यशस्वीरित्या हटवण्यात आले आहेत.');
@@ -280,6 +357,7 @@ export default function App() {
     gallery.forEach((g) => {
       if (!newIds.has(g.id)) {
         deleteGalleryImage(g.id).catch(console.error);
+        cloudDeleteGalleryImage(g.id).catch(console.error);
       }
     });
 
@@ -288,6 +366,7 @@ export default function App() {
       const existing = gallery.find((g) => g.id === n.id);
       if (!existing || JSON.stringify(existing) !== JSON.stringify(n)) {
         saveGalleryImage(n).catch(console.error);
+        cloudSaveGalleryImage(n).catch(console.error);
       }
     });
 
@@ -302,6 +381,7 @@ export default function App() {
       return updated;
     });
     saveOccasion(newOccasion).catch(console.error);
+    cloudSaveOccasion(newOccasion).catch(console.error);
   };
 
   const handleUpdateOccasion = (updatedOccasion: OccasionEvent) => {
@@ -311,6 +391,7 @@ export default function App() {
       return updated;
     });
     saveOccasion(updatedOccasion).catch(console.error);
+    cloudSaveOccasion(updatedOccasion).catch(console.error);
   };
 
   const handleDeleteOccasion = (occasionId: string) => {
@@ -320,6 +401,7 @@ export default function App() {
       return updated;
     });
     deleteOccasion(occasionId).catch(console.error);
+    cloudDeleteOccasion(occasionId).catch(console.error);
   };
 
   // Add Expense Transaction
@@ -330,6 +412,7 @@ export default function App() {
       return updated;
     });
     saveExpense(newExpense).catch(console.error);
+    cloudSaveExpense(newExpense).catch(console.error);
   };
 
   // Update Expense Transaction (Admin Only)
@@ -340,6 +423,7 @@ export default function App() {
       return updated;
     });
     saveExpense(updatedExpense).catch(console.error);
+    cloudSaveExpense(updatedExpense).catch(console.error);
   };
 
   // Delete Expense Transaction (Admin Only)
@@ -350,6 +434,7 @@ export default function App() {
       return updated;
     });
     deleteExpense(expenseId).catch(console.error);
+    cloudDeleteExpense(expenseId).catch(console.error);
   };
 
   // Approve Expense
@@ -369,6 +454,7 @@ export default function App() {
       return newExpenses;
     });
     saveExpense(updated).catch(console.error);
+    cloudSaveExpense(updated).catch(console.error);
   };
 
   // Add Member
@@ -379,6 +465,7 @@ export default function App() {
       return updated;
     });
     saveMember(newMember).catch(console.error);
+    cloudSaveMember(newMember).catch(console.error);
   };
 
   // Update Member
@@ -389,6 +476,7 @@ export default function App() {
       return updated;
     });
     saveMember(updatedMember).catch(console.error);
+    cloudSaveMember(updatedMember).catch(console.error);
   };
 
   // Delete Member
