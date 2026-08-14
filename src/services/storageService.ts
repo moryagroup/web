@@ -22,11 +22,9 @@ export { DEFAULT_USER };
 
 const STORAGE_KEYS = {
   USER: 'morya_mandal_user_v2',
-  CUSTOM_INCOME_TYPES: 'morya_mandal_custom_income_types_v1',
-  LOGO: 'morya_mandal_group_logo_v1',
 };
 
-// Initial data getters (used for initial state before Supabase DB loads)
+// Initial state fallbacks (All domain persistence is 100% Supabase DB & CDN)
 export const getStoredIncomes = (): IncomeTransaction[] => INITIAL_INCOMES;
 export const saveIncomes = (_incomes: IncomeTransaction[]) => {};
 
@@ -39,27 +37,10 @@ export const saveMembers = (_members: Member[]) => {};
 export const getStoredOccasions = (): OccasionEvent[] => INITIAL_OCCASIONS;
 export const saveOccasions = (_occasions: OccasionEvent[]) => {};
 
-export const getCustomIncomeTypes = (): string[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.CUSTOM_INCOME_TYPES);
-    if (!data) return [];
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
+export const getCustomIncomeTypes = (): string[] => [];
+export const saveCustomIncomeType = (_newType: string) => [];
 
-export const saveCustomIncomeType = (newType: string) => {
-  const current = getCustomIncomeTypes();
-  if (newType && !current.includes(newType)) {
-    const updated = [...current, newType];
-    localStorage.setItem(STORAGE_KEYS.CUSTOM_INCOME_TYPES, JSON.stringify(updated));
-    return updated;
-  }
-  return current;
-};
-
+// ONLY store current login session in storage
 export const getStoredUser = (): CurrentUser => {
   try {
     const data = localStorage.getItem(STORAGE_KEYS.USER);
@@ -81,25 +62,8 @@ export const saveUser = (user: CurrentUser) => {
 export const getStoredEventGallery = (): EventGalleryImage[] => INITIAL_EVENT_GALLERY;
 export const saveEventGallery = (_gallery: EventGalleryImage[]) => {};
 
-export const getStoredGroupLogo = (): string => {
-  try {
-    return localStorage.getItem(STORAGE_KEYS.LOGO) || '';
-  } catch {
-    return '';
-  }
-};
-
-export const saveGroupLogo = (logoUrl: string) => {
-  try {
-    if (!logoUrl) {
-      localStorage.removeItem(STORAGE_KEYS.LOGO);
-    } else {
-      localStorage.setItem(STORAGE_KEYS.LOGO, logoUrl);
-    }
-  } catch (err) {
-    console.error('Error saving group logo:', err);
-  }
-};
+export const getStoredGroupLogo = (): string => '';
+export const saveGroupLogo = (_logoUrl: string) => {};
 
 export const getStoredSuggestions = (): MemberSuggestion[] => INITIAL_SUGGESTIONS;
 export const saveSuggestions = (_suggestions: MemberSuggestion[]) => {};
