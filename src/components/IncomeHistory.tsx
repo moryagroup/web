@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { IncomeTransaction, Member, CurrentUser } from '../types';
 import { hasFullFinancialAccess, isBadgedMember, isCoreMemberRole } from '../utils/rbac';
+import { isDateInSelectedYear } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import {
   Search,
@@ -97,8 +98,8 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   // Filter logic
   const filteredIncomes = useMemo(() => {
     return baseIncomes.filter((item) => {
-      // Financial Year match
-      if (selectedYear !== 'ALL' && item.financialYear !== selectedYear) return false;
+      // Calendar Year match (Jan - Dec)
+      if (selectedYear !== 'ALL' && !isDateInSelectedYear(item.transactionDate, selectedYear, item.financialYear)) return false;
 
       // Search match
       const query = searchTerm.toLowerCase();
@@ -219,9 +220,11 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               onChange={(e) => setSelectedYear(e.target.value)}
               className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <option value="ALL">सर्व आर्थिक वर्षे</option>
-              <option value="२०२६-२७">२०२६-२७</option>
-              <option value="२०२५-२६">२०२५-२६</option>
+              <option value="ALL">सर्व वर्षे (All Years)</option>
+              <option value="२०२६">२०२६</option>
+              <option value="२०२५">२०२५</option>
+              <option value="२०२४">२०२४</option>
+              <option value="२०२७">२०२७</option>
             </select>
           </div>
 
@@ -599,7 +602,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               }}
               className="space-y-3 text-xs"
             >
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">जमा रक्कम (₹) *</label>
                   <input
@@ -619,6 +622,21 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                     onChange={(e) => setEditingIncome({ ...editingIncome, transactionDate: e.target.value })}
                     className="w-full p-2.5 border border-slate-300 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 outline-none"
                   />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">वर्ष (Year) *</label>
+                  <select
+                    value={editingIncome.financialYear || '२०२६'}
+                    onChange={(e) => setEditingIncome({ ...editingIncome, financialYear: e.target.value })}
+                    className="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 outline-none"
+                  >
+                    <option value="२०२६">२०२६</option>
+                    <option value="२०२५">२०२५</option>
+                    <option value="२०२४">२०२४</option>
+                    <option value="२०२७">२०२७</option>
+                    <option value="२०२६-२७">२०२६-२७</option>
+                    <option value="२०२५-२६">२०२५-२६</option>
+                  </select>
                 </div>
               </div>
 

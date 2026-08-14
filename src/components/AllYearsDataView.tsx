@@ -3,6 +3,7 @@ import { IncomeTransaction, ExpenseTransaction, CurrentUser } from '../types';
 import { isCoreMemberRole } from '../utils/rbac';
 import { RbacGuard } from './RbacGuard';
 import { exportToCSV, triggerPDFPrint } from '../utils/exportUtils';
+import { getFinancialYearFromDate } from '../utils/dateUtils';
 import {
   History,
   TrendingUp,
@@ -54,8 +55,12 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
   // Multi-year aggregates
   const yearsSummary = useMemo(() => {
     return FINANCIAL_YEARS.map((year) => {
-      const yearIncomes = incomes.filter((i) => i.financialYear === year);
-      const yearExpenses = expenses.filter((e) => e.financialYear === year && e.approvalStatus === 'मंजूर');
+      const yearIncomes = incomes.filter(
+        (i) => i.financialYear === year || getFinancialYearFromDate(i.transactionDate) === year
+      );
+      const yearExpenses = expenses.filter(
+        (e) => (e.financialYear === year || getFinancialYearFromDate(e.expenseDate) === year) && e.approvalStatus === 'मंजूर'
+      );
 
       const totalIncome = yearIncomes.reduce((sum, i) => sum + i.amount, 0);
       const totalExpense = yearExpenses.reduce((sum, e) => sum + e.amount, 0);

@@ -9,6 +9,7 @@ import {
   Member,
 } from '../types';
 import { hasFullFinancialAccess } from '../utils/rbac';
+import { getFinancialYearFromDate } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { ArrowUpRight, CheckCircle2, Upload, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 
@@ -129,7 +130,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
       billNumber: billNumber.trim() || undefined,
       attachmentUrl: attachmentUrl || undefined,
       notes: notes.trim() || undefined,
-      financialYear,
+      financialYear: getFinancialYearFromDate(expenseDate),
       approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
       approvedBy: isApproved ? `${currentUser.name} (${currentUser.role})` : undefined,
       approvedByRole: isApproved ? currentUser.role : undefined,

@@ -325,3 +325,37 @@ export async function seedSupabaseIfEmpty(): Promise<void> {
     console.warn('[Supabase Seed] Seed error:', err);
   }
 }
+
+// ─── Settings Table (Group Logo & Configurations) ───────────────────────────
+
+export async function fetchGroupLogoFromSupabase(): Promise<string | undefined> {
+  if (!isSupabaseConfigured) return undefined;
+  try {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'group_logo')
+      .maybeSingle();
+
+    if (error || !data) return undefined;
+    return data.value?.url || '';
+  } catch (err) {
+    console.warn('[Supabase] fetchGroupLogo error:', err);
+    return undefined;
+  }
+}
+
+export async function saveGroupLogoToSupabase(url: string): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    const row = {
+      key: 'group_logo',
+      value: { url },
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('settings').upsert(row);
+    if (error) console.error('[Supabase] saveGroupLogo error:', error);
+  } catch (err) {
+    console.warn('[Supabase] saveGroupLogoToSupabase error:', err);
+  }
+}

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { IncomeTransaction, ExpenseTransaction, CurrentUser } from '../types';
 import { isCoreMemberRole } from '../utils/rbac';
+import { isDateInSelectedYear } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { exportToCSV, triggerPDFPrint } from '../utils/exportUtils';
 import {
@@ -70,13 +71,13 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
     return '₹' + amount.toLocaleString('en-IN');
   };
 
-  // Filter dataset by financial year
+  // Filter dataset by calendar year (Jan - Dec)
   const yearIncomes = useMemo(() => {
-    return incomes.filter((i) => i.financialYear === selectedYear);
+    return incomes.filter((i) => isDateInSelectedYear(i.transactionDate, selectedYear, i.financialYear));
   }, [incomes, selectedYear]);
 
   const yearExpenses = useMemo(() => {
-    return expenses.filter((e) => e.financialYear === selectedYear);
+    return expenses.filter((e) => isDateInSelectedYear(e.expenseDate, selectedYear, e.financialYear));
   }, [expenses, selectedYear]);
 
   // Monthly Grouping
@@ -207,9 +208,10 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
             onChange={(e) => setSelectedYear(e.target.value)}
             className="bg-slate-800 text-amber-300 font-bold text-xs rounded-xl border border-slate-700 p-2.5 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
           >
-            <option value="२०२६-२७">२०२६-२७ (चालू वर्ष)</option>
-            <option value="२०२५-२६">२०२५-२६</option>
-            <option value="२०२४-२५">२०२४-२५</option>
+            <option value="२०२६">२०२६ (चालू वर्ष)</option>
+            <option value="२०२५">२०२५</option>
+            <option value="२०२४">२०२४</option>
+            <option value="२०२७">२०२७</option>
           </select>
         </div>
       </div>

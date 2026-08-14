@@ -22,6 +22,7 @@ export { DEFAULT_USER };
 
 const STORAGE_KEYS = {
   USER: 'morya_mandal_user_v2',
+  GROUP_LOGO: 'morya_mandal_group_logo_v2',
 };
 
 // Initial state fallbacks (All domain persistence is 100% Supabase DB & CDN)
@@ -62,8 +63,25 @@ export const saveUser = (user: CurrentUser) => {
 export const getStoredEventGallery = (): EventGalleryImage[] => INITIAL_EVENT_GALLERY;
 export const saveEventGallery = (_gallery: EventGalleryImage[]) => {};
 
-export const getStoredGroupLogo = (): string => '';
-export const saveGroupLogo = (_logoUrl: string) => {};
+export const getStoredGroupLogo = (): string => {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.GROUP_LOGO) || '';
+  } catch {
+    return '';
+  }
+};
+
+export const saveGroupLogo = (logoUrl: string) => {
+  try {
+    if (logoUrl) {
+      localStorage.setItem(STORAGE_KEYS.GROUP_LOGO, logoUrl);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.GROUP_LOGO);
+    }
+  } catch (err) {
+    console.error('Failed to save group logo to localStorage:', err);
+  }
+};
 
 export const getStoredSuggestions = (): MemberSuggestion[] => INITIAL_SUGGESTIONS;
 export const saveSuggestions = (_suggestions: MemberSuggestion[]) => {};

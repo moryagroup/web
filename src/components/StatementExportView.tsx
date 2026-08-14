@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { IncomeTransaction, ExpenseTransaction, CurrentUser } from '../types';
 import { isCoreMemberRole } from '../utils/rbac';
+import { isDateInSelectedYear } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { exportToCSV, triggerPDFPrint } from '../utils/exportUtils';
 import {
@@ -66,8 +67,8 @@ export const StatementExportView: React.FC<StatementExportViewProps> = ({
     let exp = expenses.filter((e) => e.approvalStatus === 'मंजूर');
 
     if (filterMode === 'YEAR') {
-      inc = inc.filter((i) => i.financialYear === selectedYear);
-      exp = exp.filter((e) => e.financialYear === selectedYear);
+      inc = inc.filter((i) => isDateInSelectedYear(i.transactionDate, selectedYear, i.financialYear));
+      exp = exp.filter((e) => isDateInSelectedYear(e.expenseDate, selectedYear, e.financialYear));
     } else {
       inc = inc.filter((i) => {
         const d = i.transactionDate;
@@ -281,15 +282,16 @@ export const StatementExportView: React.FC<StatementExportViewProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
           {filterMode === 'YEAR' ? (
             <div>
-              <label className="block font-bold text-slate-700 mb-1">आर्थिक वर्ष निवडा</label>
+              <label className="block font-bold text-slate-700 mb-1">वर्ष निवडा</label>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
                 className="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 outline-none"
               >
-                <option value="२०२६-२७">२०२६-२७ (चालू वर्ष)</option>
-                <option value="२०२५-२६">२०२५-२६</option>
-                <option value="२०२४-२५">२०२४-२५</option>
+                <option value="२०२६">२०२६ (चालू वर्ष)</option>
+                <option value="२०२५">२०२५</option>
+                <option value="२०२४">२०२४</option>
+                <option value="२०२७">२०२७</option>
               </select>
             </div>
           ) : (

@@ -108,9 +108,10 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({
             onChange={(e) => setSelectedYear(e.target.value)}
             className="w-full mt-1 bg-white border border-slate-300 font-bold text-slate-800 text-sm rounded-lg p-1.5 focus:ring-2 focus:ring-orange-400 focus:outline-none cursor-pointer"
           >
-            <option value="२०२६-२७">२०२६-२७ (चालू वर्ष)</option>
-            <option value="२०२५-२६">२०२५-२६</option>
-            <option value="२०२४-२५">२०२४-२५</option>
+            <option value="२०२६">२०२६ (चालू वर्ष: १ जाने - ३१ डिसे)</option>
+            <option value="२०२५">२०२५ (१ जाने - ३१ डिसे)</option>
+            <option value="२०२४">२०२४ (१ जाने - ३१ डिसे)</option>
+            <option value="२०२७">२०२७ (१ जाने - ३१ डिसे)</option>
           </select>
         </div>
         <p className="text-[10px] text-slate-500 font-bold mt-1">

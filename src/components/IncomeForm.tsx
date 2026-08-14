@@ -9,6 +9,7 @@ import {
   CurrentUser,
 } from '../types';
 import { hasFullFinancialAccess } from '../utils/rbac';
+import { getFinancialYearFromDate } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft } from 'lucide-react';
 
@@ -175,7 +176,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       receiptNumber: receiptNumber.trim() || undefined,
       attachmentUrl: attachmentUrl || undefined,
       notes: notes.trim() || undefined,
-      financialYear,
+      financialYear: getFinancialYearFromDate(transactionDate),
       createdBy: `${currentUser.name} (${currentUser.role})`,
       createdAt: new Date().toISOString(),
     };

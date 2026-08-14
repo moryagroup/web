@@ -1,7 +1,7 @@
 export const DESIGNATION_RANKS: Record<string, number> = {
   'अध्यक्ष': 1,
-  'कार्याध्यक्ष': 2,
-  'उपाध्यक्ष': 3,
+  'उपाध्यक्ष': 2,
+  'कार्याध्यक्ष': 3,
   'सचिव': 4,
   'खजिनदार': 5,
   'उपखजिनदार': 6,
@@ -41,7 +41,7 @@ export const isCoreMemberRole = (role?: string): boolean => {
 
 export const hasAdminPermissions = (role?: string): boolean => {
   if (!role) return false;
-  return ['ॲडमिन', 'Admin', 'अध्यक्ष', 'खजिनदार', 'उपखजिनदार'].includes(role.trim());
+  return ['ॲडमिन', 'Admin'].includes(role.trim());
 };
 
 export const isBadgedMember = (role?: string): boolean => {

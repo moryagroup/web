@@ -90,8 +90,11 @@ import {
   clearAllTransactionsFromSupabase,
   subscribeToSupabaseRealtime,
   seedSupabaseIfEmpty,
+  fetchGroupLogoFromSupabase,
+  saveGroupLogoToSupabase,
 } from './services/supabaseService';
 import { isSupabaseConfigured } from './services/supabaseClient';
+import { Agentation } from 'agentation';
 
 import { Sidebar } from './components/Sidebar';
 import { HeaderStats } from './components/HeaderStats';
@@ -111,12 +114,13 @@ import { LoginModal } from './components/LoginModal';
 import { OccasionModal } from './components/OccasionModal';
 import { SettingsModal } from './components/SettingsModal';
 import { isBadgedMember, hasAdminPermissions } from './utils/rbac';
+import { isDateInSelectedYear } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { Menu } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [selectedYear, setSelectedYear] = useState<string>('२०२६-२७');
+  const [selectedYear, setSelectedYear] = useState<string>('२०२६');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
   const [isOccasionModalOpen, setIsOccasionModalOpen] = useState<boolean>(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
@@ -200,16 +204,21 @@ export default function App() {
       if (isSupabaseConfigured) {
         try {
           await seedSupabaseIfEmpty();
-          const [m, inc, exp, occ] = await Promise.all([
+          const [m, inc, exp, occ, logo] = await Promise.all([
             fetchMembersFromSupabase(),
             fetchIncomesFromSupabase(),
             fetchExpensesFromSupabase(),
             fetchOccasionsFromSupabase(),
+            fetchGroupLogoFromSupabase(),
           ]);
           if (m && m.length > 0) setMembers(m);
           if (inc && inc.length > 0) setIncomes(inc);
           if (exp && exp.length > 0) setExpenses(exp);
           if (occ && occ.length > 0) setOccasions(occ);
+          if (logo !== undefined && logo !== '') {
+            setGroupLogo(logo);
+            saveGroupLogo(logo);
+          }
         } catch (err) {
           console.warn('[Supabase] Initial load error:', err);
         }
@@ -220,16 +229,21 @@ export default function App() {
 
     const unsubSupabaseRealtime = subscribeToSupabaseRealtime(async () => {
       if (isSupabaseConfigured) {
-        const [m, inc, exp, occ] = await Promise.all([
+        const [m, inc, exp, occ, logo] = await Promise.all([
           fetchMembersFromSupabase(),
           fetchIncomesFromSupabase(),
           fetchExpensesFromSupabase(),
           fetchOccasionsFromSupabase(),
+          fetchGroupLogoFromSupabase(),
         ]);
         if (m && m.length > 0) setMembers(m);
         if (inc) setIncomes(inc);
         if (exp) setExpenses(exp);
         if (occ && occ.length > 0) setOccasions(occ);
+        if (logo !== undefined && logo !== '') {
+          setGroupLogo(logo);
+          saveGroupLogo(logo);
+        }
       }
     });
 
@@ -301,6 +315,7 @@ export default function App() {
     saveGroupLogo(logoUrl);
     saveGroupLogoFirestore(logoUrl).catch(console.error);
     cloudSaveGroupLogo(logoUrl).catch(console.error);
+    saveGroupLogoToSupabase(logoUrl).catch(console.error);
   };
 
   const handleOpenLogin = (memberId?: string, type: 'admin' | 'member' = 'member') => {
@@ -324,8 +339,8 @@ export default function App() {
 
   // Financial Summary Calculation
   const summary = useMemo(() => {
-    const yearIncomes = incomes.filter((i) => i.financialYear === selectedYear);
-    const yearExpenses = expenses.filter((e) => e.financialYear === selectedYear);
+    const yearIncomes = incomes.filter((i) => isDateInSelectedYear(i.transactionDate, selectedYear, i.financialYear));
+    const yearExpenses = expenses.filter((e) => isDateInSelectedYear(e.expenseDate, selectedYear, e.financialYear));
     return calculateFinancialSummary(yearIncomes, yearExpenses);
   }, [incomes, expenses, selectedYear]);
 
@@ -831,6 +846,11 @@ export default function App() {
 
       {/* Mobile Network Status Notifier */}
       <NetworkStatusNotifier />
+
+      {/* Agentation Visual Feedback Toolbar - Local Development & Admin User Only */}
+      {import.meta.env.DEV && currentUser?.isLoggedIn && hasAdminPermissions(currentUser?.role) && (
+        <Agentation />
+      )}
     </div>
     </>
   );

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FinancialYearSummary, CurrentUser, IncomeTransaction, ExpenseTransaction } from '../types';
 import { isCoreMemberRole } from '../utils/rbac';
+import { isDateInSelectedYear } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { exportToCSV, triggerPDFPrint } from '../utils/exportUtils';
 import {
@@ -58,21 +59,21 @@ export const CoreSummaryView: React.FC<CoreSummaryViewProps> = ({
 
   // Category level breakdown
   const subscriptionIncome = incomes
-    .filter((i) => i.financialYear === selectedYear && i.incomeType.includes('वर्गणी'))
+    .filter((i) => isDateInSelectedYear(i.transactionDate, selectedYear, i.financialYear) && i.incomeType.includes('वर्गणी'))
     .reduce((sum, i) => sum + i.amount, 0);
 
   const donationIncome = incomes
-    .filter((i) => i.financialYear === selectedYear && (i.incomeType.includes('देणगी') || i.incomeType.includes('प्रायोजकत्व')))
+    .filter((i) => isDateInSelectedYear(i.transactionDate, selectedYear, i.financialYear) && (i.incomeType.includes('देणगी') || i.incomeType.includes('प्रायोजकत्व')))
     .reduce((sum, i) => sum + i.amount, 0);
 
   const otherIncome = Math.max(0, summary.totalIncome - (subscriptionIncome + donationIncome));
 
-  const pendingExpenses = expenses.filter((e) => e.financialYear === selectedYear && e.approvalStatus === 'प्रलंबित');
+  const pendingExpenses = expenses.filter((e) => isDateInSelectedYear(e.expenseDate, selectedYear, e.financialYear) && e.approvalStatus === 'प्रलंबित');
   const pendingAmount = pendingExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   const handleExportCSV = () => {
     const filename = `MoryaGroup_CoreSummary_${selectedYear}_${Date.now()}.csv`;
-    const headers = ['घटक / शीर्षक', 'रक्कम (₹)', 'आर्थिक वर्ष', 'विवरण / टीप'];
+    const headers = ['घटक / शीर्षक', 'रक्कम (₹)', 'वर्ष', 'विवरण / टीप'];
 
     const rows: (string | number | boolean)[][] = [
       ['एकूण जमा (Total Deposit)', summary.totalIncome, selectedYear, 'एकूण सर्व उत्पन्नाचा जमा हिशोब'],
@@ -136,9 +137,10 @@ export const CoreSummaryView: React.FC<CoreSummaryViewProps> = ({
             onChange={(e) => setSelectedYear(e.target.value)}
             className="bg-slate-800 text-emerald-300 font-bold text-xs rounded-xl border border-slate-700 p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer"
           >
-            <option value="२०२६-२७">२०२६-२७ (चालू वर्ष)</option>
-            <option value="२०२५-२६">२०२५-२६</option>
-            <option value="२०२४-२५">२०२४-२५</option>
+            <option value="२०२६">२०२६ (चालू वर्ष)</option>
+            <option value="२०२५">२०२५</option>
+            <option value="२०२४">२०२४</option>
+            <option value="२०२७">२०२७</option>
           </select>
         </div>
       </div>
@@ -195,7 +197,7 @@ export const CoreSummaryView: React.FC<CoreSummaryViewProps> = ({
             <div className="flex justify-between">
               <span>मंजूर खर्चाची एकूण संख्या:</span>
               <span className="font-bold">
-                {expenses.filter((e) => e.financialYear === selectedYear && e.approvalStatus === 'मंजूर').length}
+                {expenses.filter((e) => isDateInSelectedYear(e.expenseDate, selectedYear, e.financialYear) && e.approvalStatus === 'मंजूर').length}
               </span>
             </div>
             <div className="flex justify-between">

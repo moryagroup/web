@@ -21,8 +21,8 @@ export async function runTier2Tests() {
 
   await group.test('R2.1 - Designation rank mapping for office bearers & members', () => {
     assertEqual(getDesignationRank('अध्यक्ष'), 1, 'अध्यक्ष rank must be 1');
-    assertEqual(getDesignationRank('कार्याध्यक्ष'), 2, 'कार्याध्यक्ष rank must be 2');
-    assertEqual(getDesignationRank('उपाध्यक्ष'), 3, 'उपाध्यक्ष rank must be 3');
+    assertEqual(getDesignationRank('उपाध्यक्ष'), 2, 'उपाध्यक्ष rank must be 2 (Vijay Jagtap)');
+    assertEqual(getDesignationRank('कार्याध्यक्ष'), 3, 'कार्याध्यक्ष rank must be 3');
     assertEqual(getDesignationRank('सचिव'), 4, 'सचिव rank must be 4');
     assertEqual(getDesignationRank('खजिनदार'), 5, 'खजिनदार rank must be 5');
     assertEqual(getDesignationRank('उपखजिनदार'), 6, 'उपखजिनदार rank must be 6');
@@ -55,15 +55,15 @@ export async function runTier2Tests() {
     assertEqual(hasFullFinancialAccess(''), false, 'empty string role must NOT have financial access');
   });
 
-  await group.test('R2.5 - Admin permissions granted to admin and key executive roles', () => {
+  await group.test('R2.5 - Admin permissions granted strictly to explicit Admin role', () => {
     assert(hasAdminPermissions('ॲडमिन'), 'ॲडमिन must have admin permissions');
     assert(hasAdminPermissions('Admin'), 'Admin must have admin permissions');
-    assert(hasAdminPermissions('अध्यक्ष'), 'अध्यक्ष must have admin permissions');
-    assert(hasAdminPermissions('खजिनदार'), 'खजिनदार must have admin permissions');
-    assert(hasAdminPermissions('उपखजिनदार'), 'उपखजिनदार must have admin permissions');
   });
 
-  await group.test('R2.6 - Admin permissions denied to regular members and other bearers', () => {
+  await group.test('R2.6 - Admin permissions denied to regular members, अध्यक्ष, and office bearers', () => {
+    assertEqual(hasAdminPermissions('अध्यक्ष'), false, 'अध्यक्ष (Rakesh Pote) must NOT have admin permissions');
+    assertEqual(hasAdminPermissions('खजिनदार'), false, 'खजिनदार must NOT have admin permissions');
+    assertEqual(hasAdminPermissions('उपखजिनदार'), false, 'उपखजिनदार must NOT have admin permissions');
     assertEqual(hasAdminPermissions('सभासद'), false, 'सभासद must NOT have admin permissions');
     assertEqual(hasAdminPermissions('सचिव'), false, 'सचिव must NOT have admin permissions');
     assertEqual(hasAdminPermissions('उपाध्यक्ष'), false, 'उपाध्यक्ष must NOT have admin permissions');
