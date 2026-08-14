@@ -55,11 +55,13 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
   // Multi-year aggregates
   const yearsSummary = useMemo(() => {
     return FINANCIAL_YEARS.map((year) => {
-      const yearIncomes = incomes.filter(
-        (i) => i.financialYear === year || getFinancialYearFromDate(i.transactionDate) === year
+      const yearIncomes = incomes.filter((i) =>
+        isDateInSelectedYear(i.transactionDate, year, i.financialYear)
       );
       const yearExpenses = expenses.filter(
-        (e) => (e.financialYear === year || getFinancialYearFromDate(e.expenseDate) === year) && e.approvalStatus === 'मंजूर'
+        (e) =>
+          isDateInSelectedYear(e.expenseDate, year, e.financialYear) &&
+          e.approvalStatus === 'मंजूर'
       );
 
       const totalIncome = yearIncomes.reduce((sum, i) => sum + i.amount, 0);
