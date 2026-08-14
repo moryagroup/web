@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Member, CurrentUser, IncomeTransaction } from '../types';
 import moryaLogo from '../assets/morya_logo.jpg';
 import { getMemberSubscriptionPaid, getMemberExtraDonationPaid } from '../services/storageService';
@@ -53,16 +53,49 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onNavigate,
   onOpenLogin,
 }) => {
-  // Find current member profile from members list, or default
-  const activeMember = members.find(
-    (m) => m.fullName.trim() === currentUser.name.trim()
-  ) || members[0];
-
-  const [selectedMemberId, setSelectedMemberId] = useState<string>(
-    activeMember?.id || members[0]?.id || ''
+  // Fallback synthetic Admin member profile if not present in DB
+  const defaultAdminProfile: Member = useMemo(
+    () => ({
+      id: 'm-admin',
+      memberCode: 'M-100',
+      fullName: 'सिस्टम ॲडमिन',
+      designation: 'ॲडमिन',
+      phone: currentUser.phone || '9822010100',
+      annualTargetAmount: 0,
+      address: 'हडपसर गोंधळनगर, पुणे',
+      isActive: true,
+      email: currentUser.email || 'moryagroupdata@gmail.com',
+      birthDate: currentUser.birthDate || '1985-01-01',
+      age: currentUser.age || 41,
+    }),
+    [currentUser]
   );
 
-  const currentProfile = members.find((m) => m.id === selectedMemberId) || activeMember;
+  const allMembersWithAdmin = useMemo(() => {
+    const hasAdmin = members.some(
+      (m) => m.id === 'm-admin' || m.fullName.trim() === 'सिस्टम ॲडमिन' || m.designation === 'ॲडमिन'
+    );
+    return hasAdmin ? members : [defaultAdminProfile, ...members];
+  }, [members, defaultAdminProfile]);
+
+  const activeMember = useMemo(() => {
+    if (currentUser.role === 'ॲडमिन' || currentUser.name.trim() === 'सिस्टम ॲडमिन') {
+      return (
+        allMembersWithAdmin.find(
+          (m) => m.id === 'm-admin' || m.fullName.trim() === 'सिस्टम ॲडमिन' || m.designation === 'ॲडमिन'
+        ) || defaultAdminProfile
+      );
+    }
+    return (
+      allMembersWithAdmin.find((m) => m.fullName.trim() === currentUser.name.trim()) ||
+      allMembersWithAdmin[0]
+    );
+  }, [allMembersWithAdmin, currentUser, defaultAdminProfile]);
+
+  const [selectedMemberId, setSelectedMemberId] = useState<string>(activeMember.id);
+
+  const currentProfile =
+    allMembersWithAdmin.find((m) => m.id === selectedMemberId) || activeMember;
   const isAdmin = hasAdminPermissions(currentUser.role) && currentUser.isLoggedIn !== false;
   const profileLogoInputRef = useRef<HTMLInputElement>(null);
 
@@ -372,11 +405,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 value={selectedMemberId}
                 onChange={(e) => {
                   const targetId = e.target.value;
-                  const targetMember = members.find((m) => m.id === targetId);
+                  const targetMember = allMembersWithAdmin.find((m) => m.id === targetId);
                   const isAdmin = currentUser.role === 'ॲडमिन' && currentUser.isLoggedIn !== false;
                   const isSelf = targetMember && targetMember.fullName.trim() === currentUser.name.trim();
 
-                  if (isAdmin || isSelf) {
+                  if (isAdmin || isSelf || targetMember?.designation === 'ॲडमिन') {
                     setSelectedMemberId(targetId);
                     setIsEditing(false);
                   } else {
@@ -386,9 +419,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 }}
                 className="bg-slate-800 text-amber-300 font-bold text-xs rounded-xl border border-slate-700 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
               >
-                {members.map((m) => (
+                {allMembersWithAdmin.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.fullName} ({m.designation || 'सभासद'})
+                    {m.designation === 'ॲडमिन' ? '⚡' : m.designation !== 'सभासद' ? '🏅' : '👤'} {m.fullName} ({m.designation || 'सभासद'})
                   </option>
                 ))}
               </select>

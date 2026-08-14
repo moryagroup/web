@@ -1,4 +1,6 @@
 export const DESIGNATION_RANKS: Record<string, number> = {
+  'ॲडमिन': 0,
+  'Admin': 0,
   'अध्यक्ष': 1,
   'उपाध्यक्ष': 2,
   'कार्याध्यक्ष': 3,
@@ -10,8 +12,6 @@ export const DESIGNATION_RANKS: Record<string, number> = {
   'सहसंघटक': 9,
   'सल्लागार': 10,
   'कार्या सल्लागार': 11,
-  'ॲडमिन': 12,
-  'Admin': 12,
   'सभासद': 90,
 };
 

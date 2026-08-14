@@ -1,6 +1,20 @@
 import { Member, OccasionEvent, IncomeTransaction, ExpenseTransaction, CurrentUser, EventGalleryImage, MemberSuggestion } from './types';
 
 export const INITIAL_MEMBERS: Member[] = [
+  {
+    id: 'm-admin',
+    memberCode: 'M-100',
+    fullName: 'सिस्टम ॲडमिन',
+    designation: 'ॲडमिन',
+    phone: '9822010100',
+    annualTargetAmount: 0,
+    address: 'हडपसर गोंधळनगर, पुणे',
+    isActive: true,
+    birthDate: '1985-01-01',
+    email: 'moryagroupdata@gmail.com',
+    age: 41,
+    password: 'Tom&jerry5633#',
+  },
   // 6 Office Bearers (पदाधिकारी)
   {
     id: 'm-101',
