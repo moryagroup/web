@@ -183,6 +183,7 @@ export interface CurrentUser {
   birthDate?: string;
   email?: string;
   age?: number;
+  photoUrl?: string;
 }
 
 export interface FinancialYearSummary {

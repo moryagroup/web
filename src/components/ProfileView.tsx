@@ -139,8 +139,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       reader.onload = (event) => {
         const result = event.target?.result as string;
         if (result) {
-          // Update member's photoUrl
-          onUpdateMember({ ...currentProfile, photoUrl: result });
+          const updated = { ...currentProfile, photoUrl: result };
+          onUpdateMember(updated);
+          if (
+            currentProfile.id === 'm-admin' ||
+            currentProfile.fullName.trim() === currentUser.name.trim() ||
+            currentUser.role === 'ॲडमिन'
+          ) {
+            onUpdateCurrentUser({
+              ...currentUser,
+              photoUrl: result,
+            });
+          }
         }
       };
       reader.readAsDataURL(file);
@@ -316,6 +326,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     );
   }
 
+  const currentProfilePhoto =
+    currentProfile.photoUrl ||
+    (currentProfile.id === 'm-admin' || currentProfile.fullName.trim() === currentUser.name.trim()
+      ? currentUser.photoUrl
+      : undefined);
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {onNavigate && (
@@ -339,16 +355,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               className="cursor-pointer"
               title="मोठा फोटो पहा (Full Screen View)"
             >
-              {currentProfile.photoUrl ? (
+              {currentProfilePhoto ? (
                 <img
-                  src={currentProfile.photoUrl}
+                  src={currentProfilePhoto}
                   alt={currentProfile.fullName}
                   className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-full border-4 border-amber-400 shadow-2xl bg-slate-950 p-0.5 transition-transform group-hover:scale-105"
                 />
               ) : (
                 <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-amber-400/90 bg-amber-500/20 flex flex-col items-center justify-center text-amber-300 font-black shadow-2xl transition-transform group-hover:scale-105">
                   <User className="w-12 h-12 text-amber-400" />
-                  <span className="text-[9px] font-bold text-amber-200 mt-1">मोठा फोटो पहा</span>
+                  <span className="text-[9px] font-bold text-amber-200 mt-1">फोटो जोडा</span>
                 </div>
               )}
             </div>
@@ -918,7 +934,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       <ProfilePhotoLightboxModal
         isOpen={isPhotoLightboxOpen}
         onClose={() => setIsPhotoLightboxOpen(false)}
-        photoUrl={currentProfile.photoUrl}
+        photoUrl={currentProfilePhoto}
         memberName={currentProfile.fullName}
         memberRole={currentProfile.designation}
         memberCode={currentProfile.memberCode}

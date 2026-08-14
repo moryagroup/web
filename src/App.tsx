@@ -612,7 +612,13 @@ export default function App() {
         console.error('[Supabase] Member photo upload error:', err);
       }
     }
-    setMembers((prev) => prev.map((m) => (m.id === finalMember.id ? finalMember : m)));
+    setMembers((prev) => {
+      const exists = prev.some((m) => m.id === finalMember.id);
+      if (exists) {
+        return prev.map((m) => (m.id === finalMember.id ? finalMember : m));
+      }
+      return [finalMember, ...prev];
+    });
     saveMember(finalMember).catch(console.error);
     cloudSaveMember(finalMember).catch(console.error);
     saveMemberToSupabase(finalMember).catch(console.error);
