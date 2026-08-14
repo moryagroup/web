@@ -11,6 +11,8 @@ import {
   hasFullFinancialAccess,
   hasAdminPermissions,
   isBadgedMember,
+  canViewRecentGroupTransactions,
+  canViewAllTransactions,
   AUTHORIZED_FINANCIAL_ROLES,
 } from '../src/utils/rbac';
 
@@ -77,7 +79,15 @@ export async function runTier2Tests() {
     assertEqual(isBadgedMember(undefined), false, 'undefined is NOT badged member');
   });
 
-  await group.test('R2.8 - Adversarial inputs: Whitespace, case variations, and unicode integrity', () => {
+  await group.test('R2.8 - Regular member privacy enforcement rules', () => {
+    assert(canViewRecentGroupTransactions('अध्यक्ष'), 'अध्यक्ष can view group recent transactions');
+    assert(canViewRecentGroupTransactions('सचिव'), 'सचिव can view group recent transactions');
+    assert(canViewRecentGroupTransactions('ॲडमिन'), 'ॲडमिन can view group recent transactions');
+    assertEqual(canViewRecentGroupTransactions('सभासद'), false, 'सभासद must NOT view group recent transactions');
+    assertEqual(canViewRecentGroupTransactions(undefined), false, 'undefined role must NOT view group recent transactions');
+  });
+
+  await group.test('R2.9 - Adversarial inputs: Whitespace, case variations, and unicode integrity', () => {
     assert(hasFullFinancialAccess('  खजिनदार  '), 'Whitespace trimming must handle leading/trailing spaces');
     assert(hasAdminPermissions('  ॲडमिन  '), 'Whitespace trimming must handle leading/trailing spaces for admin');
     assertEqual(getDesignationRank('  अध्यक्ष  '), 1, 'Designation rank must trim whitespace');

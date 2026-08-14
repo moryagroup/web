@@ -146,14 +146,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           {/* Admin Transaction Reset Section */}
-          {onClearAllTransactions && (
+          {onClearAllTransactions && isAdmin && (
             <div className="pt-4 border-t border-slate-200 space-y-2">
               <div className="flex items-center gap-2">
                 <Trash2 className="w-4 h-4 text-rose-600" />
                 <h4 className="font-bold text-slate-800">सर्व व्यवहार डेटा रीसेट (Clear All Transactions)</h4>
               </div>
               <p className="text-[11px] text-slate-500 leading-relaxed">
-                ही क्रिया सर्व जमा व खर्च व्यवहार डेटा (LocalStorage व Firestore मधील) कायमचा हटवेल.
+                ही क्रिया सर्व जमा व खर्च व्यवहार (सेंट्रल डेटाबेस व सर्व डिव्हाइसेस मधील) कायमचे हटवेल. ॲडमिन पासवर्ड पडताळणी आवश्यक.
               </p>
               <button
                 onClick={onClearAllTransactions}

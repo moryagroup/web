@@ -80,6 +80,7 @@ import { HeaderStats } from './components/HeaderStats';
 import { DashboardView } from './components/DashboardView';
 import { IncomeForm } from './components/IncomeForm';
 import { ExpenseForm } from './components/ExpenseForm';
+import { AdminClearConfirmModal } from './components/AdminClearConfirmModal';
 import { IncomeHistory } from './components/IncomeHistory';
 import { ExpenseHistory } from './components/ExpenseHistory';
 import { MemberSubscriptionsView } from './components/MemberSubscriptionsView';
@@ -101,6 +102,7 @@ export default function App() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
   const [isOccasionModalOpen, setIsOccasionModalOpen] = useState<boolean>(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
+  const [isAdminClearModalOpen, setIsAdminClearModalOpen] = useState<boolean>(false);
   const [loginModalMemberId, setLoginModalMemberId] = useState<string | undefined>(undefined);
   const [loginModalType, setLoginModalType] = useState<'admin' | 'member'>('member');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
@@ -333,19 +335,21 @@ export default function App() {
     cloudSaveCustomIncomeTypes(updated).catch(console.error);
   };
 
-  const handleClearAllTransactions = async () => {
+  const handleClearAllTransactions = () => {
     if (!hasAdminPermissions(currentUser.role)) {
       alert('व्यवहार हटवण्याचे अधिकार केवळ ॲडमिन यांनाच आहेत.');
       return;
     }
-    if (confirm('तुम्हाला खरोखर सर्व जमा व खर्च व्यवहार कायमचे हटवायचे आहेत का? हे कृत्य परत करता येणार नाही.')) {
-      clearAllTransactionsFromStorage();
-      await clearAllTransactionsFromFirestore();
-      await cloudClearAllTransactions();
-      setIncomes([]);
-      setExpenses([]);
-      alert('सर्व जमा व खर्च व्यवहार यशस्वीरित्या हटवण्यात आले आहेत.');
-    }
+    setIsAdminClearModalOpen(true);
+  };
+
+  const handleConfirmClearTransactions = async () => {
+    clearAllTransactionsFromStorage();
+    await clearAllTransactionsFromFirestore();
+    await cloudClearAllTransactions();
+    setIncomes([]);
+    setExpenses([]);
+    alert('सर्व जमा व खर्च व्यवहार यशस्वीरित्या हटवण्यात आले आहेत.');
   };
 
   // Gallery Persistence & Real-Time Sync
@@ -655,6 +659,7 @@ export default function App() {
             {activeTab === 'expense-history' && (
               <ExpenseHistory
                 expenses={expenses}
+                members={members}
                 currentUser={currentUser}
                 financialYear={selectedYear}
                 onApproveExpense={handleApproveExpense}
@@ -807,6 +812,13 @@ export default function App() {
         currentUser={currentUser}
         onOpenLogin={handleOpenLogin}
         onClearAllTransactions={handleClearAllTransactions}
+      />
+
+      {/* Admin Clear Transactions Password Protection Modal */}
+      <AdminClearConfirmModal
+        isOpen={isAdminClearModalOpen}
+        onClose={() => setIsAdminClearModalOpen(false)}
+        onConfirm={handleConfirmClearTransactions}
       />
 
       {/* Mobile Network Status Notifier */}

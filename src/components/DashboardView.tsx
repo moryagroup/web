@@ -11,7 +11,7 @@ import {
 } from '../types';
 import { HeaderStats } from './HeaderStats';
 import { EventGallerySection } from './EventGallerySection';
-import { hasFullFinancialAccess, isBadgedMember } from '../utils/rbac';
+import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions } from '../utils/rbac';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -289,129 +289,201 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       )}
 
-      {/* Grid Layout: Recent Incomes & Expenses */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Income Transactions */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                  <ArrowDownLeft className="w-5 h-5" />
+      {/* Grid Layout: Recent Incomes & Expenses (Core Members / Admin Only) */}
+      {canViewRecentGroupTransactions(currentUser.role) ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Income Transactions */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                    <ArrowDownLeft className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-slate-800 text-base">
+                    अलीकडील जमा नोंदी
+                  </h3>
                 </div>
-                <h3 className="font-bold text-slate-800 text-base">
-                  अलीकडील जमा नोंदी
-                </h3>
+                <button
+                  onClick={() => onNavigate('income-history')}
+                  className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <span>
+                    सर्व जमा ({incomes.length})
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
               </div>
+
+              <div className="divide-y divide-slate-100 mt-2">
+                {recentIncomes.map((item) => (
+                  <div key={item.id} className="py-3 flex justify-between items-center text-xs">
+                    <div>
+                      <p className="font-bold text-slate-800">{item.depositorName}</p>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                        <span className="px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">
+                          {item.depositorType}
+                        </span>
+                        <span>• {item.incomeType}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-black text-emerald-700 text-sm">
+                        + ₹{item.amount.toLocaleString('en-IN')}
+                      </p>
+                      <p className="text-[10px] text-slate-400">{item.transactionDate}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100">
               <button
-                onClick={() => onNavigate('income-history')}
-                className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
+                onClick={() => onNavigate('income-form')}
+                className="w-full py-2 bg-slate-50 hover:bg-emerald-50 text-emerald-800 font-bold text-xs rounded-xl border border-slate-200 hover:border-emerald-200 transition-colors cursor-pointer"
               >
-                <span>
-                  सर्व जमा ({incomes.length})
-                </span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                + नवीन जमा नोंद जोडा
               </button>
             </div>
+          </div>
 
-            <div className="divide-y divide-slate-100 mt-2">
-              {recentIncomes.map((item) => (
-                <div key={item.id} className="py-3 flex justify-between items-center text-xs">
-                  <div>
-                    <p className="font-bold text-slate-800">{item.depositorName}</p>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
-                      <span className="px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">
-                        {item.depositorType}
-                      </span>
-                      <span>• {item.incomeType}</span>
+          {/* Recent Expense Transactions */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
+                    <ArrowUpRight className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-slate-800 text-base">
+                    अलीकडील खर्च नोंदी
+                  </h3>
+                </div>
+                <button
+                  onClick={() => onNavigate('expense-history')}
+                  className="text-xs font-bold text-rose-700 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <span>
+                    सर्व खर्च ({expenses.length})
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="divide-y divide-slate-100 mt-2">
+                {recentExpenses.map((item) => (
+                  <div key={item.id} className="py-3 flex justify-between items-center text-xs">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-bold text-slate-800">{item.recipientName}</p>
+                        {item.approvalStatus === 'मंजूर' ? (
+                          <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded text-[9px] font-bold">
+                            मंजूर
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded text-[9px] font-bold">
+                            प्रलंबित
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                        <span>{item.expenseCategory}</span>
+                        <span>• {item.reason}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-black text-rose-700 text-sm">
+                        - ₹{item.amount.toLocaleString('en-IN')}
+                      </p>
+                      <p className="text-[10px] text-slate-400">{item.expenseDate}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-black text-emerald-700 text-sm">
-                      + ₹{item.amount.toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-[10px] text-slate-400">{item.transactionDate}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-slate-100">
-            <button
-              onClick={() => onNavigate('income-form')}
-              className="w-full py-2 bg-slate-50 hover:bg-emerald-50 text-emerald-800 font-bold text-xs rounded-xl border border-slate-200 hover:border-emerald-200 transition-colors cursor-pointer"
-            >
-              + नवीन जमा नोंद जोडा
-            </button>
-          </div>
-        </div>
-
-        {/* Recent Expense Transactions */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
-                  <ArrowUpRight className="w-5 h-5" />
-                </div>
-                <h3 className="font-bold text-slate-800 text-base">
-                  अलीकडील खर्च नोंदी
-                </h3>
+                ))}
               </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100">
               <button
-                onClick={() => onNavigate('expense-history')}
-                className="text-xs font-bold text-rose-700 hover:underline flex items-center gap-1 cursor-pointer"
+                onClick={() => onNavigate('expense-form')}
+                className="w-full py-2 bg-slate-50 hover:bg-rose-50 text-rose-800 font-bold text-xs rounded-xl border border-slate-200 hover:border-rose-200 transition-colors cursor-pointer"
               >
-                <span>
-                  सर्व खर्च ({expenses.length})
-                </span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                + नवीन खर्च नोंद जोडा
               </button>
             </div>
-
-            <div className="divide-y divide-slate-100 mt-2">
-              {recentExpenses.map((item) => (
-                <div key={item.id} className="py-3 flex justify-between items-center text-xs">
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="font-bold text-slate-800">{item.recipientName}</p>
-                      {item.approvalStatus === 'मंजूर' ? (
-                        <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded text-[9px] font-bold">
-                          मंजूर
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded text-[9px] font-bold">
-                          प्रलंबित
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
-                      <span>{item.expenseCategory}</span>
-                      <span>• {item.reason}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-black text-rose-700 text-sm">
-                      - ₹{item.amount.toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-[10px] text-slate-400">{item.expenseDate}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-slate-100">
-            <button
-              onClick={() => onNavigate('expense-form')}
-              className="w-full py-2 bg-slate-50 hover:bg-rose-50 text-rose-800 font-bold text-xs rounded-xl border border-slate-200 hover:border-rose-200 transition-colors cursor-pointer"
-            >
-              + नवीन खर्च नोंद जोडा
-            </button>
           </div>
         </div>
-      </div>
+      ) : (
+        /* Personal Transactions Section for Regular Members */
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div className="flex justify-between items-center pb-4 border-b border-slate-100 mb-4">
+            <div>
+              <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                <User className="w-5 h-5 text-amber-600" />
+                माझे वैयक्तिक जमा व खर्च व्यवहार
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">तुमच्या खात्याशी संबंधित नोंदवलेले जमा व खर्च व्यवहार</p>
+            </div>
+            <button
+              onClick={() => onNavigate('income-history')}
+              className="text-xs font-bold text-amber-700 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>माझा संपूर्ण हिशोब</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {displayIncomes.filter(
+              (i) =>
+                (currentMember && i.linkedMemberId === currentMember.id) ||
+                i.depositorName.trim().toLowerCase() === (currentUser.name || '').trim().toLowerCase()
+            ).length === 0 &&
+            displayExpenses.filter(
+              (e) =>
+                (currentMember && e.linkedMemberId === currentMember.id) ||
+                e.recipientName.trim().toLowerCase() === (currentUser.name || '').trim().toLowerCase()
+            ).length === 0 ? (
+              <div className="text-center py-6 text-slate-400 text-xs">
+                तुमच्या खात्यावर अद्याप कोणतेही जमा किंवा खर्च व्यवहार नोंदवलेले नाहीत.
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {displayIncomes
+                  .filter(
+                    (i) =>
+                      (currentMember && i.linkedMemberId === currentMember.id) ||
+                      i.depositorName.trim().toLowerCase() === (currentUser.name || '').trim().toLowerCase()
+                  )
+                  .map((item) => (
+                    <div key={item.id} className="py-3 flex justify-between items-center text-xs">
+                      <div>
+                        <p className="font-bold text-slate-800">{item.incomeType}</p>
+                        <p className="text-[10px] text-slate-400">{item.transactionDate} • {item.reason}</p>
+                      </div>
+                      <p className="font-black text-emerald-700 text-sm">+ ₹{item.amount.toLocaleString('en-IN')}</p>
+                    </div>
+                  ))}
+                {displayExpenses
+                  .filter(
+                    (e) =>
+                      (currentMember && e.linkedMemberId === currentMember.id) ||
+                      e.recipientName.trim().toLowerCase() === (currentUser.name || '').trim().toLowerCase()
+                  )
+                  .map((item) => (
+                    <div key={item.id} className="py-3 flex justify-between items-center text-xs">
+                      <div>
+                        <p className="font-bold text-slate-800">{item.expenseCategory}</p>
+                        <p className="text-[10px] text-slate-400">{item.expenseDate} • {item.reason}</p>
+                      </div>
+                      <p className="font-black text-rose-700 text-sm">- ₹{item.amount.toLocaleString('en-IN')}</p>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Member Subscription Overview Teaser (Executive Badged Members Only) */}
       {isBadged && (

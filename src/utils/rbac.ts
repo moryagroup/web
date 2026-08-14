@@ -51,6 +51,18 @@ export const isBadgedMember = (role?: string): boolean => {
   return true;
 };
 
+// Regular members see only their own transactions. Core members & Admin see group transactions.
+export const canViewRecentGroupTransactions = (role?: string): boolean => {
+  if (!role) return false;
+  const trimmed = role.trim();
+  if (trimmed === 'ॲडमिन' || trimmed === 'Admin') return true;
+  return isBadgedMember(trimmed);
+};
+
+export const canViewAllTransactions = (role?: string): boolean => {
+  return canViewRecentGroupTransactions(role);
+};
+
 export const getDesignationRank = (designation?: string): number => {
   if (!designation) return 99;
   const trimmed = designation.trim();

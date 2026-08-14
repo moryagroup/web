@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { IncomeTransaction, Member, CurrentUser } from '../types';
-import { hasFullFinancialAccess } from '../utils/rbac';
+import { hasFullFinancialAccess, isBadgedMember, isCoreMemberRole } from '../utils/rbac';
 import { RbacGuard } from './RbacGuard';
 import {
   Search,
@@ -74,10 +74,18 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     );
   }, [members, currentUser]);
 
-  // Show all mandal incomes for consistent cross-device view
+  // Core members & Admin see all incomes. Regular members see ONLY their own incomes.
+  const canViewAll = currentUser ? isBadgedMember(currentUser.role) || isCoreMemberRole(currentUser.role) : false;
+
   const baseIncomes = useMemo(() => {
-    return incomes;
-  }, [incomes]);
+    if (canViewAll) {
+      return incomes;
+    }
+    return incomes.filter((i) =>
+      (currentMember && i.linkedMemberId === currentMember.id) ||
+      i.depositorName.trim().toLowerCase() === (currentUser?.name || '').trim().toLowerCase()
+    );
+  }, [incomes, canViewAll, currentMember, currentUser]);
 
   // Unique list of income types in dataset
   const availableIncomeTypes = useMemo(() => {

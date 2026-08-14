@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { ExpenseTransaction, CurrentUser } from '../types';
-import { hasFullFinancialAccess } from '../utils/rbac';
+import { ExpenseTransaction, Member, CurrentUser } from '../types';
+import { hasFullFinancialAccess, isBadgedMember, isCoreMemberRole } from '../utils/rbac';
 import { RbacGuard } from './RbacGuard';
 import { exportToCSV, triggerPDFPrint } from '../utils/exportUtils';
 import {
@@ -22,6 +22,7 @@ import {
 
 interface ExpenseHistoryProps {
   expenses: ExpenseTransaction[];
+  members?: Member[];
   currentUser: CurrentUser;
   financialYear: string;
   onApproveExpense: (expenseId: string, approverName: string, approverRole: any) => void;
@@ -33,6 +34,7 @@ interface ExpenseHistoryProps {
 
 export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
   expenses,
+  members = [],
   currentUser,
   financialYear,
   onApproveExpense,
@@ -67,10 +69,28 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
 
   const isFullAccess = hasFullFinancialAccess(currentUser.role);
 
-  // Show all mandal expenses for consistent cross-device view
+  const currentMember = useMemo(() => {
+    if (!currentUser) return null;
+    return members.find(
+      (m) =>
+        m.fullName.trim() === currentUser.name.trim() ||
+        (currentUser.phone && m.phone === currentUser.phone)
+    );
+  }, [members, currentUser]);
+
+  const canViewAll = currentUser ? isBadgedMember(currentUser.role) || isCoreMemberRole(currentUser.role) : false;
+
+  // Core members & Admin see all expenses. Regular members see ONLY their own expenses.
   const baseExpenses = useMemo(() => {
-    return expenses;
-  }, [expenses]);
+    if (canViewAll) {
+      return expenses;
+    }
+    return expenses.filter(
+      (e) =>
+        (currentMember && e.linkedMemberId === currentMember.id) ||
+        e.recipientName.trim().toLowerCase() === (currentUser?.name || '').trim().toLowerCase()
+    );
+  }, [expenses, canViewAll, currentMember, currentUser]);
 
   const categories = useMemo(() => {
     const cats = new Set<string>();
