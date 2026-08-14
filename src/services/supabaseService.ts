@@ -52,6 +52,25 @@ export async function uploadImageToSupabaseStorage(
   return publicUrlData.publicUrl;
 }
 
+export async function uploadBase64ImageToSupabase(
+  base64Data: string,
+  folder: 'profiles' | 'logos' | 'occasions' | 'gallery' | 'bills',
+  fileName: string
+): Promise<string> {
+  if (!isSupabaseConfigured) return base64Data;
+  if (!base64Data || (!base64Data.startsWith('data:') && !base64Data.startsWith('blob:'))) {
+    return base64Data;
+  }
+  try {
+    const res = await fetch(base64Data);
+    const blob = await res.blob();
+    return await uploadImageToSupabaseStorage(blob, folder, fileName);
+  } catch (err) {
+    console.warn('[Supabase Storage] Base64 upload error:', err);
+    return base64Data;
+  }
+}
+
 // ─── Members Table CRUD ─────────────────────────────────────────────────────
 
 export async function fetchMembersFromSupabase(): Promise<Member[]> {

@@ -92,6 +92,7 @@ import {
   seedSupabaseIfEmpty,
   fetchGroupLogoFromSupabase,
   saveGroupLogoToSupabase,
+  uploadBase64ImageToSupabase,
 } from './services/supabaseService';
 import { isSupabaseConfigured } from './services/supabaseClient';
 import { Agentation } from 'agentation';
@@ -215,9 +216,8 @@ export default function App() {
           if (inc && inc.length > 0) setIncomes(inc);
           if (exp && exp.length > 0) setExpenses(exp);
           if (occ && occ.length > 0) setOccasions(occ);
-          if (logo !== undefined && logo !== '') {
+          if (logo !== undefined) {
             setGroupLogo(logo);
-            saveGroupLogo(logo);
           }
         } catch (err) {
           console.warn('[Supabase] Initial load error:', err);
@@ -240,9 +240,8 @@ export default function App() {
         if (inc) setIncomes(inc);
         if (exp) setExpenses(exp);
         if (occ && occ.length > 0) setOccasions(occ);
-        if (logo !== undefined && logo !== '') {
+        if (logo !== undefined) {
           setGroupLogo(logo);
-          saveGroupLogo(logo);
         }
       }
     });
@@ -310,12 +309,20 @@ export default function App() {
     cloudSaveSuggestion(updatedSug).catch(console.error);
   };
 
-  const handleUpdateGroupLogo = (logoUrl: string) => {
-    setGroupLogo(logoUrl);
-    saveGroupLogo(logoUrl);
-    saveGroupLogoFirestore(logoUrl).catch(console.error);
-    cloudSaveGroupLogo(logoUrl).catch(console.error);
-    saveGroupLogoToSupabase(logoUrl).catch(console.error);
+  const handleUpdateGroupLogo = async (logoUrl: string) => {
+    let finalUrl = logoUrl;
+    if (logoUrl && (logoUrl.startsWith('data:') || logoUrl.startsWith('blob:'))) {
+      try {
+        finalUrl = await uploadBase64ImageToSupabase(logoUrl, 'logos', 'morya_group_logo.png');
+      } catch (err) {
+        console.error('[Supabase] Failed to upload logo to CDN storage:', err);
+      }
+    }
+    setGroupLogo(finalUrl);
+    saveGroupLogo(finalUrl);
+    saveGroupLogoFirestore(finalUrl).catch(console.error);
+    cloudSaveGroupLogo(finalUrl).catch(console.error);
+    saveGroupLogoToSupabase(finalUrl).catch(console.error);
   };
 
   const handleOpenLogin = (memberId?: string, type: 'admin' | 'member' = 'member') => {
@@ -493,19 +500,37 @@ export default function App() {
   };
 
   // Add Member
-  const handleAddMember = (newMember: Member) => {
-    setMembers((prev) => [...prev.filter((m) => m.id !== newMember.id), newMember]);
-    saveMember(newMember).catch(console.error);
-    cloudSaveMember(newMember).catch(console.error);
-    saveMemberToSupabase(newMember).catch(console.error);
+  const handleAddMember = async (newMember: Member) => {
+    let finalMember = newMember;
+    if (newMember.photoUrl && (newMember.photoUrl.startsWith('data:') || newMember.photoUrl.startsWith('blob:'))) {
+      try {
+        const cdnUrl = await uploadBase64ImageToSupabase(newMember.photoUrl, 'profiles', `${newMember.id}.png`);
+        finalMember = { ...newMember, photoUrl: cdnUrl };
+      } catch (err) {
+        console.error('[Supabase] Member photo upload error:', err);
+      }
+    }
+    setMembers((prev) => [...prev.filter((m) => m.id !== finalMember.id), finalMember]);
+    saveMember(finalMember).catch(console.error);
+    cloudSaveMember(finalMember).catch(console.error);
+    saveMemberToSupabase(finalMember).catch(console.error);
   };
 
   // Update Member
-  const handleUpdateMember = (updatedMember: Member) => {
-    setMembers((prev) => prev.map((m) => (m.id === updatedMember.id ? updatedMember : m)));
-    saveMember(updatedMember).catch(console.error);
-    cloudSaveMember(updatedMember).catch(console.error);
-    saveMemberToSupabase(updatedMember).catch(console.error);
+  const handleUpdateMember = async (updatedMember: Member) => {
+    let finalMember = updatedMember;
+    if (updatedMember.photoUrl && (updatedMember.photoUrl.startsWith('data:') || updatedMember.photoUrl.startsWith('blob:'))) {
+      try {
+        const cdnUrl = await uploadBase64ImageToSupabase(updatedMember.photoUrl, 'profiles', `${updatedMember.id}.png`);
+        finalMember = { ...updatedMember, photoUrl: cdnUrl };
+      } catch (err) {
+        console.error('[Supabase] Member photo upload error:', err);
+      }
+    }
+    setMembers((prev) => prev.map((m) => (m.id === finalMember.id ? finalMember : m)));
+    saveMember(finalMember).catch(console.error);
+    cloudSaveMember(finalMember).catch(console.error);
+    saveMemberToSupabase(finalMember).catch(console.error);
   };
 
   // Delete Member
