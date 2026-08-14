@@ -117,8 +117,8 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
   const [addBirthDate, setAddBirthDate] = useState('');
   const [addEmail, setAddEmail] = useState('');
   const [addAge, setAddAge] = useState('');
-  const [addPassword, setAddPassword] = useState('');
-  const [addConfirmPassword, setAddConfirmPassword] = useState('');
+  const [addPassword, setAddPassword] = useState('morya@123');
+  const [addConfirmPassword, setAddConfirmPassword] = useState('morya@123');
   const [addPasswordError, setAddPasswordError] = useState<string | null>(null);
 
   // Edit Member Modal state
@@ -211,7 +211,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       birthDate: addBirthDate || undefined,
       email: addEmail.trim() || undefined,
       age: parseInt(addAge, 10) || undefined,
-      password: addPassword.trim() || undefined,
+      password: addPassword.trim() || 'morya@123',
     };
 
     onAddMember(newMember);
@@ -226,8 +226,8 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
     setAddBirthDate('');
     setAddEmail('');
     setAddAge('');
-    setAddPassword('');
-    setAddConfirmPassword('');
+    setAddPassword('morya@123');
+    setAddConfirmPassword('morya@123');
     setAddPasswordError(null);
     setShowAddModal(false);
   };
@@ -294,8 +294,9 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
   // Open Password & Email Share Link Modal
   const handleOpenShareModal = (member: Member) => {
     setShareModalMember(member);
-    setSharePasswordVal(member.password || '');
-    setShareConfirmPasswordVal(member.password || '');
+    const pass = member.password && member.password.trim() !== '' ? member.password.trim() : 'morya@123';
+    setSharePasswordVal(pass);
+    setShareConfirmPasswordVal(pass);
     setSharePasswordError(null);
     setShareEmailVal(member.email || 'moryagroupdata@gmail.com');
     setShareCopied(false);

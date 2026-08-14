@@ -108,10 +108,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     const isAdminLoggedIn = currentUser?.role === 'ॲडमिन' && currentUser?.isLoggedIn !== false;
 
     if (selectedMember) {
-      // If member has a set password and current user is NOT Admin
-      if (!isAdminLoggedIn && selectedMember.password && selectedMember.password.trim() !== '') {
-        if (!memberPassword.trim() || memberPassword.trim() !== selectedMember.password.trim()) {
-          setPasswordError('चुकीचा पासवर्ड! कृपया बरोबर पासवर्ड प्रविष्ट करा.');
+      const effectivePassword =
+        selectedMember.password && selectedMember.password.trim() !== ''
+          ? selectedMember.password.trim()
+          : 'morya@123';
+
+      // If current user is NOT Admin
+      if (!isAdminLoggedIn) {
+        if (!memberPassword.trim() || memberPassword.trim() !== effectivePassword) {
+          setPasswordError('चुकीचा पासवर्ड! कृपया बरोबर पासवर्ड प्रविष्ट करा. (डिफॉल्ट पासवर्ड: morya@123)');
           return;
         }
       }
@@ -407,14 +412,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                           setPasswordError(null);
                         }}
                         placeholder={
-                          selectedMember?.password
+                          selectedMember?.password && selectedMember.password.trim() !== ''
                             ? 'सेट केलेला पासवर्ड प्रविष्ट करा'
-                            : 'पासवर्ड (असेल तर प्रविष्ट करा नसेल तर मोकळे सोडा)'
+                            : 'पासवर्ड प्रविष्ट करा (डिफॉल्ट: morya@123)'
                         }
                         className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl font-mono text-xs focus:ring-2 focus:ring-amber-500 outline-none"
                       />
                     </div>
-                    {selectedMember?.password ? (
+                    {selectedMember?.password && selectedMember.password.trim() !== '' ? (
                       currentUser?.role === 'ॲडमिन' && currentUser?.isLoggedIn !== false ? (
                         <p className="text-[10px] text-purple-700 font-bold mt-1 flex items-center gap-1">
                           <ShieldCheck className="w-3 h-3 text-purple-600" />
@@ -423,12 +428,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       ) : (
                         <p className="text-[10px] text-amber-800 font-bold mt-1 flex items-center gap-1">
                           <Lock className="w-3 h-3 text-amber-600" />
-                          <span>🔒 पासवर्ड सेट आहे: लॉगिन / स्विच करण्यासाठी बरोबर पासवर्ड प्रविष्ट करा.</span>
+                          <span>🔒 पासवर्ड सेट आहे: लॉगिन करण्यासाठी सेट केलेला पासवर्ड प्रविष्ट करा.</span>
                         </p>
                       )
                     ) : (
-                      <p className="text-[10px] text-slate-500 font-bold mt-1">
-                        या खात्यास अद्याप पासवर्ड सेट केलेला नाही (थेट लॉगिन शक्य).
+                      <p className="text-[10px] text-amber-800 font-bold mt-1 flex items-center gap-1">
+                        <Lock className="w-3 h-3 text-amber-600" />
+                        <span>🔑 डिफॉल्ट पासवर्ड: <span className="font-mono bg-amber-100 text-amber-950 px-1.5 py-0.5 rounded font-bold">morya@123</span> (पासवर्ड बदलेला नसेल तर हा पासवर्ड वापरा)</span>
                       </p>
                     )}
                   </div>
