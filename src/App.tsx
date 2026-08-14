@@ -93,6 +93,9 @@ import {
   fetchGroupLogoFromSupabase,
   saveGroupLogoToSupabase,
   uploadBase64ImageToSupabase,
+  fetchGalleryFromSupabase,
+  saveGalleryItemToSupabase,
+  deleteGalleryItemFromSupabase,
 } from './services/supabaseService';
 import { isSupabaseConfigured } from './services/supabaseClient';
 import { Agentation } from 'agentation';
@@ -205,19 +208,28 @@ export default function App() {
       if (isSupabaseConfigured) {
         try {
           await seedSupabaseIfEmpty();
-          const [m, inc, exp, occ, logo] = await Promise.all([
+          const [m, inc, exp, occ, logo, gal] = await Promise.all([
             fetchMembersFromSupabase(),
             fetchIncomesFromSupabase(),
             fetchExpensesFromSupabase(),
             fetchOccasionsFromSupabase(),
             fetchGroupLogoFromSupabase(),
+            fetchGalleryFromSupabase(),
           ]);
           if (m && m.length > 0) setMembers(m);
           if (inc && inc.length > 0) setIncomes(inc);
           if (exp && exp.length > 0) setExpenses(exp);
-          if (occ && occ.length > 0) setOccasions(occ);
-          if (logo !== undefined) {
+          if (occ && occ.length > 0) {
+            setOccasions(occ);
+            saveOccasions(occ);
+          }
+          if (gal && gal.length > 0) {
+            setGalleryState(gal);
+            saveEventGallery(gal);
+          }
+          if (logo && logo.trim() !== '') {
             setGroupLogo(logo);
+            saveGroupLogo(logo);
           }
         } catch (err) {
           console.warn('[Supabase] Initial load error:', err);
@@ -229,19 +241,28 @@ export default function App() {
 
     const unsubSupabaseRealtime = subscribeToSupabaseRealtime(async () => {
       if (isSupabaseConfigured) {
-        const [m, inc, exp, occ, logo] = await Promise.all([
+        const [m, inc, exp, occ, logo, gal] = await Promise.all([
           fetchMembersFromSupabase(),
           fetchIncomesFromSupabase(),
           fetchExpensesFromSupabase(),
           fetchOccasionsFromSupabase(),
           fetchGroupLogoFromSupabase(),
+          fetchGalleryFromSupabase(),
         ]);
         if (m && m.length > 0) setMembers(m);
         if (inc) setIncomes(inc);
         if (exp) setExpenses(exp);
-        if (occ && occ.length > 0) setOccasions(occ);
-        if (logo !== undefined) {
+        if (occ && occ.length > 0) {
+          setOccasions(occ);
+          saveOccasions(occ);
+        }
+        if (gal && gal.length > 0) {
+          setGalleryState(gal);
+          saveEventGallery(gal);
+        }
+        if (logo && logo.trim() !== '') {
           setGroupLogo(logo);
+          saveGroupLogo(logo);
         }
       }
     });
@@ -258,15 +279,18 @@ export default function App() {
       }
       if (Array.isArray(cloudDb.occasions) && cloudDb.occasions.length > 0) {
         setOccasions(cloudDb.occasions);
+        saveOccasions(cloudDb.occasions);
       }
       if (Array.isArray(cloudDb.gallery) && cloudDb.gallery.length > 0) {
         setGalleryState(cloudDb.gallery);
+        saveEventGallery(cloudDb.gallery);
       }
       if (Array.isArray(cloudDb.suggestions)) {
         setSuggestions(cloudDb.suggestions);
       }
-      if (cloudDb.settings?.groupLogo !== undefined) {
+      if (cloudDb.settings?.groupLogo && cloudDb.settings.groupLogo.trim() !== '') {
         setGroupLogo(cloudDb.settings.groupLogo);
+        saveGroupLogo(cloudDb.settings.groupLogo);
       }
       if (Array.isArray(cloudDb.settings?.customIncomeTypes)) {
         setCustomIncomeTypes(cloudDb.settings.customIncomeTypes);
@@ -412,7 +436,7 @@ export default function App() {
   };
 
   // Gallery Persistence & Real-Time Sync
-  const handleSaveGallery = (newGallery: EventGalleryImage[]) => {
+  const handleSaveGallery = async (newGallery: EventGalleryImage[]) => {
     const newGalleryArray = Array.isArray(newGallery) ? newGallery : [];
     const newIds = new Set(newGalleryArray.map((g) => g.id));
 
@@ -421,38 +445,80 @@ export default function App() {
       if (!newIds.has(g.id)) {
         deleteGalleryImage(g.id).catch(console.error);
         cloudDeleteGalleryImage(g.id).catch(console.error);
+        deleteGalleryItemFromSupabase(g.id).catch(console.error);
       }
     });
 
-    // Save added or updated items
-    newGalleryArray.forEach((n) => {
-      const existing = gallery.find((g) => g.id === n.id);
-      if (!existing || JSON.stringify(existing) !== JSON.stringify(n)) {
-        saveGalleryImage(n).catch(console.error);
-        cloudSaveGalleryImage(n).catch(console.error);
-      }
-    });
+    // Upload base64 images to Supabase CDN and sync across backends
+    const processedGallery = await Promise.all(
+      newGalleryArray.map(async (n) => {
+        let finalItem = n;
+        if (n.imageUrl && (n.imageUrl.startsWith('data:') || n.imageUrl.startsWith('blob:'))) {
+          try {
+            const cdnUrl = await uploadBase64ImageToSupabase(n.imageUrl, 'gallery', `${n.id}.png`);
+            finalItem = { ...n, imageUrl: cdnUrl };
+          } catch (err) {
+            console.error('[Supabase] Gallery image CDN upload error:', err);
+          }
+        }
+        saveGalleryImage(finalItem).catch(console.error);
+        cloudSaveGalleryImage(finalItem).catch(console.error);
+        saveGalleryItemToSupabase(finalItem).catch(console.error);
+        return finalItem;
+      })
+    );
 
-    setGalleryState(newGalleryArray);
+    setGalleryState(processedGallery);
+    saveEventGallery(processedGallery);
   };
 
   // Occasions Management
-  const handleAddOccasion = (newOccasion: OccasionEvent) => {
-    setOccasions((prev) => [newOccasion, ...prev.filter((o) => o.id !== newOccasion.id)]);
-    saveOccasion(newOccasion).catch(console.error);
-    cloudSaveOccasion(newOccasion).catch(console.error);
-    saveOccasionToSupabase(newOccasion).catch(console.error);
+  const handleAddOccasion = async (newOccasion: OccasionEvent) => {
+    let finalOccasion = newOccasion;
+    if (newOccasion.bannerUrl && (newOccasion.bannerUrl.startsWith('data:') || newOccasion.bannerUrl.startsWith('blob:'))) {
+      try {
+        const cdnUrl = await uploadBase64ImageToSupabase(newOccasion.bannerUrl, 'occasions', `${newOccasion.id}.png`);
+        finalOccasion = { ...newOccasion, bannerUrl: cdnUrl };
+      } catch (err) {
+        console.error('[Supabase] Occasion banner upload error:', err);
+      }
+    }
+    setOccasions((prev) => {
+      const updated = [finalOccasion, ...prev.filter((o) => o.id !== finalOccasion.id)];
+      saveOccasions(updated);
+      return updated;
+    });
+    saveOccasion(finalOccasion).catch(console.error);
+    cloudSaveOccasion(finalOccasion).catch(console.error);
+    saveOccasionToSupabase(finalOccasion).catch(console.error);
   };
 
-  const handleUpdateOccasion = (updatedOccasion: OccasionEvent) => {
-    setOccasions((prev) => prev.map((o) => (o.id === updatedOccasion.id ? updatedOccasion : o)));
-    saveOccasion(updatedOccasion).catch(console.error);
-    cloudSaveOccasion(updatedOccasion).catch(console.error);
-    saveOccasionToSupabase(updatedOccasion).catch(console.error);
+  const handleUpdateOccasion = async (updatedOccasion: OccasionEvent) => {
+    let finalOccasion = updatedOccasion;
+    if (updatedOccasion.bannerUrl && (updatedOccasion.bannerUrl.startsWith('data:') || updatedOccasion.bannerUrl.startsWith('blob:'))) {
+      try {
+        const cdnUrl = await uploadBase64ImageToSupabase(updatedOccasion.bannerUrl, 'occasions', `${updatedOccasion.id}.png`);
+        finalOccasion = { ...updatedOccasion, bannerUrl: cdnUrl };
+      } catch (err) {
+        console.error('[Supabase] Occasion banner upload error:', err);
+      }
+    }
+    setOccasions((prev) => {
+      const updated = prev.map((o) => (o.id === finalOccasion.id ? finalOccasion : o));
+      saveOccasions(updated);
+      return updated;
+    });
+    saveOccasion(finalOccasion).catch(console.error);
+    cloudSaveOccasion(finalOccasion).catch(console.error);
+    saveOccasionToSupabase(finalOccasion).catch(console.error);
   };
 
   const handleDeleteOccasion = (occasionId: string) => {
-    setOccasions((prev) => prev.filter((o) => o.id !== occasionId));
+    setOccasions((prev) => {
+      const updated = prev.filter((o) => o.id !== occasionId);
+      saveOccasions(updated);
+      return updated;
+    });
     deleteOccasion(occasionId).catch(console.error);
     cloudDeleteOccasion(occasionId).catch(console.error);
     deleteOccasionFromSupabase(occasionId).catch(console.error);

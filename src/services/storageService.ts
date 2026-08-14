@@ -23,6 +23,8 @@ export { DEFAULT_USER };
 const STORAGE_KEYS = {
   USER: 'morya_mandal_user_v2',
   GROUP_LOGO: 'morya_mandal_group_logo_v2',
+  GALLERY: 'morya_mandal_gallery_v2',
+  OCCASIONS: 'morya_mandal_occasions_v2',
 };
 
 // Initial state fallbacks (All domain persistence is 100% Supabase DB & CDN)
@@ -35,8 +37,24 @@ export const saveExpenses = (_expenses: ExpenseTransaction[]) => {};
 export const getStoredMembers = (): Member[] => INITIAL_MEMBERS;
 export const saveMembers = (_members: Member[]) => {};
 
-export const getStoredOccasions = (): OccasionEvent[] => INITIAL_OCCASIONS;
-export const saveOccasions = (_occasions: OccasionEvent[]) => {};
+export const getStoredOccasions = (): OccasionEvent[] => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.OCCASIONS);
+    if (!data) return INITIAL_OCCASIONS;
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_OCCASIONS;
+  } catch {
+    return INITIAL_OCCASIONS;
+  }
+};
+
+export const saveOccasions = (occasions: OccasionEvent[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.OCCASIONS, JSON.stringify(occasions));
+  } catch (err) {
+    console.error('Failed to save occasions to localStorage:', err);
+  }
+};
 
 export const getCustomIncomeTypes = (): string[] => [];
 export const saveCustomIncomeType = (_newType: string) => [];
@@ -60,8 +78,24 @@ export const saveUser = (user: CurrentUser) => {
   localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 };
 
-export const getStoredEventGallery = (): EventGalleryImage[] => INITIAL_EVENT_GALLERY;
-export const saveEventGallery = (_gallery: EventGalleryImage[]) => {};
+export const getStoredEventGallery = (): EventGalleryImage[] => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.GALLERY);
+    if (!data) return INITIAL_EVENT_GALLERY;
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_EVENT_GALLERY;
+  } catch {
+    return INITIAL_EVENT_GALLERY;
+  }
+};
+
+export const saveEventGallery = (gallery: EventGalleryImage[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(gallery));
+  } catch (err) {
+    console.error('Failed to save gallery to localStorage:', err);
+  }
+};
 
 export const getStoredGroupLogo = (): string => {
   try {

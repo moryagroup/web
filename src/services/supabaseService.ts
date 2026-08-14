@@ -16,6 +16,7 @@ import {
 import {
   INITIAL_MEMBERS,
   INITIAL_OCCASIONS,
+  INITIAL_EVENT_GALLERY,
 } from '../mockData';
 
 const BUCKET_NAME = 'morya-assets';
@@ -340,6 +341,14 @@ export async function seedSupabaseIfEmpty(): Promise<void> {
         await saveOccasionToSupabase(o);
       }
     }
+
+    const { count: galleryCount } = await supabase.from('gallery').select('*', { count: 'exact', head: true });
+    if (!galleryCount || galleryCount === 0) {
+      console.log('[Supabase Seed] Seeding initial 8 event gallery dataset...');
+      for (const g of INITIAL_EVENT_GALLERY) {
+        await saveGalleryItemToSupabase(g);
+      }
+    }
   } catch (err) {
     console.warn('[Supabase Seed] Seed error:', err);
   }
@@ -376,5 +385,59 @@ export async function saveGroupLogoToSupabase(url: string): Promise<void> {
     if (error) console.error('[Supabase] saveGroupLogo error:', error);
   } catch (err) {
     console.warn('[Supabase] saveGroupLogoToSupabase error:', err);
+  }
+}
+
+// ─── Event Gallery Table CRUD ──────────────────────────────────────────────
+
+export async function fetchGalleryFromSupabase(): Promise<EventGalleryImage[]> {
+  if (!isSupabaseConfigured) return [];
+  try {
+    const { data, error } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
+    if (error) {
+      console.error('[Supabase] fetchGallery error:', error);
+      return [];
+    }
+    return (data || []).map((row) => ({
+      id: row.id,
+      title: row.title,
+      category: row.event_name || 'गणेशोत्सव',
+      imageUrl: row.image_url,
+      dateStr: row.upload_date,
+      description: row.description || '',
+      createdAt: row.created_at,
+    }));
+  } catch (err) {
+    console.warn('[Supabase] fetchGallery error:', err);
+    return [];
+  }
+}
+
+export async function saveGalleryItemToSupabase(item: EventGalleryImage): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    const row = {
+      id: item.id,
+      title: item.title || 'कार्यक्रम फोटो',
+      event_name: item.category || 'गणेशोत्सव',
+      image_url: item.imageUrl,
+      upload_date: item.dateStr || new Date().toISOString().split('T')[0],
+      description: item.description || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('gallery').upsert(row);
+    if (error) console.error('[Supabase] saveGalleryItem error:', error);
+  } catch (err) {
+    console.warn('[Supabase] saveGalleryItemToSupabase error:', err);
+  }
+}
+
+export async function deleteGalleryItemFromSupabase(id: string): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    const { error } = await supabase.from('gallery').delete().eq('id', id);
+    if (error) console.error('[Supabase] deleteGalleryItem error:', error);
+  } catch (err) {
+    console.warn('[Supabase] deleteGalleryItemFromSupabase error:', err);
   }
 }
