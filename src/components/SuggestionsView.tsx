@@ -18,6 +18,7 @@ import {
   Settings,
   Award,
   ArrowLeft,
+  Trash2,
 } from 'lucide-react';
 
 interface SuggestionsViewProps {
@@ -26,6 +27,7 @@ interface SuggestionsViewProps {
   members: Member[];
   onAddSuggestion: (newSuggestion: MemberSuggestion) => void;
   onUpdateSuggestion: (updatedSuggestion: MemberSuggestion) => void;
+  onDeleteSuggestion?: (suggestionId: string) => void;
   onNavigate?: (tab: string) => void;
   onOpenLogin?: () => void;
 }
@@ -45,6 +47,7 @@ export const SuggestionsView: React.FC<SuggestionsViewProps> = ({
   members,
   onAddSuggestion,
   onUpdateSuggestion,
+  onDeleteSuggestion,
   onNavigate,
   onOpenLogin,
 }) => {
@@ -305,17 +308,36 @@ export const SuggestionsView: React.FC<SuggestionsViewProps> = ({
                     <span className="px-2.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-200 font-bold text-[10px] rounded-md">
                       {sug.category}
                     </span>
-                    <span
-                      className={`px-2.5 py-0.5 text-[11px] font-bold rounded-full ${
-                        sug.status === 'स्वीकृत' || sug.status === 'पूर्ण'
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                          : sug.status === 'प्रक्रियेत'
-                          ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                          : 'bg-amber-50 text-amber-800 border border-amber-300'
-                      }`}
-                    >
-                      {sug.status}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`px-2.5 py-0.5 text-[11px] font-bold rounded-full ${
+                          sug.status === 'स्वीकृत' || sug.status === 'पूर्ण'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : sug.status === 'प्रक्रियेत'
+                            ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                            : 'bg-amber-50 text-amber-800 border border-amber-300'
+                        }`}
+                      >
+                        {sug.status}
+                      </span>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                'तुम्हाला खरोखर हा अभिप्राय / सूचना प्रणालीमधून हटवायची आहे का? (ही कारवाई फक्त ॲडमिन करू शकतात)'
+                              )
+                            ) {
+                              onDeleteSuggestion?.(sug.id);
+                            }
+                          }}
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          title="ॲडमिन मोड: ही सूचना/अभिप्राय पूर्णपणे काढून टाका"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <h3 className="text-base font-black text-slate-900 leading-snug">{sug.title}</h3>

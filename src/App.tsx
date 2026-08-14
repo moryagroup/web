@@ -345,6 +345,14 @@ export default function App() {
     cloudSaveSuggestion(updatedSug).catch(console.error);
   };
 
+  const handleDeleteSuggestion = (id: string) => {
+    setSuggestions((prev) => {
+      const updated = prev.filter((s) => s.id !== id);
+      saveSuggestions(updated);
+      return updated;
+    });
+  };
+
   const handleUpdateGroupLogo = async (logoUrl: string) => {
     let finalUrl = logoUrl;
     if (logoUrl && (logoUrl.startsWith('data:') || logoUrl.startsWith('blob:'))) {
@@ -867,6 +875,7 @@ export default function App() {
                 members={members}
                 onAddSuggestion={handleAddSuggestion}
                 onUpdateSuggestion={handleUpdateSuggestion}
+                onDeleteSuggestion={handleDeleteSuggestion}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />

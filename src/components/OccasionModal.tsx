@@ -31,6 +31,8 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [description, setDescription] = useState<string>('');
+  const [workDetails, setWorkDetails] = useState<string>('');
+  const [responsiblePerson, setResponsiblePerson] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
@@ -45,6 +47,8 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
     setStartDate('');
     setEndDate('');
     setDescription('');
+    setWorkDetails('');
+    setResponsiblePerson('');
     setErrorMessage('');
     setIsFormOpen(false);
   };
@@ -70,6 +74,8 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
     setStartDate(occ.startDate || '');
     setEndDate(occ.endDate || '');
     setDescription(occ.description || '');
+    setWorkDetails(occ.workDetails || '');
+    setResponsiblePerson(occ.responsiblePerson || '');
     setErrorMessage('');
     setIsFormOpen(true);
   };
@@ -102,6 +108,8 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
         startDate: startDate || undefined,
         endDate: endDate || undefined,
         description: description.trim() || undefined,
+        workDetails: workDetails.trim() || undefined,
+        responsiblePerson: responsiblePerson.trim() || undefined,
       };
       onUpdateOccasion(updated);
     } else {
@@ -112,6 +120,8 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
         startDate: startDate || undefined,
         endDate: endDate || undefined,
         description: description.trim() || undefined,
+        workDetails: workDetails.trim() || undefined,
+        responsiblePerson: responsiblePerson.trim() || undefined,
       };
       onAddOccasion(newOccasion);
     }
@@ -234,6 +244,34 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                 />
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">
+                    कामाचे स्वरूप / जबाबदारी (Work Details)
+                  </label>
+                  <input
+                    type="text"
+                    value={workDetails}
+                    onChange={(e) => setWorkDetails(e.target.value)}
+                    placeholder="उदा. मंडप सजावट, ध्वनी व प्रकाश, भोजन नियोजन"
+                    className="w-full p-2 border border-slate-300 rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase mb-1">
+                    प्रमुख / जबाबदार व्यक्ती (Responsible Manager)
+                  </label>
+                  <input
+                    type="text"
+                    value={responsiblePerson}
+                    onChange={(e) => setResponsiblePerson(e.target.value)}
+                    placeholder="उदा. महेश पाटील (अध्यक्ष) / श्रीकांत (खजिनदार)"
+                    className="w-full p-2 border border-slate-300 rounded-lg font-bold"
+                  />
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
                 <button
                   type="button"
@@ -277,8 +315,8 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                   key={occ.id}
                   className="p-3 bg-white rounded-xl border border-slate-200 hover:border-amber-400 transition-colors flex items-center justify-between gap-3 shadow-xs"
                 >
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-black text-slate-800 text-xs">{occ.name}</h4>
                       <span className="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded-md text-[10px]">
                         वर्ष: {occ.year}
@@ -286,6 +324,20 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                     </div>
                     {occ.description && (
                       <p className="text-[11px] text-slate-500">{occ.description}</p>
+                    )}
+                    {(occ.workDetails || occ.responsiblePerson) && (
+                      <div className="flex flex-wrap gap-1.5 text-[10px]">
+                        {occ.workDetails && (
+                          <span className="px-2 py-0.5 bg-amber-50 text-amber-900 border border-amber-200 rounded font-bold">
+                            काम/जबाबदारी: {occ.workDetails}
+                          </span>
+                        )}
+                        {occ.responsiblePerson && (
+                          <span className="px-2 py-0.5 bg-purple-50 text-purple-900 border border-purple-200 rounded font-bold">
+                            प्रमुख/व्यवस्थापक: {occ.responsiblePerson}
+                          </span>
+                        )}
+                      </div>
                     )}
                     {(occ.startDate || occ.endDate) && (
                       <p className="text-[10px] text-slate-400">

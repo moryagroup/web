@@ -93,6 +93,8 @@ export interface OccasionEvent {
   endDate?: string;
   description?: string;
   bannerUrl?: string;
+  workDetails?: string; // कामाचे स्वरूप / जबाबदारी
+  responsiblePerson?: string; // प्रमुख / जबाबदार व्यक्ती
   createdAt?: string;
   updatedAt?: string;
 }
