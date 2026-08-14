@@ -94,6 +94,8 @@ export function getFinancialYearFromDate(dateStr?: string): string {
   return `${convertEnglishToMarathiDigits(startYear)}-${convertEnglishToMarathiDigits(endYearShort)}`;
 }
 
+
+
 /**
  * Checks if a transaction date (or fallback financialYear) matches the selected Calendar Year (Jan 1 - Dec 31)
  * or Financial Year (Apr 1 - Mar 31).
@@ -109,9 +111,18 @@ export function isDateInSelectedYear(
   const isFinancialYear = convertedSelected.includes('-');
 
   if (isFinancialYear) {
-    // Financial Year filter (e.g. 2025-26 -> Apr 1 2025 to Mar 31 2026)
+    // Financial Year filter (e.g. 2026-27 or 2026-2027 -> Apr 1 2026 to Mar 31 2027)
     const fyStartYear = parseYearNumber(convertedSelected);
     if (transactionDateStr) {
+      const parts = transactionDateStr.split('-');
+      if (parts.length >= 2) {
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10); // 1 to 12
+        if (!isNaN(y) && !isNaN(m)) {
+          const transFYStart = m >= 4 ? y : y - 1;
+          return transFYStart === fyStartYear;
+        }
+      }
       const d = new Date(transactionDateStr);
       if (!isNaN(d.getTime())) {
         const y = d.getFullYear();
@@ -126,10 +137,17 @@ export function isDateInSelectedYear(
     return false;
   }
 
-  // Calendar Year filter (e.g. 2025 -> Jan 1 2025 to Dec 31 2025)
+  // Calendar Year filter (e.g. 2026 -> Jan 1 2026 to Dec 31 2026)
   const targetYear = parseYearNumber(convertedSelected);
 
   if (transactionDateStr) {
+    const parts = transactionDateStr.split('-');
+    if (parts.length >= 1) {
+      const y = parseInt(parts[0], 10);
+      if (!isNaN(y)) {
+        return y === targetYear;
+      }
+    }
     const d = new Date(transactionDateStr);
     if (!isNaN(d.getTime())) {
       return d.getFullYear() === targetYear;

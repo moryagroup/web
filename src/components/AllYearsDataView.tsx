@@ -230,7 +230,7 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
                   <span className="px-3 py-1 bg-slate-900 text-amber-400 font-black text-sm rounded-xl">
                     {item.year}
                   </span>
-                  <span className="text-xs text-slate-500 font-bold">आर्थिक वर्ष</span>
+                  <span className="text-xs text-slate-500 font-bold">आर्थिक वर्ष (१ एप्रिल - ३१ मार्च)</span>
                 </div>
                 <div className="text-right">
                   <span className="text-xs text-slate-500 font-bold block">वर्षाची निव्वळ शिल्लक:</span>
