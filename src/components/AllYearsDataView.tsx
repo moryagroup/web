@@ -3,7 +3,7 @@ import { IncomeTransaction, ExpenseTransaction, CurrentUser } from '../types';
 import { isCoreMemberRole } from '../utils/rbac';
 import { RbacGuard } from './RbacGuard';
 import { exportToCSV, triggerPDFPrint } from '../utils/exportUtils';
-import { getFinancialYearFromDate } from '../utils/dateUtils';
+import { getFinancialYearFromDate, isDateInSelectedYear } from '../utils/dateUtils';
 import {
   History,
   TrendingUp,
