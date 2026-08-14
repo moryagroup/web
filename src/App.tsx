@@ -98,6 +98,7 @@ import {
   deleteGalleryItemFromSupabase,
 } from './services/supabaseService';
 import { isSupabaseConfigured } from './services/supabaseClient';
+import { sendDailyEmailReport, isReportAlreadySentToday } from './services/emailService';
 import { Agentation } from 'agentation';
 
 import { Sidebar } from './components/Sidebar';
@@ -302,8 +303,19 @@ export default function App() {
       clearTimeout(timer);
       unsubCloud();
       unsubSupabaseRealtime();
+      unsubList.forEach((unsub) => unsub());
     };
   }, []);
+
+  // Automated Daily Transaction Email Check for moryagroupdata@gmail.com
+  useEffect(() => {
+    if (currentUser.isLoggedIn && !isReportAlreadySentToday() && (incomes.length > 0 || expenses.length > 0)) {
+      const timer = setTimeout(() => {
+        sendDailyEmailReport(incomes, expenses, false).catch(console.error);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [incomes, expenses, currentUser.isLoggedIn]);
 
   // Keep currentUser in localStorage (it's device-specific session data)
   useEffect(() => {
