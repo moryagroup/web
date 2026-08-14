@@ -24,9 +24,10 @@ export async function runTier2Tests() {
     assertEqual(getDesignationRank('उपाध्यक्ष'), 2, 'उपाध्यक्ष rank must be 2 (Vijay Jagtap)');
     assertEqual(getDesignationRank('कार्याध्यक्ष'), 3, 'कार्याध्यक्ष rank must be 3');
     assertEqual(getDesignationRank('सचिव'), 4, 'सचिव rank must be 4');
-    assertEqual(getDesignationRank('खजिनदार'), 5, 'खजिनदार rank must be 5');
-    assertEqual(getDesignationRank('उपखजिनदार'), 6, 'उपखजिनदार rank must be 6');
-    assertEqual(getDesignationRank('सभासद'), 7, 'सभासद rank must be 7');
+    assertEqual(getDesignationRank('उपसचिव'), 5, 'उपसचिव rank must be 5');
+    assertEqual(getDesignationRank('खजिनदार'), 6, 'खजिनदार rank must be 6');
+    assertEqual(getDesignationRank('उपखजिनदार'), 7, 'उपखजिनदार rank must be 7');
+    assertEqual(getDesignationRank('सभासद'), 90, 'सभासद rank must be 90');
   });
 
   await group.test('R2.2 - Designation rank for unknown or empty roles defaults gracefully', () => {

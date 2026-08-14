@@ -134,8 +134,8 @@ export function formatEmailReportContent(
   if (metrics.todayIncomes.length > 0) {
     body += `--- आजच्या जमा नोंदी ---\n`;
     metrics.todayIncomes.forEach((i, idx) => {
-      body += `${idx + 1}. ${i.payerName} | ₹${i.amount} | ${i.incomeType} | ${i.paymentMode || 'रोख'}${
-        i.receiptNo ? ` (पावती #${i.receiptNo})` : ''
+      body += `${idx + 1}. ${i.depositorName} | ₹${i.amount} | ${i.incomeType} | ${i.paymentMethod || 'रोख'}${
+        i.receiptNumber ? ` (पावती #${i.receiptNumber})` : ''
       }\n`;
     });
     body += `\n`;
@@ -144,7 +144,7 @@ export function formatEmailReportContent(
   if (metrics.todayExpenses.length > 0) {
     body += `--- आजच्या खर्च नोंदी ---\n`;
     metrics.todayExpenses.forEach((e, idx) => {
-      body += `${idx + 1}. ${e.title} | ₹${e.amount} | श्रेणी: ${e.category} | दर्जा: ${e.approvalStatus}\n`;
+      body += `${idx + 1}. ${e.reason} | ₹${e.amount} | प्रकार: ${e.recipientType || 'खर्च'} | दर्जा: ${e.approvalStatus}\n`;
     });
     body += `\n`;
   }

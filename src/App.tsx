@@ -303,7 +303,6 @@ export default function App() {
       clearTimeout(timer);
       unsubCloud();
       unsubSupabaseRealtime();
-      unsubList.forEach((unsub) => unsub());
     };
   }, []);
 
