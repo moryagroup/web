@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { OccasionEvent, CurrentUser } from '../types';
-import { Calendar, Plus, Edit2, Trash2, X, Check, AlertCircle } from 'lucide-react';
+import { OccasionEvent, EventTask, Member, CurrentUser } from '../types';
+import { Calendar, Plus, Edit2, Trash2, X, Check, AlertCircle, CheckCircle2, UserCheck, ListChecks } from 'lucide-react';
 import { hasAdminPermissions } from '../utils/rbac';
 
 interface OccasionModalProps {
   isOpen: boolean;
   onClose: () => void;
   occasions: OccasionEvent[];
+  members?: Member[];
   onAddOccasion: (occasion: OccasionEvent) => void;
   onUpdateOccasion: (occasion: OccasionEvent) => void;
   onDeleteOccasion: (id: string) => void;
@@ -18,6 +19,7 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
   isOpen,
   onClose,
   occasions,
+  members = [],
   onAddOccasion,
   onUpdateOccasion,
   onDeleteOccasion,
@@ -33,12 +35,50 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
   const [description, setDescription] = useState<string>('');
   const [workDetails, setWorkDetails] = useState<string>('');
   const [responsiblePerson, setResponsiblePerson] = useState<string>('');
+  const [tasks, setTasks] = useState<EventTask[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
   const isAdmin = isLoggedIn && hasAdminPermissions(currentUser.role);
 
   if (!isOpen) return null;
+
+  const handleAddTaskRow = () => {
+    const defaultMember = members[0];
+    const newTask: EventTask = {
+      id: 'task-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      taskTitle: '',
+      assignedMemberId: defaultMember?.id || '',
+      assignedMemberName: defaultMember?.fullName || '',
+      assignedMemberRole: defaultMember?.designation || 'सभासद',
+      assignedMemberPhone: defaultMember?.phone || '',
+      status: 'प्रलंबित',
+    };
+    setTasks((prev) => [...prev, newTask]);
+  };
+
+  const handleUpdateTaskRow = (id: string, field: keyof EventTask, value: any) => {
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        if (field === 'assignedMemberId') {
+          const selectedM = members.find((mem) => mem.id === value);
+          return {
+            ...t,
+            assignedMemberId: value,
+            assignedMemberName: selectedM ? selectedM.fullName : '',
+            assignedMemberRole: selectedM ? selectedM.designation || 'सभासद' : '',
+            assignedMemberPhone: selectedM ? selectedM.phone || '' : '',
+          };
+        }
+        return { ...t, [field]: value };
+      })
+    );
+  };
+
+  const handleRemoveTaskRow = (id: string) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+  };
 
   const resetForm = () => {
     setEditingId(null);
@@ -49,6 +89,7 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
     setDescription('');
     setWorkDetails('');
     setResponsiblePerson('');
+    setTasks([]);
     setErrorMessage('');
     setIsFormOpen(false);
   };
@@ -76,6 +117,7 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
     setDescription(occ.description || '');
     setWorkDetails(occ.workDetails || '');
     setResponsiblePerson(occ.responsiblePerson || '');
+    setTasks(Array.isArray(occ.tasks) ? occ.tasks : []);
     setErrorMessage('');
     setIsFormOpen(true);
   };
@@ -100,6 +142,8 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
       return;
     }
 
+    const validTasks = tasks.filter((t) => t.taskTitle.trim() !== '');
+
     if (editingId) {
       const updated: OccasionEvent = {
         id: editingId,
@@ -110,6 +154,7 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
         description: description.trim() || undefined,
         workDetails: workDetails.trim() || undefined,
         responsiblePerson: responsiblePerson.trim() || undefined,
+        tasks: validTasks.length > 0 ? validTasks : undefined,
       };
       onUpdateOccasion(updated);
     } else {
@@ -122,6 +167,7 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
         description: description.trim() || undefined,
         workDetails: workDetails.trim() || undefined,
         responsiblePerson: responsiblePerson.trim() || undefined,
+        tasks: validTasks.length > 0 ? validTasks : undefined,
       };
       onAddOccasion(newOccasion);
     }
@@ -272,6 +318,100 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                 </div>
               </div>
 
+              {/* Multiple Event Tasks & Manager Assignment */}
+              <div className="bg-amber-50/80 p-3 rounded-xl border border-amber-200 space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="font-bold text-amber-900 flex items-center gap-1.5 text-xs">
+                    <ListChecks className="w-4 h-4 text-amber-600" />
+                    <span>उत्सवातील विविध कामे व जबाबदार सभासद (Multiple Event Tasks & Managers)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddTaskRow}
+                    className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-[11px] rounded-lg shadow-xs flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ काम/जबाबदारी जोडा</span>
+                  </button>
+                </div>
+
+                {tasks.length === 0 ? (
+                  <p className="text-[11px] text-amber-700 italic text-center py-2 bg-white/60 rounded-lg border border-dashed border-amber-200">
+                    या उत्सवासाठी अद्याप कोणतीही कामे जोडलेली नाहीत. वर '+ काम/जबाबदारी जोडा' बटणावर क्लिक करा.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {tasks.map((task, idx) => (
+                      <div
+                        key={task.id}
+                        className="bg-white p-2.5 rounded-lg border border-amber-200 grid grid-cols-1 sm:grid-cols-12 gap-2 items-center text-xs shadow-xs"
+                      >
+                        {/* Task Title */}
+                        <div className="sm:col-span-5">
+                          <label className="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">
+                            कामाचे नाव / जबाबदारी #{idx + 1}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={task.taskTitle}
+                            onChange={(e) => handleUpdateTaskRow(task.id, 'taskTitle', e.target.value)}
+                            placeholder="उदा. मंडप सजावट / महाप्रसाद वितरण"
+                            className="w-full p-1.5 border border-slate-300 rounded-md font-bold"
+                          />
+                        </div>
+
+                        {/* Select Member as Manager */}
+                        <div className="sm:col-span-4">
+                          <label className="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">
+                            प्रमुख व्यवस्थापक (Assigned Member)
+                          </label>
+                          <select
+                            value={task.assignedMemberId || ''}
+                            onChange={(e) => handleUpdateTaskRow(task.id, 'assignedMemberId', e.target.value)}
+                            className="w-full p-1.5 border border-slate-300 rounded-md font-bold text-slate-800"
+                          >
+                            {members.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.memberCode} - {m.fullName} ({m.designation || 'सभासद'})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Status Select */}
+                        <div className="sm:col-span-2">
+                          <label className="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">
+                            स्थिती (Status)
+                          </label>
+                          <select
+                            value={task.status}
+                            onChange={(e) => handleUpdateTaskRow(task.id, 'status', e.target.value as any)}
+                            className="w-full p-1.5 border border-slate-300 rounded-md font-bold text-slate-800"
+                          >
+                            <option value="प्रलंबित">प्रलंबित</option>
+                            <option value="प्रक्रियेत">प्रक्रियेत</option>
+                            <option value="पूर्ण">पूर्ण</option>
+                          </select>
+                        </div>
+
+                        {/* Remove Task Button */}
+                        <div className="sm:col-span-1 text-right pt-2 sm:pt-0">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTaskRow(task.id)}
+                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md cursor-pointer"
+                            title="काम काढून टाका"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
                 <button
                   type="button"
@@ -321,6 +461,11 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                       <span className="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded-md text-[10px]">
                         वर्ष: {occ.year}
                       </span>
+                      {occ.tasks && occ.tasks.length > 0 && (
+                        <span className="px-2 py-0.5 bg-purple-100 text-purple-900 border border-purple-300 font-bold rounded-md text-[10px]">
+                          {occ.tasks.length} नियोजित कामे
+                        </span>
+                      )}
                     </div>
                     {occ.description && (
                       <p className="text-[11px] text-slate-500">{occ.description}</p>
@@ -337,6 +482,38 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                             प्रमुख/व्यवस्थापक: {occ.responsiblePerson}
                           </span>
                         )}
+                      </div>
+                    )}
+                    {/* Render Tasks List if any */}
+                    {occ.tasks && occ.tasks.length > 0 && (
+                      <div className="pt-1.5 space-y-1">
+                        <p className="text-[10px] font-bold text-slate-600">नियोजित कामे व जबाबदार प्रमुख:</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[10px]">
+                          {occ.tasks.map((t) => (
+                            <div
+                              key={t.id}
+                              className="p-1.5 bg-slate-50 rounded-md border border-slate-200 flex justify-between items-center"
+                            >
+                              <div>
+                                <span className="font-bold text-slate-800">{t.taskTitle}</span>
+                                <span className="block text-[9px] text-amber-800 font-medium">
+                                  प्रमुख: {t.assignedMemberName} ({t.assignedMemberRole || 'सभासद'})
+                                </span>
+                              </div>
+                              <span
+                                className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                                  t.status === 'पूर्ण'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : t.status === 'प्रक्रियेत'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}
+                              >
+                                {t.status}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                     {(occ.startDate || occ.endDate) && (

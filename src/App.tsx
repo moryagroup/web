@@ -735,6 +735,7 @@ export default function App() {
                 incomes={incomes}
                 expenses={expenses}
                 members={members}
+                occasions={occasions}
                 currentUser={currentUser}
                 gallery={gallery}
                 selectedYear={selectedYear}
@@ -745,6 +746,7 @@ export default function App() {
                 onApproveExpense={handleApproveExpense}
                 onLogout={handleLogout}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
+                onUpdateOccasion={handleUpdateOccasion}
               />
             )}
 
@@ -928,6 +930,7 @@ export default function App() {
         isOpen={isOccasionModalOpen}
         onClose={() => setIsOccasionModalOpen(false)}
         occasions={occasions}
+        members={members}
         onAddOccasion={handleAddOccasion}
         onUpdateOccasion={handleUpdateOccasion}
         onDeleteOccasion={handleDeleteOccasion}

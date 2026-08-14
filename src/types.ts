@@ -85,6 +85,17 @@ export interface Member {
   updatedAt?: string;
 }
 
+export interface EventTask {
+  id: string;
+  taskTitle: string; // e.g. "मंडप व सजावट नियोजन"
+  assignedMemberId?: string;
+  assignedMemberName: string;
+  assignedMemberRole?: string;
+  assignedMemberPhone?: string;
+  status: 'प्रलंबित' | 'प्रक्रियेत' | 'पूर्ण';
+  notes?: string;
+}
+
 export interface OccasionEvent {
   id: string;
   name: string; // e.g., गणेशोत्सव २०२६
@@ -95,6 +106,7 @@ export interface OccasionEvent {
   bannerUrl?: string;
   workDetails?: string; // कामाचे स्वरूप / जबाबदारी
   responsiblePerson?: string; // प्रमुख / जबाबदार व्यक्ती
+  tasks?: EventTask[]; // Multiple works/tasks per event
   createdAt?: string;
   updatedAt?: string;
 }

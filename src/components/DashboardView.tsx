@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import moryaLogo from '../assets/morya_logo.jpg';
 import { LogoLightboxModal } from './LogoLightboxModal';
 import {
@@ -8,6 +8,8 @@ import {
   Member,
   CurrentUser,
   EventGalleryImage,
+  OccasionEvent,
+  EventTask,
 } from '../types';
 import { HeaderStats } from './HeaderStats';
 import { EventGallerySection } from './EventGallerySection';
@@ -27,6 +29,7 @@ import {
   Maximize2,
   User,
   Camera,
+  ListChecks,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -34,6 +37,7 @@ interface DashboardViewProps {
   incomes: IncomeTransaction[];
   expenses: ExpenseTransaction[];
   members: Member[];
+  occasions?: OccasionEvent[];
   currentUser: CurrentUser;
   gallery: EventGalleryImage[];
   selectedYear: string;
@@ -44,6 +48,7 @@ interface DashboardViewProps {
   onApproveExpense: (expId: string, name: string, role: any) => void;
   onLogout?: () => void;
   onOpenLogin?: () => void;
+  onUpdateOccasion?: (occasion: OccasionEvent) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -51,6 +56,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   incomes,
   expenses,
   members,
+  occasions = [],
   currentUser,
   gallery,
   selectedYear,
@@ -61,6 +67,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onApproveExpense,
   onLogout,
   onOpenLogin,
+  onUpdateOccasion,
 }) => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const isFullAccess = hasFullFinancialAccess(currentUser.role);
@@ -73,6 +80,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         (currentUser?.phone && m.phone === currentUser.phone))
   );
   const memberPhoto = currentMember?.photoUrl;
+
+  // Compute assigned tasks for the currently logged in member
+  const assignedTasksForMe = useMemo(() => {
+    if (!currentUser.isLoggedIn) return [];
+    const myTasks: Array<{ occasion: OccasionEvent; task: EventTask }> = [];
+    (occasions || []).forEach((occ) => {
+      (occ.tasks || []).forEach((t) => {
+        const matchesMemberId = currentMember && t.assignedMemberId === currentMember.id;
+        const matchesMemberName =
+          t.assignedMemberName &&
+          t.assignedMemberName.trim().toLowerCase() === (currentUser.name || '').trim().toLowerCase();
+        const matchesPhone = currentMember && t.assignedMemberPhone && t.assignedMemberPhone === currentMember.phone;
+        if (matchesMemberId || matchesMemberName || matchesPhone) {
+          myTasks.push({ occasion: occ, task: t });
+        }
+      });
+    });
+    return myTasks;
+  }, [occasions, currentUser, currentMember]);
 
   const displayIncomes = Array.isArray(incomes) ? incomes : [];
   const displayExpenses = Array.isArray(expenses) ? expenses : [];
@@ -237,6 +263,77 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           )}
         </div>
       </div>
+
+      {/* Home Page Notification: Assigned Event Tasks & Work Responsibilities */}
+      {assignedTasksForMe.length > 0 && (
+        <div className="bg-gradient-to-r from-purple-950 via-slate-900 to-indigo-950 text-white p-5 rounded-2xl shadow-xl border border-purple-500/50 space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-purple-500/30">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold shadow-xs">
+                <ListChecks className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-black text-sm text-amber-400 flex items-center gap-2">
+                  <span>तुमच्याकडे सोपवलेली उत्सव कामांची जबाबदारी</span>
+                  <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-400/40 rounded-full text-[10px]">
+                    {assignedTasksForMe.length} कामे
+                  </span>
+                </h3>
+                <p className="text-[11px] text-purple-200">
+                  मंडळ व्यवस्थापनाने उत्सवात तुमच्या नावावर खालील प्रमुख कामांची जबाबदारी दिली आहे:
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            {assignedTasksForMe.map(({ occasion, task }) => (
+              <div
+                key={task.id}
+                className="bg-slate-900/90 p-3.5 rounded-xl border border-purple-500/40 flex justify-between items-center gap-3 shadow-md"
+              >
+                <div className="space-y-1">
+                  <span className="px-2 py-0.5 bg-purple-500/30 text-purple-300 font-bold text-[10px] rounded border border-purple-400/40">
+                    {occasion.name} ({occasion.year})
+                  </span>
+                  <p className="font-black text-amber-300 text-sm">{task.taskTitle}</p>
+                  <p className="text-[10px] text-slate-400">
+                    प्रमुख व्यवस्थापक: <span className="text-white font-bold">{task.assignedMemberName}</span> ({task.assignedMemberRole || 'सभासद'})
+                  </p>
+                </div>
+
+                <div className="text-right shrink-0 space-y-2">
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-block ${
+                      task.status === 'पूर्ण'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        : task.status === 'प्रक्रियेत'
+                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    }`}
+                  >
+                    {task.status}
+                  </span>
+                  {onUpdateOccasion && (
+                    <button
+                      onClick={() => {
+                        const newStatus = task.status === 'पूर्ण' ? 'प्रलंबित' : 'पूर्ण';
+                        const updatedTasks = (occasion.tasks || []).map((t) =>
+                          t.id === task.id ? { ...t, status: newStatus as any } : t
+                        );
+                        onUpdateOccasion({ ...occasion, tasks: updatedTasks });
+                      }}
+                      className="block w-full px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10px] rounded-lg shadow cursor-pointer transition-all active:scale-95 text-center"
+                    >
+                      {task.status === 'पूर्ण' ? 'पुन्हा उघडा' : '✓ काम पूर्ण करा'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Pending Expense Approvals Banner (If any) */}
       {pendingExpenses.length > 0 && (
