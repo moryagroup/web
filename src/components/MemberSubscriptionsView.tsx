@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Member, IncomeTransaction, CurrentUser } from '../types';
 import { getMemberSubscriptionPaid, getMemberExtraDonationPaid } from '../services/storageService';
 import { hasAdminPermissions, getDesignationRank, isBadgedMember } from '../utils/rbac';
+import { isDateInSelectedYear } from '../utils/dateUtils';
 import {
   Users,
   PlusCircle,
@@ -22,11 +23,13 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowLeft,
+  Calendar,
 } from 'lucide-react';
 
 interface MemberSubscriptionsViewProps {
   members: Member[];
   incomes: IncomeTransaction[];
+  financialYear?: string;
   currentUser: CurrentUser;
   onAddMember: (newMember: Member) => void;
   onUpdateMember: (updatedMember: Member) => void;
@@ -48,6 +51,7 @@ const STANDARD_DESIGNATIONS = [
 export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = ({
   members,
   incomes,
+  financialYear,
   currentUser,
   onAddMember,
   onUpdateMember,
@@ -60,8 +64,17 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
   const isAdmin = isStrictAdmin;
   const isBadged = isBadgedMember(currentUser.role) && isLoggedIn;
 
+  // Selected Year state (Default 2026 or passed financialYear)
+  const [selectedYear, setSelectedYear] = useState<string>(financialYear || '२०२६');
+
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter incomes by selected year for member subscription calculations
+  const filteredIncomesByYear = useMemo(() => {
+    if (selectedYear === 'ALL') return incomes;
+    return incomes.filter((i) => isDateInSelectedYear(i.transactionDate, selectedYear, i.financialYear));
+  }, [incomes, selectedYear]);
 
   if (!isLoggedIn || !isBadged) {
     return (
@@ -395,7 +408,24 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap sm:flex-nowrap">
+          {/* Year selector for checking previous year data */}
+          <div className="flex items-center gap-1.5 bg-amber-50/90 border border-amber-300 p-1.5 px-3 rounded-xl shrink-0">
+            <Calendar className="w-4 h-4 text-amber-700" />
+            <span className="text-xs font-bold text-amber-900 hidden sm:inline">वर्ष (Year):</span>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="bg-white border border-amber-300 font-black text-amber-950 text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
+            >
+              <option value="२०२६">२०२६ (चालू वर्ष)</option>
+              <option value="२०२५">२०२५ (मागील वर्ष)</option>
+              <option value="२०२४">२०२४ (मागील वर्ष)</option>
+              <option value="२०२७">२०२७ (पुढील वर्ष)</option>
+              <option value="ALL">सर्व वर्षे (All Years)</option>
+            </select>
+          </div>
+
           {/* Search bar */}
           <div className="relative flex-1 md:w-64">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -425,8 +455,8 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       {/* Members Grid / Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sortedAndFilteredMembers.map((member) => {
-          const subscriptionPaid = getMemberSubscriptionPaid(member.id, incomes);
-          const extraDonationPaid = getMemberExtraDonationPaid(member.id, incomes);
+          const subscriptionPaid = getMemberSubscriptionPaid(member.id, filteredIncomesByYear);
+          const extraDonationPaid = getMemberExtraDonationPaid(member.id, filteredIncomesByYear);
           const target = member.annualTargetAmount || 6000;
           const remainingSubscription = Math.max(0, target - subscriptionPaid);
           const percentage = Math.min(100, Math.round((subscriptionPaid / target) * 100));

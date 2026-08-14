@@ -788,6 +788,7 @@ export default function App() {
                 <MemberSubscriptionsView
                   members={members}
                   incomes={incomes}
+                  financialYear={selectedYear}
                   currentUser={currentUser}
                   onAddMember={handleAddMember}
                   onUpdateMember={handleUpdateMember}
