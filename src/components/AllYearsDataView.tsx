@@ -213,9 +213,9 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
       </div>
 
       {/* Financial Year Comparison Table & Cards */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
-        <h3 className="text-base font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-          <TrendingUp className="w-5 h-5 text-indigo-600" />
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+        <h3 className="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
+          <TrendingUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
           वर्षनिहाय जमा-खर्च तुलनात्मक तक्ता (Year-by-Year Comparison)
         </h3>
 
@@ -223,20 +223,20 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
           {yearsSummary.map((item) => (
             <div
               key={item.year}
-              className="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-3 hover:shadow-md transition-shadow"
+              className="bg-slate-50 dark:bg-slate-900/80 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 space-y-3 hover:shadow-md transition-shadow"
             >
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200 pb-3">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 bg-slate-900 text-amber-400 font-black text-sm rounded-xl">
+                  <span className="px-3 py-1 bg-slate-900 dark:bg-slate-800 text-amber-400 font-black text-sm rounded-xl border border-slate-700">
                     {item.year}
                   </span>
-                  <span className="text-xs text-slate-500 font-bold">आर्थिक वर्ष (१ एप्रिल - ३१ मार्च)</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">आर्थिक वर्ष (१ एप्रिल - ३१ मार्च)</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-slate-500 font-bold block">वर्षाची निव्वळ शिल्लक:</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-bold block">वर्षाची निव्वळ शिल्लक:</span>
                   <span
                     className={`text-lg font-black ${
-                      item.netBalance >= 0 ? 'text-emerald-700' : 'text-rose-700'
+                      item.netBalance >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'
                     }`}
                   >
                     {formatCurrency(item.netBalance)}
@@ -245,28 +245,28 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
-                <div className="p-3 bg-emerald-50/80 rounded-xl border border-emerald-100">
-                  <p className="text-emerald-800 font-bold mb-1">एकूण जमा (Income)</p>
-                  <p className="text-xl font-black text-emerald-900">{formatCurrency(item.totalIncome)}</p>
-                  <p className="text-[10px] text-emerald-700 mt-1">
+                <div className="p-3 bg-emerald-50/80 dark:bg-emerald-950/40 rounded-xl border border-emerald-100 dark:border-emerald-800">
+                  <p className="text-emerald-800 dark:text-emerald-300 font-bold mb-1">एकूण जमा (Income)</p>
+                  <p className="text-xl font-black text-emerald-900 dark:text-emerald-200">{formatCurrency(item.totalIncome)}</p>
+                  <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1">
                     वर्गणी: {formatCurrency(item.subTotal)} | देणगी: {formatCurrency(item.donTotal)}
                   </p>
                 </div>
 
-                <div className="p-3 bg-rose-50/80 rounded-xl border border-rose-100">
-                  <p className="text-rose-800 font-bold mb-1">एकूण मंजूर खर्च (Expense)</p>
-                  <p className="text-xl font-black text-rose-900">{formatCurrency(item.totalExpense)}</p>
-                  <p className="text-[10px] text-rose-700 mt-1">मंजूर व्यवहारांची संख्या: {item.expenseCount}</p>
+                <div className="p-3 bg-rose-50/80 dark:bg-rose-950/40 rounded-xl border border-rose-100 dark:border-rose-800">
+                  <p className="text-rose-800 dark:text-rose-300 font-bold mb-1">एकूण मंजूर खर्च (Expense)</p>
+                  <p className="text-xl font-black text-rose-900 dark:text-rose-200">{formatCurrency(item.totalExpense)}</p>
+                  <p className="text-[10px] text-rose-700 dark:text-rose-400 mt-1">मंजूर व्यवहारांची संख्या: {item.expenseCount}</p>
                 </div>
 
-                <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-100 flex flex-col justify-between">
+                <div className="p-3 bg-blue-50/80 dark:bg-blue-950/40 rounded-xl border border-blue-100 dark:border-blue-800 flex flex-col justify-between">
                   <div>
-                    <p className="text-blue-800 font-bold mb-1">शिल्लक टक्केवारी (Margin)</p>
-                    <p className="text-xl font-black text-blue-950">
+                    <p className="text-blue-800 dark:text-blue-300 font-bold mb-1">शिल्लक टक्केवारी (Margin)</p>
+                    <p className="text-xl font-black text-blue-950 dark:text-blue-200">
                       {item.totalIncome > 0 ? Math.round((item.netBalance / item.totalIncome) * 100) : 0}%
                     </p>
                   </div>
-                  <p className="text-[10px] text-blue-700 font-medium">एकूण उत्पन्नातील शिलकीचा वाटा</p>
+                  <p className="text-[10px] text-blue-700 dark:text-blue-400 font-medium">एकूण उत्पन्नातील शिलकीचा वाटा</p>
                 </div>
               </div>
             </div>

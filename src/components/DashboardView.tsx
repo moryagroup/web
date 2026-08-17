@@ -445,12 +445,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {pendingIncomes.map((inc) => (
               <div
                 key={inc.id}
-                className="bg-white p-3 rounded-xl border border-emerald-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
+                className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-emerald-200/80 dark:border-emerald-700/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
               >
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-slate-800">{inc.depositorName}</span>
-                    <span className="text-slate-500">
+                    <span className="font-bold text-slate-800 dark:text-slate-100">{inc.depositorName}</span>
+                    <span className="text-slate-500 dark:text-slate-400">
                       ({inc.incomeType} - {inc.reason})
                     </span>
                     {inc.attachmentUrl ? (
@@ -513,12 +513,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {pendingExpenses.map((exp) => (
               <div
                 key={exp.id}
-                className="bg-white p-3 rounded-xl border border-amber-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
+                className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-amber-200/80 dark:border-amber-700/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
               >
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-slate-800">{exp.recipientName}</span>
-                    <span className="text-slate-500">
+                    <span className="font-bold text-slate-800 dark:text-slate-100">{exp.recipientName}</span>
+                    <span className="text-slate-500 dark:text-slate-400">
                       ({exp.expenseCategory} - {exp.reason})
                     </span>
                     {exp.attachmentUrl ? (
@@ -564,20 +564,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {canViewRecentGroupTransactions(currentUser.role) ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Income Transactions */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
             <div>
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-700">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold">
                     <ArrowDownLeft className="w-5 h-5" />
                   </div>
-                  <h3 className="font-bold text-slate-800 text-base">
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">
                     अलीकडील जमा नोंदी
                   </h3>
                 </div>
                 <button
                   onClick={() => onNavigate('income-history')}
-                  className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <span>
                     सर्व जमा ({incomes.length})
@@ -586,20 +586,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </button>
               </div>
 
-              <div className="divide-y divide-slate-100 mt-2">
+              <div className="divide-y divide-slate-100 dark:divide-slate-700 mt-2">
                 {recentIncomes.map((item) => (
                   <div key={item.id} className="py-3 flex justify-between items-center text-xs">
                     <div>
-                      <p className="font-bold text-slate-800">{item.depositorName}</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-100">{item.depositorName}</p>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
-                        <span className="px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">
+                        <span className="px-1.5 py-0.2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-600">
                           {item.depositorType}
                         </span>
                         <span>• {item.incomeType}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-black text-emerald-700 text-sm">
+                      <p className="font-black text-emerald-700 dark:text-emerald-400 text-sm">
                         + ₹{item.amount.toLocaleString('en-IN')}
                       </p>
                       <p className="text-[10px] text-slate-400">{item.transactionDate}</p>
@@ -609,10 +609,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100">
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-700">
               <button
                 onClick={() => onNavigate('income-form')}
-                className="w-full py-2 bg-slate-50 hover:bg-emerald-50 text-emerald-800 font-bold text-xs rounded-xl border border-slate-200 hover:border-emerald-200 transition-colors cursor-pointer"
+                className="w-full py-2 bg-slate-50 dark:bg-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-600 text-emerald-800 dark:text-emerald-300 font-bold text-xs rounded-xl border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer"
               >
                 + नवीन जमा नोंद जोडा
               </button>
@@ -620,20 +620,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Recent Expense Transactions */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
             <div>
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-700">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
+                  <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 flex items-center justify-center font-bold">
                     <ArrowUpRight className="w-5 h-5" />
                   </div>
-                  <h3 className="font-bold text-slate-800 text-base">
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">
                     अलीकडील खर्च नोंदी
                   </h3>
                 </div>
                 <button
                   onClick={() => onNavigate('expense-history')}
-                  className="text-xs font-bold text-rose-700 hover:underline flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-bold text-rose-700 dark:text-rose-400 hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <span>
                     सर्व खर्च ({expenses.length})
@@ -642,12 +642,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </button>
               </div>
 
-              <div className="divide-y divide-slate-100 mt-2">
+              <div className="divide-y divide-slate-100 dark:divide-slate-700 mt-2">
                 {recentExpenses.map((item) => (
                   <div key={item.id} className="py-3 flex justify-between items-center text-xs">
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <p className="font-bold text-slate-800">{item.recipientName}</p>
+                        <p className="font-bold text-slate-800 dark:text-slate-100">{item.recipientName}</p>
                         {item.approvalStatus === 'मंजूर' ? (
                           <span className="px-2 py-0.5 bg-emerald-600 text-white border border-emerald-500 rounded-md text-[10px] font-black shadow-xs">
                             ✓ मंजूर

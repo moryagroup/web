@@ -251,9 +251,9 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
       </div>
 
       {/* Month-wise Cards Breakdown */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
-        <h3 className="text-base font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-          <FileSpreadsheet className="w-5 h-5 text-amber-600" />
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+        <h3 className="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
+          <FileSpreadsheet className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           महिनानिहाय जमा-खर्च तक्ता ({selectedYear})
         </h3>
 
@@ -265,13 +265,15 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
               return (
                 <div
                   key={monthName}
-                  className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-3 hover:shadow-md transition-shadow"
+                  className="bg-slate-50 dark:bg-slate-900/80 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 space-y-3 hover:shadow-md transition-shadow"
                 >
-                  <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                    <span className="font-black text-slate-900 text-sm">{monthName}</span>
+                  <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
+                    <span className="font-black text-slate-900 dark:text-slate-100 text-sm">{monthName}</span>
                     <span
-                      className={`text-[11px] font-bold px-2 py-0.5 rounded ${
-                        netMonthBalance >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
+                        netMonthBalance >= 0
+                          ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                          : 'bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-700'
                       }`}
                     >
                       {netMonthBalance >= 0 ? 'शिल्लक फायद्यात' : 'तोटा'}
@@ -280,16 +282,16 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
 
                   <div className="space-y-1.5 text-xs">
                     <div className="flex justify-between font-bold">
-                      <span className="text-slate-600">जमा (Income):</span>
-                      <span className="text-emerald-700">{formatCurrency(data.income)}</span>
+                      <span className="text-slate-600 dark:text-slate-400">जमा (Income):</span>
+                      <span className="text-emerald-700 dark:text-emerald-400">{formatCurrency(data.income)}</span>
                     </div>
                     <div className="flex justify-between font-bold">
-                      <span className="text-slate-600">खर्च (Expense):</span>
-                      <span className="text-rose-700">{formatCurrency(data.expense)}</span>
+                      <span className="text-slate-600 dark:text-slate-400">खर्च (Expense):</span>
+                      <span className="text-rose-700 dark:text-rose-400">{formatCurrency(data.expense)}</span>
                     </div>
-                    <div className="flex justify-between font-black pt-1.5 border-t border-slate-200 text-sm">
-                      <span className="text-slate-800">निव्वळ शिल्लक:</span>
-                      <span className={netMonthBalance >= 0 ? 'text-emerald-800' : 'text-rose-800'}>
+                    <div className="flex justify-between font-black pt-1.5 border-t border-slate-200 dark:border-slate-700 text-sm">
+                      <span className="text-slate-800 dark:text-slate-200">निव्वळ शिल्लक:</span>
+                      <span className={netMonthBalance >= 0 ? 'text-emerald-800 dark:text-emerald-400' : 'text-rose-800 dark:text-rose-400'}>
                         {formatCurrency(netMonthBalance)}
                       </span>
                     </div>
