@@ -562,7 +562,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* Grid Layout: Recent Incomes & Expenses (Core Members / Admin Only) */}
       {canViewRecentGroupTransactions(currentUser.role) ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
           {/* Recent Income Transactions */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
             <div>
