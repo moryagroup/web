@@ -286,8 +286,20 @@ export default function App() {
             fetchGalleryFromSupabase(),
           ]);
           if (m && m.length > 0) setMembers(m);
-          if (inc && inc.length > 0) setIncomes(inc);
-          if (exp && exp.length > 0) setExpenses(exp);
+          if (inc && inc.length > 0) {
+            setIncomes((prev) => {
+              const dbIds = new Set(inc.map((i) => i.id));
+              const localOnly = prev.filter((i) => !dbIds.has(i.id));
+              return [...localOnly, ...inc];
+            });
+          }
+          if (exp && exp.length > 0) {
+            setExpenses((prev) => {
+              const dbIds = new Set(exp.map((e) => e.id));
+              const localOnly = prev.filter((e) => !dbIds.has(e.id));
+              return [...localOnly, ...exp];
+            });
+          }
           if (occ && occ.length > 0) {
             setOccasions((prev) => {
               const merged = mergeOccasionsPreservingTasks(occ, prev);

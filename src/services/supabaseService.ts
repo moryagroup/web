@@ -205,6 +205,15 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
     }
   }
 
+  let dbAttachmentUrl: string | null = null;
+  if (finalAttachmentUrl) {
+    if (finalAttachmentUrl.startsWith('http://') || finalAttachmentUrl.startsWith('https://')) {
+      dbAttachmentUrl = finalAttachmentUrl;
+    } else {
+      dbAttachmentUrl = null;
+    }
+  }
+
   const appStatus = income.approvalStatus || 'मंजूर';
   const notesWithApproval = `${income.notes || ''}\n__APPROVAL__:${appStatus}`.trim();
 
@@ -223,7 +232,7 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
     receipt_number: income.receiptNumber || null,
     reason: income.reason,
     notes: notesWithApproval,
-    attachment_url: finalAttachmentUrl,
+    attachment_url: dbAttachmentUrl,
     approval_status: appStatus,
     approved_by: income.approvedBy || null,
     approved_by_role: income.approvedByRole || null,
@@ -234,17 +243,19 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
   const { error } = await supabase.from('incomes').upsert(row);
   if (error) {
     console.error('[Supabase] saveIncome error:', error);
-    const fallbackRow = { ...row };
-    if (error.message && error.message.includes('attachment_url')) {
-      delete (fallbackRow as any).attachment_url;
+    const fallbackRow = {
+      ...row,
+      attachment_url: null,
+    };
+    delete (fallbackRow as any).approval_status;
+    delete (fallbackRow as any).approved_by;
+    delete (fallbackRow as any).approved_by_role;
+    delete (fallbackRow as any).approved_at;
+
+    const { error: fallbackErr } = await supabase.from('incomes').upsert(fallbackRow);
+    if (fallbackErr) {
+      console.error('[Supabase] saveIncome fallback error:', fallbackErr);
     }
-    if (error.message && error.message.includes('approval_status')) {
-      delete (fallbackRow as any).approval_status;
-      delete (fallbackRow as any).approved_by;
-      delete (fallbackRow as any).approved_by_role;
-      delete (fallbackRow as any).approved_at;
-    }
-    await supabase.from('incomes').upsert(fallbackRow);
   }
 }
 
@@ -331,6 +342,15 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
     }
   }
 
+  let dbAttachmentUrl: string | null = null;
+  if (finalAttachmentUrl) {
+    if (finalAttachmentUrl.startsWith('http://') || finalAttachmentUrl.startsWith('https://')) {
+      dbAttachmentUrl = finalAttachmentUrl;
+    } else {
+      dbAttachmentUrl = null;
+    }
+  }
+
   const appStatus = expense.approvalStatus || 'प्रलंबित';
   const notesWithApproval = `${expense.notes || ''}\n__APPROVAL__:${appStatus}`.trim();
 
@@ -347,7 +367,7 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
     bill_number: expense.billNumber || null,
     reason: expense.reason,
     notes: notesWithApproval,
-    attachment_url: finalAttachmentUrl,
+    attachment_url: dbAttachmentUrl,
     approval_status: appStatus,
     approved_by: expense.approvedBy || null,
     approved_by_role: expense.approvedByRole || null,
@@ -358,17 +378,19 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
   const { error } = await supabase.from('expenses').upsert(row);
   if (error) {
     console.error('[Supabase] saveExpense error:', error);
-    const fallbackRow = { ...row };
-    if (error.message && error.message.includes('attachment_url')) {
-      delete (fallbackRow as any).attachment_url;
+    const fallbackRow = {
+      ...row,
+      attachment_url: null,
+    };
+    delete (fallbackRow as any).approval_status;
+    delete (fallbackRow as any).approved_by;
+    delete (fallbackRow as any).approved_by_role;
+    delete (fallbackRow as any).approved_at;
+
+    const { error: fallbackErr } = await supabase.from('expenses').upsert(fallbackRow);
+    if (fallbackErr) {
+      console.error('[Supabase] saveExpense fallback error:', fallbackErr);
     }
-    if (error.message && error.message.includes('approval_status')) {
-      delete (fallbackRow as any).approval_status;
-      delete (fallbackRow as any).approved_by;
-      delete (fallbackRow as any).approved_by_role;
-      delete (fallbackRow as any).approved_at;
-    }
-    await supabase.from('expenses').upsert(fallbackRow);
   }
 }
 
