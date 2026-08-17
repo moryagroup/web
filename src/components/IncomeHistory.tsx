@@ -17,6 +17,10 @@ import {
   Pencil,
   Trash2,
   ArrowLeft,
+  CheckCircle,
+  Clock,
+  XCircle,
+  Check,
 } from 'lucide-react';
 import { NativeService } from '../services/nativeService';
 
@@ -47,10 +51,25 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('ALL');
   const [selectedMemberId, setSelectedMemberId] = useState('ALL');
   const [selectedYear, setSelectedYear] = useState(financialYear);
+  const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'मंजूर' | 'प्रलंबित' | 'नाकारले'>('ALL');
   const [selectedIncomeDetail, setSelectedIncomeDetail] = useState<IncomeTransaction | null>(null);
 
   const isLoggedIn = currentUser?.isLoggedIn !== false;
   const isAdmin = isLoggedIn && (currentUser?.role === 'ॲडमिन' || currentUser?.role === 'Admin' || currentUser?.role === 'अध्यक्ष' || currentUser?.role === 'खजिनदार');
+  const canApprove = isLoggedIn && currentUser && ['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(currentUser.role);
+
+  const handleApproveClick = (incomeId: string) => {
+    const item = incomes.find((i) => i.id === incomeId);
+    if (!item) return;
+    const updated: IncomeTransaction = {
+      ...item,
+      approvalStatus: 'मंजूर',
+      approvedBy: `${currentUser?.name} (${currentUser?.role})`,
+      approvedByRole: currentUser?.role,
+      approvedAt: new Date().toISOString(),
+    };
+    onUpdateIncome?.(updated);
+  };
 
   if (!isLoggedIn && currentUser) {
     return (
@@ -100,6 +119,10 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     return baseIncomes.filter((item) => {
       // Calendar Year match (Jan - Dec)
       if (selectedYear !== 'ALL' && !isDateInSelectedYear(item.transactionDate, selectedYear, item.financialYear)) return false;
+
+      // Approval Status filter
+      const itemStatus = item.approvalStatus || 'मंजूर';
+      if (selectedStatus !== 'ALL' && itemStatus !== selectedStatus) return false;
 
       // Search match
       const query = searchTerm.toLowerCase();
@@ -329,14 +352,15 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 <th className="p-3.5">कारण / तपशील</th>
                 <th className="p-3.5 text-right">रक्कम</th>
                 <th className="p-3.5">पेमेंट</th>
-                <th className="p-3.5">नोंद करणारे</th>
+                <th className="p-3.5">मंजुरी स्थिती</th>
+                <th className="p-3.5">मंजूर करणारे</th>
                 <th className="p-3.5 text-center">क्रिया</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
               {filteredIncomes.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-slate-400">
+                  <td colSpan={11} className="p-8 text-center text-slate-400">
                     कोणतेही जमा व्यवहार आढळले नाहीत.
                   </td>
                 </tr>
@@ -396,7 +420,30 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                         </div>
                       )}
                     </td>
-                    <td className="p-3.5 text-[11px] text-slate-500">{item.createdBy}</td>
+                    <td className="p-3.5">
+                      {item.approvalStatus === 'प्रलंबित' ? (
+                        <span className="px-2.5 py-0.5 bg-amber-500 text-slate-950 rounded-lg text-[10px] font-black flex items-center gap-1 w-fit shadow-2xs border border-amber-400">
+                          <Clock className="w-3 h-3 text-slate-950" /> प्रलंबित
+                        </span>
+                      ) : item.approvalStatus === 'नाकारले' ? (
+                        <span className="px-2.5 py-0.5 bg-rose-600 text-white rounded-lg text-[10px] font-black flex items-center gap-1 w-fit shadow-2xs border border-rose-500">
+                          <XCircle className="w-3 h-3 text-white" /> नाकारले
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black flex items-center gap-1 w-fit shadow-2xs border border-emerald-500">
+                          <CheckCircle className="w-3 h-3 text-white" /> मंजूर
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3.5 text-[11px] text-slate-600">
+                      {item.approvalStatus === 'प्रलंबित' ? (
+                        <span className="text-slate-400 italic">मंजुरीची वाट पाहत आहे</span>
+                      ) : (
+                        <div>
+                          <span className="font-semibold text-slate-800">{item.approvedBy || item.createdBy}</span>
+                        </div>
+                      )}
+                    </td>
                     <td className="p-3.5 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
@@ -406,6 +453,16 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                         >
                           <Eye className="w-4 h-4" />
                         </button>
+                        {item.approvalStatus === 'प्रलंबित' && canApprove && (
+                          <button
+                            onClick={() => handleApproveClick(item.id)}
+                            className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                            title="मंजूर करा"
+                          >
+                            <Check className="w-3 h-3" />
+                            <span>मंजूर</span>
+                          </button>
+                        )}
                         {isAdmin && (
                           <>
                             <button

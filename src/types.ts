@@ -142,6 +142,10 @@ export interface IncomeTransaction {
   attachmentUrl?: string; // Proof image or doc
   notes?: string;
   financialYear: string; // e.g., '2026-2027'
+  approvalStatus?: ApprovalStatus;
+  approvedBy?: string; // Name of approver
+  approvedByRole?: UserDesignation; // Role of approver
+  approvedAt?: string; // Timestamp when approved
   createdBy: string; // Admin / Treasurer name
   createdAt: string; // Full system timestamp ISO or formatted
   updatedAt?: string;

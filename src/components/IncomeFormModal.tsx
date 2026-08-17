@@ -114,6 +114,11 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       .toTimeString()
       .split(' ')[0]}`;
 
+    const isAuthorizedRole = ['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(
+      currentUser.role
+    );
+    const isApproved = isAuthorizedRole;
+
     onSubmit({
       transactionNo: autoTransNo,
       amount: Number(amount),
@@ -134,6 +139,10 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       receiptNumber: receiptNumber.trim() || undefined,
       notes: notes.trim() || undefined,
       financialYear: getFinancialYearFromDate(transactionDate),
+      approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
+      approvedBy: isApproved ? `${currentUser.name} (${currentUser.role})` : undefined,
+      approvedByRole: isApproved ? currentUser.role : undefined,
+      approvedAt: isApproved ? new Date().toISOString() : undefined,
       createdBy: `${currentUser.name} (${currentUser.role})`,
       createdAt: formattedCreatedAt,
     });

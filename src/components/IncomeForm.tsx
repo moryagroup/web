@@ -158,6 +158,11 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       1000 + Math.random() * 9000
     )}`;
 
+    const isAuthorizedRole = ['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(
+      currentUser.role
+    );
+    const isApproved = isAuthorizedRole;
+
     const newIncome: IncomeTransaction = {
       id: `inc-${Date.now()}`,
       transactionNo,
@@ -177,6 +182,10 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       attachmentUrl: attachmentUrl || undefined,
       notes: notes.trim() || undefined,
       financialYear: getFinancialYearFromDate(transactionDate),
+      approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
+      approvedBy: isApproved ? `${currentUser.name} (${currentUser.role})` : undefined,
+      approvedByRole: isApproved ? currentUser.role : undefined,
+      approvedAt: isApproved ? new Date().toISOString() : undefined,
       createdBy: `${currentUser.name} (${currentUser.role})`,
       createdAt: new Date().toISOString(),
     };

@@ -494,6 +494,18 @@ export default function App() {
     saveIncomeToSupabase(updatedIncome).catch(console.error);
   };
 
+  const handleApproveIncome = (incId: string, name: string, role: any) => {
+    const item = incomes.find((i) => i.id === incId);
+    if (!item) return;
+    handleUpdateIncome({
+      ...item,
+      approvalStatus: 'मंजूर',
+      approvedBy: `${name} (${role})`,
+      approvedByRole: role,
+      approvedAt: new Date().toISOString(),
+    });
+  };
+
   // Delete Income Transaction (Admin Only)
   const handleDeleteIncome = (incomeId: string) => {
     setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
@@ -857,6 +869,7 @@ export default function App() {
                 onSaveGallery={handleSaveGallery}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onApproveExpense={handleApproveExpense}
+                onApproveIncome={handleApproveIncome}
                 onLogout={handleLogout}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
                 onUpdateOccasion={handleUpdateOccasion}

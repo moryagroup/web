@@ -47,6 +47,7 @@ interface DashboardViewProps {
   onSaveGallery: (gallery: EventGalleryImage[]) => void;
   onNavigate: (tab: string) => void;
   onApproveExpense: (expId: string, name: string, role: any) => void;
+  onApproveIncome?: (incId: string, name: string, role: any) => void;
   onLogout?: () => void;
   onOpenLogin?: () => void;
   onUpdateOccasion?: (occasion: OccasionEvent) => void;
@@ -66,6 +67,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSaveGallery,
   onNavigate,
   onApproveExpense,
+  onApproveIncome,
   onLogout,
   onOpenLogin,
   onUpdateOccasion,
@@ -161,6 +163,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const pendingExpenses = isFullAccess
     ? expenses.filter((e) => e.approvalStatus === 'प्रलंबित')
+    : [];
+
+  const pendingIncomes = isFullAccess
+    ? incomes.filter((i) => i.approvalStatus === 'प्रलंबित')
     : [];
 
   const canApprove = ['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(
@@ -406,6 +412,57 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       )}
 
+      {/* Pending Income Approvals Banner (If any) */}
+      {pendingIncomes.length > 0 && (
+        <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl shadow-xs">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-emerald-200/60">
+            <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
+              <ShieldAlert className="w-5 h-5 text-emerald-600 animate-bounce" />
+              <span>जमा मंजुरी प्रलंबित ({pendingIncomes.length} व्यवहार)</span>
+            </div>
+            <button
+              onClick={() => onNavigate('income-history')}
+              className="text-xs text-emerald-800 hover:underline font-bold flex items-center gap-1 cursor-pointer"
+            >
+              <span>सर्व प्रलंबित जमा पहा</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {pendingIncomes.map((inc) => (
+              <div
+                key={inc.id}
+                className="bg-white p-3 rounded-xl border border-emerald-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
+              >
+                <div>
+                  <span className="font-bold text-slate-800">{inc.depositorName}</span>
+                  <span className="text-slate-500 ml-2">
+                    ({inc.incomeType} - {inc.reason})
+                  </span>
+                  <span className="block text-[10px] text-slate-400">
+                    तारीख: {inc.transactionDate} | पावती: {inc.receiptNumber || 'नाही'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="font-black text-emerald-700 text-sm">
+                    + ₹{inc.amount.toLocaleString('en-IN')}
+                  </span>
+                  {canApprove && onApproveIncome && (
+                    <button
+                      onClick={() => onApproveIncome(inc.id, currentUser.name, currentUser.role)}
+                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer"
+                    >
+                      मंजूर करा
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Pending Expense Approvals Banner (If any) */}
       {pendingExpenses.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl shadow-xs">
@@ -487,7 +544,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {recentIncomes.map((item) => (
                   <div key={item.id} className="py-3 flex justify-between items-center text-xs">
                     <div>
-                      <p className="font-bold text-slate-800">{item.depositorName}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-bold text-slate-800">{item.depositorName}</p>
+                        {item.approvalStatus === 'प्रलंबित' ? (
+                          <span className="px-2 py-0.5 bg-amber-500 text-slate-950 border border-amber-400 rounded-md text-[10px] font-black shadow-xs">
+                            ⏳ प्रलंबित
+                          </span>
+                        ) : item.approvalStatus === 'नाकारले' ? (
+                          <span className="px-2 py-0.5 bg-rose-600 text-white border border-rose-500 rounded-md text-[10px] font-black shadow-xs">
+                            ✕ नाकारले
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-emerald-600 text-white border border-emerald-500 rounded-md text-[10px] font-black shadow-xs">
+                            ✓ मंजूर
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
                         <span className="px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">
                           {item.depositorType}
