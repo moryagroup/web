@@ -37,40 +37,34 @@ function mergeOccasionsPreservingTasks(
   incoming: OccasionEvent[],
   existing: OccasionEvent[]
 ): OccasionEvent[] {
-  const incomingMap = new Map(incoming.map((o) => [o.id, o]));
+  const existingMap = new Map(existing.map((o) => [o.id, o]));
   const mergedMap = new Map<string, OccasionEvent>();
 
-  // 1. Process existing items first (to keep local additions & tasks)
-  existing.forEach((prev) => {
-    const inc = incomingMap.get(prev.id);
-    if (!inc) {
-      // Not yet in incoming DB response -> keep existing local item intact!
-      mergedMap.set(prev.id, prev);
-    } else {
-      // Exists in both -> merge, preserving tasks & details if missing in incoming
-      const tasks =
-        inc.tasks && inc.tasks.length > 0
-          ? inc.tasks
-          : prev.tasks && prev.tasks.length > 0
-          ? prev.tasks
-          : [];
-      mergedMap.set(prev.id, {
-        ...prev,
-        ...inc,
-        tasks,
-        workDetails: inc.workDetails || prev.workDetails,
-        responsiblePerson: inc.responsiblePerson || prev.responsiblePerson,
-        startDate: inc.startDate || prev.startDate,
-        endDate: inc.endDate || prev.endDate,
-        year: inc.year || prev.year,
-      });
-    }
+  // 1. Process incoming ONLINE DB items first (Online DB is Authoritative)
+  incoming.forEach((inc) => {
+    const prev = existingMap.get(inc.id);
+    const tasks =
+      Array.isArray(inc.tasks)
+        ? inc.tasks
+        : Array.isArray(prev?.tasks)
+        ? prev.tasks
+        : [];
+    mergedMap.set(inc.id, {
+      ...prev,
+      ...inc,
+      tasks,
+      workDetails: inc.workDetails || prev?.workDetails || '',
+      responsiblePerson: inc.responsiblePerson || prev?.responsiblePerson || '',
+      startDate: inc.startDate || prev?.startDate,
+      endDate: inc.endDate || prev?.endDate,
+      year: inc.year || prev?.year || '२०२६-२७',
+    });
   });
 
-  // 2. Add any truly new items from incoming DB
-  incoming.forEach((inc) => {
-    if (!mergedMap.has(inc.id)) {
-      mergedMap.set(inc.id, inc);
+  // 2. Keep any local items created offline that haven't synced to DB yet
+  existing.forEach((prev) => {
+    if (!mergedMap.has(prev.id)) {
+      mergedMap.set(prev.id, prev);
     }
   });
 

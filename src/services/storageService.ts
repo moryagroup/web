@@ -44,21 +44,17 @@ export const saveMembers = (_members: Member[]) => {};
 
 export const getStoredOccasions = (): OccasionEvent[] => {
   try {
-    const data = localStorage.getItem(STORAGE_KEYS.OCCASIONS);
-    if (!data) return INITIAL_OCCASIONS;
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_OCCASIONS;
-  } catch {
-    return INITIAL_OCCASIONS;
-  }
+    localStorage.removeItem(STORAGE_KEYS.OCCASIONS);
+    localStorage.removeItem('morya_mandal_occasions_v2');
+    localStorage.removeItem('morya_mandal_occasions');
+  } catch {}
+  return INITIAL_OCCASIONS;
 };
 
-export const saveOccasions = (occasions: OccasionEvent[]) => {
+export const saveOccasions = (_occasions: OccasionEvent[]) => {
   try {
-    localStorage.setItem(STORAGE_KEYS.OCCASIONS, JSON.stringify(occasions));
-  } catch (err) {
-    console.error('Failed to save occasions to localStorage:', err);
-  }
+    localStorage.removeItem(STORAGE_KEYS.OCCASIONS);
+  } catch {}
 };
 
 export const getCustomIncomeTypes = (): string[] => [];
