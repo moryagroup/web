@@ -89,10 +89,12 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
     if (canViewAll) {
       return expenses;
     }
+    const userName = (currentUser?.name || '').trim().toLowerCase();
     return expenses.filter(
       (e) =>
         (currentMember && e.linkedMemberId === currentMember.id) ||
-        e.recipientName.trim().toLowerCase() === (currentUser?.name || '').trim().toLowerCase()
+        e.recipientName.trim().toLowerCase() === userName ||
+        (userName && e.createdBy && e.createdBy.toLowerCase().includes(userName))
     );
   }, [expenses, canViewAll, currentMember, currentUser]);
 

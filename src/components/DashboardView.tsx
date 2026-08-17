@@ -33,6 +33,8 @@ import {
   ListChecks,
   AlertTriangle,
   XCircle,
+  Paperclip,
+  FileText,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -665,11 +667,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 className="bg-white p-3 rounded-xl border border-emerald-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
               >
                 <div>
-                  <span className="font-bold text-slate-800">{inc.depositorName}</span>
-                  <span className="text-slate-500 ml-2">
-                    ({inc.incomeType} - {inc.reason})
-                  </span>
-                  <span className="block text-[10px] text-slate-400">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-slate-800">{inc.depositorName}</span>
+                    <span className="text-slate-500">
+                      ({inc.incomeType} - {inc.reason})
+                    </span>
+                    {inc.attachmentUrl ? (
+                      <a
+                        href={inc.attachmentUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded text-[10px] font-bold flex items-center gap-1 hover:bg-emerald-200 transition-colors"
+                        title="खात्री करण्यासाठी पावती/स्क्रीनशॉट पहा (Click to verify attachment proof)"
+                      >
+                        <Paperclip className="w-3 h-3 text-emerald-600" />
+                        <span>📎 पावती पुरावा पाहा</span>
+                      </a>
+                    ) : (
+                      <span className="text-[10px] text-amber-700 italic bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                        (कोणताही पुरावा जोडलेला नाही)
+                      </span>
+                    )}
+                  </div>
+                  <span className="block text-[10px] text-slate-400 mt-0.5">
                     तारीख: {inc.transactionDate} | पावती: {inc.receiptNumber || 'नाही'} | नोंद: {inc.createdBy}
                   </span>
                 </div>
@@ -730,11 +750,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 className="bg-white p-3 rounded-xl border border-amber-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
               >
                 <div>
-                  <span className="font-bold text-slate-800">{exp.recipientName}</span>
-                  <span className="text-slate-500 ml-2">
-                    ({exp.expenseCategory} - {exp.reason})
-                  </span>
-                  <span className="block text-[10px] text-slate-400">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-slate-800">{exp.recipientName}</span>
+                    <span className="text-slate-500">
+                      ({exp.expenseCategory} - {exp.reason})
+                    </span>
+                    {exp.attachmentUrl ? (
+                      <a
+                        href={exp.attachmentUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-300 rounded text-[10px] font-bold flex items-center gap-1 hover:bg-rose-200 transition-colors"
+                        title="खात्री करण्यासाठी खर्च बिल/स्क्रीनशॉट पहा (Click to verify attachment proof)"
+                      >
+                        <Paperclip className="w-3 h-3 text-rose-600" />
+                        <span>📎 बिल पुरावा पाहा</span>
+                      </a>
+                    ) : (
+                      <span className="text-[10px] text-amber-700 italic bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                        (कोणताही पुरावा जोडलेला नाही)
+                      </span>
+                    )}
+                  </div>
+                  <span className="block text-[10px] text-slate-400 mt-0.5">
                     तारीख: {exp.expenseDate} | बिल: {exp.billNumber || 'नाही'} | नोंद: {exp.createdBy}
                   </span>
                 </div>

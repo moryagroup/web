@@ -105,9 +105,12 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     if (canViewAll) {
       return incomes;
     }
-    return incomes.filter((i) =>
-      (currentMember && i.linkedMemberId === currentMember.id) ||
-      i.depositorName.trim().toLowerCase() === (currentUser?.name || '').trim().toLowerCase()
+    const userName = (currentUser?.name || '').trim().toLowerCase();
+    return incomes.filter(
+      (i) =>
+        (currentMember && i.linkedMemberId === currentMember.id) ||
+        i.depositorName.trim().toLowerCase() === userName ||
+        (userName && i.createdBy && i.createdBy.toLowerCase().includes(userName))
     );
   }, [incomes, canViewAll, currentMember, currentUser]);
 
