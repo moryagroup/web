@@ -384,7 +384,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
   return (
     <div className="space-y-6 my-4">
       {/* Top Banner & Control Bar */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3">
           {onNavigate && (
             <button
@@ -402,7 +402,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-800">सभासद व पदाधिकारी यादी (हिशोब)</h2>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">सभासद व पदाधिकारी यादी (हिशोब)</h2>
               <span className="px-2.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-md text-xs font-black">
                 एकूण {members.length}
               </span>
@@ -413,7 +413,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               पदाधिकारी व सर्व सभासदांची नाव, पदवी, वार्षिक निर्धारित वर्गणी (₹६,०००) व जमा हिशोब.
             </p>
           </div>
@@ -427,7 +427,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="bg-white border border-amber-300 font-black text-amber-950 text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
+              className="bg-white dark:bg-slate-700 border border-amber-300 dark:border-amber-600 font-black text-amber-950 dark:text-amber-300 text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
             >
               <option value="२०२६">२०२६ (१ जाने - ३१ डिसे)</option>
               <option value="२०२५">२०२५ (१ जाने - ३१ डिसे)</option>
@@ -447,7 +447,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="सभासद / पद शोधा (उदा. अध्यक्ष, महेश)..."
-              className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50/50"
+              className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-xs focus:ring-2 focus:ring-amber-500 outline-none bg-slate-50/50 dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-400"
             />
           </div>
 
@@ -479,10 +479,10 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
           return (
             <div
               key={member.id}
-              className={`bg-white rounded-2xl p-5 border shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all ${
+              className={`bg-white dark:bg-slate-800 rounded-2xl p-5 border shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all ${
                 isOfficeBearer
-                  ? 'border-amber-300 ring-1 ring-amber-400/20 bg-amber-50/20'
-                  : 'border-slate-200'
+                  ? 'border-amber-300 dark:border-amber-600 ring-1 ring-amber-400/20'
+                  : 'border-slate-200 dark:border-slate-700'
               }`}
             >
               <div>
@@ -509,7 +509,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
 
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 font-mono font-bold text-[10px] rounded border border-slate-200">
+                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono font-bold text-[10px] rounded border border-slate-200 dark:border-slate-600">
                           {member.memberCode}
                         </span>
                         {isOfficeBearer ? (
@@ -518,7 +518,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                             {member.designation}
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-bold text-[10px] rounded-md border border-slate-200">
+                          <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-[10px] rounded-md border border-slate-200 dark:border-slate-600">
                             {member.designation || 'सभासद'}
                           </span>
                         )}
@@ -526,28 +526,28 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
 
                       <h3
                         onClick={() => setPhotoModalMember(member)}
-                        className="text-base font-black text-slate-800 mt-1 flex items-center gap-1.5 cursor-pointer hover:text-amber-600 transition-colors"
+                        className="text-base font-black text-slate-800 dark:text-slate-100 mt-1 flex items-center gap-1.5 cursor-pointer hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
                         title="मोठा प्रोफाईल फोटो पहा"
                       >
                         {member.fullName}
                       </h3>
-                      <p className="text-xs text-slate-500 font-medium mt-0.5">मो: {member.phone}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">मो: {member.phone}</p>
                       {member.address && (
-                        <p className="text-[10px] text-slate-400 mt-0.5">{member.address}</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{member.address}</p>
                       )}
                     </div>
                   </div>
 
                   {member.id === 'm-admin' || member.designation === 'ॲडमिन' ? (
-                    <span className="px-2.5 py-1 text-[11px] font-black rounded-full bg-purple-100 text-purple-900 border border-purple-300 shrink-0">
+                    <span className="px-2.5 py-1 text-[11px] font-black rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-900 dark:text-purple-200 border border-purple-300 dark:border-purple-700 shrink-0">
                       ⚡ ॲडमिन खाते
                     </span>
                   ) : (
                     <span
                       className={`px-2.5 py-1 text-[11px] font-bold rounded-full shrink-0 ${
                         subscriptionPaid >= target
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                          : 'bg-amber-100 text-amber-800 border border-amber-300'
+                          ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
+                          : 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
                       }`}
                     >
                       {subscriptionPaid >= target ? 'वर्गणी पूर्ण' : 'अपूर्ण'}
@@ -557,14 +557,14 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
 
                 {/* Subscription Progress Bar (Hidden for System Admin) */}
                 {member.id !== 'm-admin' && member.designation !== 'ॲडमिन' && (
-                  <div className="space-y-1.5 mt-3 pt-3 border-t border-slate-100">
+                  <div className="space-y-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
                     <div className="flex justify-between text-xs font-bold">
-                      <span className="text-slate-600">वार्षिक वर्गणी प्रगती:</span>
+                      <span className="text-slate-600 dark:text-slate-300">वार्षिक वर्गणी प्रगती:</span>
                       <span className="text-blue-700">
                         ₹{subscriptionPaid.toLocaleString('en-IN')} / ₹{target.toLocaleString('en-IN')}
                       </span>
                     </div>
-                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-100 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
                       <div
                         className={`h-full transition-all duration-500 ${
                           subscriptionPaid >= target ? 'bg-emerald-500' : 'bg-blue-600'
@@ -572,7 +572,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
-                    <p className="text-[10px] text-right text-slate-400">
+                    <p className="text-[10px] text-right text-slate-400 dark:text-slate-500">
                       {percentage}% पूर्ण | बाकी: ₹{remainingSubscription.toLocaleString('en-IN')}
                     </p>
                   </div>
@@ -580,11 +580,11 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
 
                 {/* Extra Donation Indicator */}
                 {extraDonationPaid > 0 && (
-                  <div className="mt-3 p-2 bg-emerald-50 rounded-xl border border-emerald-100 flex justify-between items-center text-xs">
-                    <span className="text-emerald-800 font-semibold">
+                  <div className="mt-3 p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl border border-emerald-100 dark:border-emerald-800 flex justify-between items-center text-xs">
+                    <span className="text-emerald-800 dark:text-emerald-300 font-semibold">
                       अतिरिक्त देणगी (Donation):
                     </span>
-                    <span className="font-bold text-emerald-700">
+                    <span className="font-bold text-emerald-700 dark:text-emerald-400">
                       + ₹{extraDonationPaid.toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -592,10 +592,10 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
               </div>
 
               {/* Card Footer Actions */}
-              <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-xs">
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs">
                 <div>
-                  <span className="text-[10px] text-slate-400 block">एकूण जमा जमाव:</span>
-                  <span className="font-black text-slate-800 text-xs">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 block">एकूण जमा जमाव:</span>
+                  <span className="font-black text-slate-800 dark:text-slate-100 text-xs">
                     ₹{(subscriptionPaid + extraDonationPaid).toLocaleString('en-IN')}
                   </span>
                 </div>
@@ -604,7 +604,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => handleOpenShareModal(member)}
-                      className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-[11px] rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-amber-200"
+                      className="px-2 py-1 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-300 font-bold text-[11px] rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-amber-200 dark:border-amber-700"
                       title="पासवर्ड व्यवस्थापन व इमेल लिंक"
                     >
                       <Key className="w-3 h-3 text-amber-600" />
@@ -612,7 +612,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                     </button>
                     <button
                       onClick={() => handleOpenEditModal(member)}
-                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-[11px] rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                       title="माहिती संपादन / पद बदला"
                     >
                       <Edit2 className="w-3 h-3 text-blue-600" />
@@ -620,7 +620,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                     </button>
                     <button
                       onClick={() => setMemberToDelete(member)}
-                      className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 rounded-lg transition-colors cursor-pointer"
                       title="सभासद काढा"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -636,7 +636,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       {/* Add Member Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-700">
             <div className="flex justify-between items-center border-b pb-2">
               <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-amber-600" />
@@ -844,7 +844,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       {/* Edit Member Modal */}
       {editingMember && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-700">
             <div className="flex justify-between items-center border-b pb-2">
               <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
                 <Edit2 className="w-5 h-5 text-blue-600" />
@@ -1053,7 +1053,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       {/* Password & Share Email Link Modal */}
       {shareModalMember && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-700">
             <div className="flex justify-between items-center border-b pb-2">
               <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
                 <Key className="w-5 h-5 text-amber-600" />
@@ -1179,7 +1179,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       {/* Delete Confirmation Modal */}
       {memberToDelete && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center border border-slate-200 dark:border-slate-700">
             <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>

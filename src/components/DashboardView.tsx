@@ -16,7 +16,7 @@ import { EventGallerySection } from './EventGallerySection';
 import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
 import { ProofLightboxModal } from './ProofLightboxModal';
 import { isGoogleDriveUrl } from '../services/googleDriveService';
-import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions } from '../utils/rbac';
+import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions, canApproveFinancialTransactions } from '../utils/rbac';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -50,6 +50,7 @@ interface DashboardViewProps {
   onSaveGallery: (gallery: EventGalleryImage[]) => void;
   onNavigate: (tab: string) => void;
   onApproveExpense: (expId: string, name: string, role: any) => void;
+  onApproveIncome?: (incId: string, name: string, role: any) => void;
   onLogout?: () => void;
   onOpenLogin?: () => void;
   onUpdateOccasion?: (occasion: OccasionEvent) => void;
@@ -69,6 +70,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSaveGallery,
   onNavigate,
   onApproveExpense,
+  onApproveIncome,
   onLogout,
   onOpenLogin,
   onUpdateOccasion,
@@ -172,13 +174,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const recentIncomes = displayIncomes.slice(0, 5);
   const recentExpenses = displayExpenses.slice(0, 5);
 
-  const pendingExpenses = isFullAccess
+  const canApprove = canApproveFinancialTransactions(currentUser.role);
+
+  const pendingIncomes = canApprove
+    ? incomes.filter((i) => i.approvalStatus === 'प्रलंबित')
+    : [];
+
+  const pendingExpenses = canApprove
     ? expenses.filter((e) => e.approvalStatus === 'प्रलंबित')
     : [];
 
-  const canApprove = ['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(
-    currentUser.role
-  );
   const isLoggedIn = currentUser.isLoggedIn !== false;
 
   if (!isLoggedIn) {
@@ -410,6 +415,74 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       className="block w-full px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10px] rounded-lg shadow cursor-pointer transition-all active:scale-95 text-center"
                     >
                       {task.status === 'पूर्ण' ? 'पुन्हा उघडा' : '✓ काम पूर्ण करा'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pending Income Approvals Banner (If any) */}
+      {pendingIncomes.length > 0 && (
+        <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl shadow-xs">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-emerald-200/60">
+            <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
+              <ShieldAlert className="w-5 h-5 text-emerald-600 animate-bounce" />
+              <span>जमा (वर्गणी/देणगी) मंजुरी प्रलंबित ({pendingIncomes.length} व्यवहार)</span>
+            </div>
+            <button
+              onClick={() => onNavigate('income-history')}
+              className="text-xs text-emerald-800 hover:underline font-bold flex items-center gap-1 cursor-pointer"
+            >
+              <span>सर्व प्रलंबित जमा पहा</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {pendingIncomes.map((inc) => (
+              <div
+                key={inc.id}
+                className="bg-white p-3 rounded-xl border border-emerald-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
+              >
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-slate-800">{inc.depositorName}</span>
+                    <span className="text-slate-500">
+                      ({inc.incomeType} - {inc.reason})
+                    </span>
+                    {inc.attachmentUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => handleProofClick(inc.attachmentUrl!)}
+                        className="px-2.5 py-1 bg-emerald-100 text-emerald-900 border border-emerald-400 rounded-lg text-[11px] font-bold flex items-center gap-1 hover:bg-emerald-200 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                        title="पावती पुरावा पहा (Click to view attachment proof)"
+                      >
+                        <Paperclip className="w-3.5 h-3.5 text-emerald-700" />
+                        <span>📎 जमा पावती पुरावा पाहा</span>
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-amber-800 italic bg-amber-100/70 px-2 py-0.5 rounded border border-amber-300">
+                        (कोणताही पुरावा जोडलेला नाही)
+                      </span>
+                    )}
+                  </div>
+                  <span className="block text-[10px] text-slate-400 mt-0.5">
+                    तारीख: {inc.transactionDate} {inc.receiptNumber ? `| पावती क्र: ${inc.receiptNumber}` : ''} | नोंद: {inc.createdBy}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="font-black text-emerald-700 text-sm">
+                    + ₹{inc.amount.toLocaleString('en-IN')}
+                  </span>
+                  {canApprove && onApproveIncome && (
+                    <button
+                      onClick={() => onApproveIncome(inc.id, currentUser.name, currentUser.role)}
+                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer active:scale-95 transition-all"
+                    >
+                      मंजूर करा
                     </button>
                   )}
                 </div>

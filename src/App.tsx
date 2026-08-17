@@ -668,6 +668,23 @@ export default function App() {
     saveExpenseToSupabase(updated).catch(console.error);
   };
 
+  // Approve Income
+  const handleApproveIncome = (incId: string, approverName: string, approverRole: any) => {
+    const income = incomes.find((i) => i.id === incId);
+    if (!income) return;
+    const updated = {
+      ...income,
+      approvalStatus: 'मंजूर' as const,
+      approvedBy: `${approverName} (${approverRole})`,
+      approvedByRole: approverRole,
+      approvedAt: new Date().toISOString(),
+    };
+    setIncomes((prev) => prev.map((i) => (i.id === incId ? updated : i)));
+    saveIncome(updated).catch(console.error);
+    cloudSaveIncome(updated).catch(console.error);
+    saveIncomeToSupabase(updated).catch(console.error);
+  };
+
   // Add Member
   const handleAddMember = async (newMember: Member) => {
     let finalMember = newMember;
@@ -857,6 +874,7 @@ export default function App() {
                 onSaveGallery={handleSaveGallery}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onApproveExpense={handleApproveExpense}
+                onApproveIncome={handleApproveIncome}
                 onLogout={handleLogout}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
                 onUpdateOccasion={handleUpdateOccasion}

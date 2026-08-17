@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { IncomeTransaction, Member, CurrentUser } from '../types';
-import { hasFullFinancialAccess, isBadgedMember, isCoreMemberRole } from '../utils/rbac';
+import { hasFullFinancialAccess, isBadgedMember, isCoreMemberRole, canApproveFinancialTransactions } from '../utils/rbac';
 import { isDateInSelectedYear } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import {
@@ -30,6 +30,7 @@ interface IncomeHistoryProps {
   currentUser?: CurrentUser;
   onUpdateIncome?: (updatedIncome: IncomeTransaction) => void;
   onDeleteIncome?: (incomeId: string) => void;
+  onApproveIncome?: (incomeId: string, approverName: string, approverRole: any) => void;
   onNavigate?: (tab: string) => void;
   onOpenLogin?: () => void;
 }
@@ -41,6 +42,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   currentUser,
   onUpdateIncome,
   onDeleteIncome,
+  onApproveIncome,
   onNavigate,
   onOpenLogin,
 }) => {
@@ -63,6 +65,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   };
 
   const isLoggedIn = currentUser?.isLoggedIn !== false;
+  const canApprove = currentUser ? canApproveFinancialTransactions(currentUser.role) : false;
   const isAdmin = isLoggedIn && (currentUser?.role === 'ॲडमिन' || currentUser?.role === 'Admin' || currentUser?.role === 'अध्यक्ष' || currentUser?.role === 'खजिनदार');
 
   if (!isLoggedIn && currentUser) {
@@ -343,6 +346,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 <th className="p-3.5 text-right">रक्कम</th>
                 <th className="p-3.5">पेमेंट</th>
                 <th className="p-3.5">नोंद करणारे</th>
+                <th className="p-3.5">स्थिती</th>
                 <th className="p-3.5 text-center">क्रिया</th>
               </tr>
             </thead>
@@ -410,6 +414,17 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                       )}
                     </td>
                     <td className="p-3.5 text-[11px] text-slate-500">{item.createdBy}</td>
+                    <td className="p-3.5">
+                      {item.approvalStatus === 'मंजूर' ? (
+                        <span className="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-black shadow-2xs border border-emerald-500 whitespace-nowrap">
+                          ✓ मंजूर
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-amber-500 text-slate-950 rounded text-[10px] font-black shadow-2xs border border-amber-400 whitespace-nowrap">
+                          ⏳ प्रलंबित
+                        </span>
+                      )}
+                    </td>
                     <td className="p-3.5 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
@@ -419,6 +434,15 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                         >
                           <Eye className="w-4 h-4" />
                         </button>
+                        {item.approvalStatus === 'प्रलंबित' && canApprove && onApproveIncome && currentUser && (
+                          <button
+                            onClick={() => onApproveIncome(item.id, currentUser.name, currentUser.role)}
+                            className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg transition-all shadow-xs cursor-pointer"
+                            title="मंजूर करा"
+                          >
+                            मंजूर
+                          </button>
+                        )}
                         {isAdmin && (
                           <>
                             <button

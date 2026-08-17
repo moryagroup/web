@@ -8,7 +8,7 @@ import {
   CurrentUser,
   Member,
 } from '../types';
-import { hasFullFinancialAccess, sortMembersByDesignation } from '../utils/rbac';
+import { hasFullFinancialAccess, sortMembersByDesignation, canApproveFinancialTransactions } from '../utils/rbac';
 import { getFinancialYearFromDate, getCalendarYearFromDate } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { ArrowUpRight, CheckCircle2, Upload, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
@@ -118,9 +118,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
     // Approval status:
     // Any authorized role (अध्यक्ष/खजिनदार/सचिव/ॲडमिन) can approve directly
-    const isAuthorizedRole = ['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(
-      currentUser.role
-    );
+    const isAuthorizedRole = canApproveFinancialTransactions(currentUser.role);
     const isApproved = autoApprove && isAuthorizedRole;
 
     const newExpense: ExpenseTransaction = {

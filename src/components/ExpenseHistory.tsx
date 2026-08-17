@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ExpenseTransaction, Member, CurrentUser } from '../types';
-import { hasFullFinancialAccess, isBadgedMember, isCoreMemberRole } from '../utils/rbac';
+import { hasFullFinancialAccess, isBadgedMember, isCoreMemberRole, canApproveFinancialTransactions } from '../utils/rbac';
 import { isDateInSelectedYear } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { exportToCSV, triggerPDFPrint } from '../utils/exportUtils';
@@ -68,6 +68,7 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
   };
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
+  const canApprove = canApproveFinancialTransactions(currentUser.role);
   const isAdmin = isLoggedIn && (currentUser.role === 'ॲडमिन' || currentUser.role === 'Admin');
 
   if (!isLoggedIn) {
@@ -153,10 +154,6 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
   const pendingCount = useMemo(() => {
     return baseExpenses.filter((e) => e.approvalStatus === 'प्रलंबित').length;
   }, [baseExpenses]);
-
-  const canApprove = ['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(
-    currentUser.role
-  );
 
   const handleApproveClick = (expId: string) => {
     onApproveExpense(expId, currentUser.name, currentUser.role);

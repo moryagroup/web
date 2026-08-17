@@ -8,7 +8,7 @@ import {
   OccasionEvent,
   CurrentUser,
 } from '../types';
-import { hasFullFinancialAccess, sortMembersByDesignation } from '../utils/rbac';
+import { hasFullFinancialAccess, sortMembersByDesignation, canApproveFinancialTransactions } from '../utils/rbac';
 import { getFinancialYearFromDate, getCalendarYearFromDate } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft } from 'lucide-react';
@@ -168,6 +168,8 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       1000 + Math.random() * 9000
     )}`;
 
+    const isAutoApproved = canApproveFinancialTransactions(currentUser.role);
+
     const newIncome: IncomeTransaction = {
       id: `inc-${Date.now()}`,
       transactionNo,
@@ -187,6 +189,10 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       attachmentUrl: attachmentUrl || undefined,
       notes: notes.trim() || undefined,
       financialYear: getFinancialYearFromDate(transactionDate),
+      approvalStatus: isAutoApproved ? 'मंजूर' : 'प्रलंबित',
+      approvedBy: isAutoApproved ? currentUser.name : undefined,
+      approvedByRole: isAutoApproved ? currentUser.role : undefined,
+      approvedAt: isAutoApproved ? new Date().toISOString() : undefined,
       createdBy: `${currentUser.name} (${currentUser.role})`,
       createdAt: new Date().toISOString(),
     };

@@ -29,6 +29,10 @@ export const hasFullFinancialAccess = (role?: string): boolean => {
   return AUTHORIZED_FINANCIAL_ROLES.includes(role.trim());
 };
 
+export const canApproveFinancialTransactions = (role?: string): boolean => {
+  return hasFullFinancialAccess(role);
+};
+
 export const isTreasurerRole = (role?: string): boolean => {
   if (!role) return false;
   const trimmed = role.trim();
