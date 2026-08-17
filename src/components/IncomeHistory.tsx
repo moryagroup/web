@@ -17,6 +17,7 @@ import {
   Pencil,
   Trash2,
   ArrowLeft,
+  Paperclip,
 } from 'lucide-react';
 import { NativeService } from '../services/nativeService';
 
@@ -540,6 +541,23 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 </p>
               )}
             </div>
+
+            {selectedIncomeDetail.attachmentUrl && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                  <Paperclip className="w-4 h-4 text-emerald-600" />
+                  <span>Google Drive पावती पुरावा (Attachment)</span>
+                </span>
+                <a
+                  href={selectedIncomeDetail.attachmentUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1"
+                >
+                  <span>📂 Drive वर पुरावा उघडा</span>
+                </a>
+              </div>
+            )}
 
             <div className="pt-2 text-[11px] text-slate-400 border-t border-slate-100 flex justify-between">
               <span>नोंद करणारे: {selectedIncomeDetail.createdBy}</span>

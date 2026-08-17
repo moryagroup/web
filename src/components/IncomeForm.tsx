@@ -12,6 +12,7 @@ import { hasFullFinancialAccess, sortMembersByDesignation } from '../utils/rbac'
 import { getFinancialYearFromDate, getCalendarYearFromDate } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft } from 'lucide-react';
+import { uploadFileToGoogleDrive, isGoogleDriveUrl } from '../services/googleDriveService';
 
 interface IncomeFormProps {
   members: Member[];
@@ -117,11 +118,20 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
     }
   };
 
-  // File upload simulation
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isUploadingDrive, setIsUploadingDrive] = useState(false);
+
+  // File upload handler to Google Drive
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setAttachmentUrl(URL.createObjectURL(file));
+    if (!file) return;
+    setIsUploadingDrive(true);
+    try {
+      const driveUrl = await uploadFileToGoogleDrive(file, file.name);
+      setAttachmentUrl(driveUrl);
+    } catch (err) {
+      console.warn('Google Drive upload error:', err);
+    } finally {
+      setIsUploadingDrive(false);
     }
   };
 
@@ -487,23 +497,42 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                पावती / Payment Proof अपलोड
+                Google Drive पावती / Payment Proof पुरावा
               </label>
-              <div className="flex items-center gap-3">
-                <label className="flex-1 flex items-center justify-center gap-2 p-2.5 bg-slate-50 border border-dashed border-slate-300 rounded-lg text-xs font-semibold text-slate-600 cursor-pointer hover:bg-slate-100 transition-colors">
-                  <Upload className="w-4 h-4 text-slate-500" />
-                  <span>फाइल / स्क्रीनशॉट निवडा</span>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                </label>
+              <div className="space-y-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <label className="flex-1 flex items-center justify-center gap-2 p-2.5 bg-amber-50/80 border border-dashed border-amber-300 rounded-lg text-xs font-semibold text-amber-900 cursor-pointer hover:bg-amber-100 transition-colors">
+                    <Upload className="w-4 h-4 text-amber-700" />
+                    <span>{isUploadingDrive ? 'Google Drive वर अपलोड होत आहे...' : '📷 Drive वर फोटो अपलोड करा'}</span>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={handleFileUpload}
+                      disabled={isUploadingDrive}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                <input
+                  type="url"
+                  value={attachmentUrl}
+                  onChange={(e) => setAttachmentUrl(e.target.value)}
+                  placeholder="किंवा Google Drive लिंक पेस्ट करा (https://drive.google.com/...)"
+                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                />
                 {attachmentUrl && (
-                  <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
-                    ✓ फाईल जोडली
-                  </span>
+                  <div className="flex items-center justify-between bg-emerald-50 border border-emerald-300 px-2.5 py-1.5 rounded-lg text-xs font-bold text-emerald-800">
+                    <span className="truncate max-w-[240px]">
+                      ✓ Google Drive लिंक जोडली: {attachmentUrl}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setAttachmentUrl('')}
+                      className="text-rose-600 hover:underline text-[11px] font-bold shrink-0 ml-2"
+                    >
+                      हटवा
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

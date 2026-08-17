@@ -430,11 +430,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 className="bg-white p-3 rounded-xl border border-amber-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
               >
                 <div>
-                  <span className="font-bold text-slate-800">{exp.recipientName}</span>
-                  <span className="text-slate-500 ml-2">
-                    ({exp.expenseCategory} - {exp.reason})
-                  </span>
-                  <span className="block text-[10px] text-slate-400">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-slate-800">{exp.recipientName}</span>
+                    <span className="text-slate-500">
+                      ({exp.expenseCategory} - {exp.reason})
+                    </span>
+                    {exp.attachmentUrl && (
+                      <a
+                        href={exp.attachmentUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-400 rounded text-[10px] font-bold flex items-center gap-1 hover:bg-emerald-200 transition-colors"
+                        title="Google Drive पुरावा पाहा (Click to view Google Drive attachment proof)"
+                      >
+                        <span>📎 Google Drive पुरावा पाहा</span>
+                      </a>
+                    )}
+                  </div>
+                  <span className="block text-[10px] text-slate-400 mt-0.5">
                     तारीख: {exp.expenseDate} | बिल: {exp.billNumber || 'नाही'}
                   </span>
                 </div>

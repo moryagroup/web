@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { CurrentUser } from '../types';
-import { Settings, Plus, Trash2, X, Check, Camera, Tag, Download, Sun, Moon } from 'lucide-react';
+import { Settings, Plus, Trash2, X, Check, Camera, Tag, Download, Sun, Moon, Upload } from 'lucide-react';
 import { hasAdminPermissions } from '../utils/rbac';
+import { getGoogleDriveScriptUrl, setGoogleDriveScriptUrl } from '../services/googleDriveService';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onToggleTheme,
 }) => {
   const [newType, setNewType] = useState<string>('');
+  const [driveScriptUrl, setDriveScriptUrl] = useState<string>(() => getGoogleDriveScriptUrl());
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
   const isAdmin = isLoggedIn && hasAdminPermissions(currentUser.role);
@@ -191,6 +193,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 ))
               )}
             </div>
+          </div>
+
+          {/* Google Drive Configuration Section */}
+          <div className="pt-4 border-t border-slate-200 space-y-2">
+            <div className="flex items-center gap-2">
+              <Upload className="w-4 h-4 text-amber-600" />
+              <h4 className="font-bold text-slate-800">Google Drive स्टोरेज (moryagroupdata@gmail.com)</h4>
+            </div>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              मंडळाच्या सर्व जमा/खर्च पावती छायाचित्रे सुरक्षितपणे <span className="font-bold text-amber-800">moryagroupdata@gmail.com</span> Google Drive वर सेव्ह होतात.
+            </p>
+            <input
+              type="url"
+              value={driveScriptUrl}
+              onChange={(e) => {
+                setDriveScriptUrl(e.target.value);
+                setGoogleDriveScriptUrl(e.target.value);
+              }}
+              placeholder="Google Apps Script Web App URL (https://script.google.com/macros/s/...)"
+              className="w-full p-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-amber-500 outline-none font-mono text-slate-700"
+            />
           </div>
 
           {/* Data Backup Section */}

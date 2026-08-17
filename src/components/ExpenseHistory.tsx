@@ -19,6 +19,7 @@ import {
   ArrowLeft,
   FileSpreadsheet,
   Printer,
+  Paperclip,
 } from 'lucide-react';
 
 interface ExpenseHistoryProps {
@@ -569,6 +570,23 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                 </p>
               )}
             </div>
+
+            {selectedExpenseDetail.attachmentUrl && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between">
+                <span className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+                  <Paperclip className="w-4 h-4 text-rose-600" />
+                  <span>Google Drive बिल पुरावा (Attachment)</span>
+                </span>
+                <a
+                  href={selectedExpenseDetail.attachmentUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1"
+                >
+                  <span>📂 Drive वर बिल पाहा</span>
+                </a>
+              </div>
+            )}
 
             {selectedExpenseDetail.approvalStatus === 'प्रलंबित' && canApprove && (
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between">
