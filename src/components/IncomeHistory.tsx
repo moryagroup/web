@@ -98,10 +98,13 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     if (canViewAll) {
       return incomes;
     }
-    return incomes.filter((i) =>
-      (currentMember && i.linkedMemberId === currentMember.id) ||
-      i.depositorName.trim().toLowerCase() === (currentUser?.name || '').trim().toLowerCase()
-    );
+    const userNameNorm = (currentUser?.name || '').trim().toLowerCase();
+    return incomes.filter((i) => {
+      const isLinkedMember = currentMember && i.linkedMemberId === currentMember.id;
+      const isDepositor = (i.depositorName || '').trim().toLowerCase().includes(userNameNorm);
+      const isCreator = (i.createdBy || '').trim().toLowerCase().includes(userNameNorm);
+      return isLinkedMember || isDepositor || isCreator;
+    });
   }, [incomes, canViewAll, currentMember, currentUser]);
 
   // Unique list of income types in dataset
