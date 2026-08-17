@@ -25,12 +25,40 @@ import {
   saveSuggestions,
   saveGroupLogo,
   saveEventGallery,
-  DEFAULT_USER,
-  getCustomIncomeTypes,
   saveCustomIncomeType,
+  getCustomIncomeTypes,
+  DEFAULT_USER,
   calculateFinancialSummary,
   clearAllTransactionsFromStorage,
 } from './services/storageService';
+import { createLocalBackupSnapshot, downloadBackupJSON } from './utils/backupUtils';
+
+function mergeOccasionsPreservingTasks(
+  incoming: OccasionEvent[],
+  existing: OccasionEvent[]
+): OccasionEvent[] {
+  const existingMap = new Map(existing.map((o) => [o.id, o]));
+  return incoming.map((inc) => {
+    const prev = existingMap.get(inc.id);
+    if (!prev) return inc;
+    const tasks =
+      inc.tasks && inc.tasks.length > 0
+        ? inc.tasks
+        : prev.tasks && prev.tasks.length > 0
+        ? prev.tasks
+        : [];
+    return {
+      ...prev,
+      ...inc,
+      tasks,
+      workDetails: inc.workDetails || prev.workDetails,
+      responsiblePerson: inc.responsiblePerson || prev.responsiblePerson,
+      startDate: inc.startDate || prev.startDate,
+      endDate: inc.endDate || prev.endDate,
+      year: inc.year || prev.year,
+    };
+  });
+}
 import {
   seedAllCollections,
   subscribeToIncomes,
@@ -121,7 +149,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { isBadgedMember, hasAdminPermissions } from './utils/rbac';
 import { isDateInSelectedYear } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
-import { Menu } from 'lucide-react';
+import { Menu, Sun, Moon } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -145,6 +173,32 @@ export default function App() {
   const [gallery, setGalleryState] = useState<EventGalleryImage[]>(getStoredEventGallery);
   const [groupLogo, setGroupLogo] = useState<string>(getStoredGroupLogo);
   const [suggestions, setSuggestions] = useState<any[]>(getStoredSuggestions);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      return (localStorage.getItem('morya_theme') as 'light' | 'dark') || 'light';
+    } catch {
+      return 'light';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('morya_theme', theme);
+    } catch (err) {
+      console.warn('Failed to save theme setting:', err);
+    }
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   // Subscribe to Firestore collections & trigger seed in background
   useEffect(() => {
@@ -221,8 +275,11 @@ export default function App() {
           if (inc && inc.length > 0) setIncomes(inc);
           if (exp && exp.length > 0) setExpenses(exp);
           if (occ && occ.length > 0) {
-            setOccasions(occ);
-            saveOccasions(occ);
+            setOccasions((prev) => {
+              const merged = mergeOccasionsPreservingTasks(occ, prev);
+              saveOccasions(merged);
+              return merged;
+            });
           }
           if (gal && gal.length > 0) {
             setGalleryState(gal);
@@ -254,8 +311,11 @@ export default function App() {
         if (inc) setIncomes(inc);
         if (exp) setExpenses(exp);
         if (occ && occ.length > 0) {
-          setOccasions(occ);
-          saveOccasions(occ);
+          setOccasions((prev) => {
+            const merged = mergeOccasionsPreservingTasks(occ, prev);
+            saveOccasions(merged);
+            return merged;
+          });
         }
         if (gal && gal.length > 0) {
           setGalleryState(gal);
@@ -279,8 +339,11 @@ export default function App() {
         setMembers(cloudDb.members);
       }
       if (Array.isArray(cloudDb.occasions) && cloudDb.occasions.length > 0) {
-        setOccasions(cloudDb.occasions);
-        saveOccasions(cloudDb.occasions);
+        setOccasions((prev) => {
+          const merged = mergeOccasionsPreservingTasks(cloudDb.occasions, prev);
+          saveOccasions(merged);
+          return merged;
+        });
       }
       if (Array.isArray(cloudDb.gallery) && cloudDb.gallery.length > 0) {
         setGalleryState(cloudDb.gallery);
@@ -305,6 +368,13 @@ export default function App() {
       unsubSupabaseRealtime();
     };
   }, []);
+
+  // Automatic Local Snapshot Backup before deploy & on data changes
+  useEffect(() => {
+    if (incomes.length > 0 || expenses.length > 0 || members.length > 0 || occasions.length > 0) {
+      createLocalBackupSnapshot(incomes, expenses, members, occasions, gallery, customIncomeTypes, groupLogo);
+    }
+  }, [incomes, expenses, members, occasions, gallery, customIncomeTypes, groupLogo]);
 
   // Automated Daily Transaction Email Check for moryagroupdata@gmail.com
   useEffect(() => {
@@ -652,7 +722,11 @@ export default function App() {
         </div>
       </div>
     )}
-    <div className="flex h-screen bg-gradient-to-br from-amber-50/80 via-orange-50/40 to-amber-100/60 font-sans text-slate-800 overflow-hidden antialiased select-none">
+    <div className={`flex h-screen font-sans overflow-hidden antialiased select-none transition-colors duration-300 ${
+      theme === 'dark'
+        ? 'bg-slate-950 text-slate-100 dark'
+        : 'bg-gradient-to-br from-amber-50/80 via-orange-50/40 to-amber-100/60 text-slate-800'
+    }`}>
       {/* Sidebar / Mobile Drawer Component */}
       <Sidebar
         activeTab={activeTab}
@@ -670,6 +744,8 @@ export default function App() {
         onClose={() => setIsMobileMenuOpen(false)}
         onOpenOccasions={() => setIsOccasionModalOpen(true)}
         onOpenSettings={() => setIsSettingsModalOpen(true)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Workspace Canvas */}
@@ -701,6 +777,24 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 active:scale-95 transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+              title={theme === 'dark' ? 'लाइट मोड चालू करा' : 'डार्क मोड चालू करा'}
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="w-4 h-4 text-amber-400" />
+                  <span className="text-[10px] font-bold text-amber-300 hidden sm:inline">लाइट</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-amber-300" />
+                  <span className="text-[10px] font-bold text-amber-300 hidden sm:inline">डार्क</span>
+                </>
+              )}
+            </button>
+
             {currentUser.isLoggedIn !== false && (
               <button
                 onClick={() => {
@@ -955,6 +1049,19 @@ export default function App() {
         currentUser={currentUser}
         onOpenLogin={handleOpenLogin}
         onClearAllTransactions={handleClearAllTransactions}
+        onDownloadBackup={() =>
+          downloadBackupJSON(
+            incomes,
+            expenses,
+            members,
+            occasions,
+            gallery,
+            customIncomeTypes,
+            groupLogo
+          )
+        }
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Admin Clear Transactions Password Protection Modal */}

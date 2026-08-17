@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+/* Theme Mode Smooth Transitions & Custom Root Rules */
+html, body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark, body.dark {
+  background-color: #090d16 !important;
+  color: #f8fafc !important;
+}
+
+html.dark main {
+  background-color: #090d16 !important;
+}
+
 /* Printable A4 PDF and Browser Print Styling */
 @media print {
   @page {

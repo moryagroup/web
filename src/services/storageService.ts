@@ -20,11 +20,16 @@ import {
 
 export { DEFAULT_USER };
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   USER: 'morya_mandal_user_v2',
   GROUP_LOGO: 'morya_mandal_group_logo_v2',
   GALLERY: 'morya_mandal_gallery_v2',
+  EVENT_GALLERY: 'morya_mandal_gallery_v2',
   OCCASIONS: 'morya_mandal_occasions_v2',
+  INCOMES: 'morya_mandal_incomes_v2',
+  EXPENSES: 'morya_mandal_expenses_v2',
+  MEMBERS: 'morya_mandal_members_v2',
+  CUSTOM_INCOME_TYPES: 'morya_mandal_custom_income_types_v2',
 };
 
 // Initial state fallbacks (All domain persistence is 100% Supabase DB & CDN)

@@ -28,6 +28,8 @@ import {
   FileDown,
   Calendar,
   Settings,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -46,6 +48,8 @@ interface SidebarProps {
   onClose?: () => void;
   onOpenOccasions?: () => void;
   onOpenSettings?: () => void;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -64,6 +68,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onClose,
   onOpenOccasions,
   onOpenSettings,
+  theme = 'light',
+  onToggleTheme,
 }) => {
   const isAdmin = hasAdminPermissions(currentUser.role) && currentUser.isLoggedIn !== false;
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -498,6 +504,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
         )}
+
+        {/* Theme Toggle Component */}
+        <div className="mt-3 p-2.5 bg-slate-900/90 rounded-xl border border-slate-800 text-slate-300 flex items-center justify-between text-xs font-bold shadow-xs">
+          <span className="flex items-center gap-1.5 text-amber-400">
+            {theme === 'dark' ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-400" />}
+            <span>थीम मोड</span>
+          </span>
+          <button
+            onClick={onToggleTheme}
+            className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-lg border border-slate-700 font-bold text-[11px] flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
+            title={theme === 'dark' ? 'लाइट मोड चालू करा' : 'डार्क मोड चालू करा'}
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <span>लाइट Mode</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-amber-300" />
+                <span>डार्क Mode</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Image Crop Modal */}

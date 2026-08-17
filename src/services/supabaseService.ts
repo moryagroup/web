@@ -266,30 +266,82 @@ export async function fetchOccasionsFromSupabase(): Promise<OccasionEvent[]> {
     console.error('[Supabase] fetchOccasions error:', error);
     return [];
   }
-  return (data || []).map((row) => ({
-    id: row.id,
-    name: row.title || 'कार्यक्रम',
-    year: '२०२६-२७',
-    description: row.description,
-    bannerUrl: row.banner_url,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }));
+  return (data || []).map((row) => {
+    let parsedDetails: Partial<OccasionEvent> = {};
+    if (row.details) {
+      try {
+        parsedDetails = typeof row.details === 'string' ? JSON.parse(row.details) : row.details;
+      } catch (err) {
+        console.warn('Failed to parse occasion details JSON:', err);
+      }
+    }
+
+    const tasksList = Array.isArray(row.tasks)
+      ? row.tasks
+      : Array.isArray(parsedDetails.tasks)
+      ? parsedDetails.tasks
+      : [];
+
+    return {
+      id: row.id,
+      name: row.title || row.name || parsedDetails.name || 'कार्यक्रम',
+      year: row.year || parsedDetails.year || '२०२६-२७',
+      startDate: row.start_date || row.event_date || parsedDetails.startDate,
+      endDate: row.end_date || parsedDetails.endDate,
+      description: row.description || parsedDetails.description,
+      bannerUrl: row.banner_url || parsedDetails.bannerUrl,
+      workDetails: row.work_details || parsedDetails.workDetails,
+      responsiblePerson: row.responsible_person || parsedDetails.responsiblePerson,
+      tasks: tasksList,
+      createdAt: row.created_at || parsedDetails.createdAt,
+      updatedAt: row.updated_at || parsedDetails.updatedAt,
+    };
+  });
 }
 
 export async function saveOccasionToSupabase(occasion: OccasionEvent): Promise<void> {
   if (!isSupabaseConfigured) return;
-  const row = {
+
+  const detailsPayload = JSON.stringify({
+    name: occasion.name,
+    year: occasion.year,
+    startDate: occasion.startDate,
+    endDate: occasion.endDate,
+    description: occasion.description || '',
+    bannerUrl: occasion.bannerUrl || null,
+    workDetails: occasion.workDetails || '',
+    responsiblePerson: occasion.responsiblePerson || '',
+    tasks: occasion.tasks || [],
+    createdAt: occasion.createdAt,
+    updatedAt: occasion.updatedAt,
+  });
+
+  const baseRow = {
     id: occasion.id,
     title: occasion.name,
     description: occasion.description || '',
     event_date: occasion.startDate || new Date().toISOString().split('T')[0],
     location: 'हडपसर, पुणे',
     banner_url: occasion.bannerUrl || null,
+    details: detailsPayload,
     updated_at: new Date().toISOString(),
   };
-  const { error } = await supabase.from('occasions').upsert(row);
-  if (error) console.error('[Supabase] saveOccasion error:', error);
+
+  const { error } = await supabase.from('occasions').upsert(baseRow);
+  if (error) {
+    console.warn('[Supabase] saveOccasion error with details column:', error.message);
+    const simpleRow = {
+      id: occasion.id,
+      title: occasion.name,
+      description: occasion.description || '',
+      event_date: occasion.startDate || new Date().toISOString().split('T')[0],
+      location: 'हडपसर, पुणे',
+      banner_url: occasion.bannerUrl || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { error: simpleErr } = await supabase.from('occasions').upsert(simpleRow);
+    if (simpleErr) console.error('[Supabase] saveOccasion fallback error:', simpleErr);
+  }
 }
 
 export async function deleteOccasionFromSupabase(id: string): Promise<void> {

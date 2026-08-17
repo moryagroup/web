@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CurrentUser } from '../types';
-import { Settings, Plus, Trash2, X, Check, Camera, Tag } from 'lucide-react';
+import { Settings, Plus, Trash2, X, Check, Camera, Tag, Download, Sun, Moon } from 'lucide-react';
 import { hasAdminPermissions } from '../utils/rbac';
 
 interface SettingsModalProps {
@@ -14,6 +14,9 @@ interface SettingsModalProps {
   currentUser: CurrentUser;
   onOpenLogin?: () => void;
   onClearAllTransactions?: () => void;
+  onDownloadBackup?: () => void;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -27,6 +30,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   currentUser,
   onOpenLogin,
   onClearAllTransactions,
+  onDownloadBackup,
+  theme = 'light',
+  onToggleTheme,
 }) => {
   const [newType, setNewType] = useState<string>('');
 
@@ -85,6 +91,48 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Body */}
         <div className="p-5 overflow-y-auto space-y-5 text-xs">
+          {/* Theme Mode Option */}
+          <div className="space-y-2 pb-4 border-b border-slate-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {theme === 'dark' ? <Moon className="w-4 h-4 text-amber-600" /> : <Sun className="w-4 h-4 text-amber-600" />}
+                <h4 className="font-bold text-slate-800">अ‍ॅप थीम मोड (Theme Mode)</h4>
+              </div>
+              <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">
+                {theme === 'dark' ? '🌙 डार्क मोड सक्रीय' : '☀️ लाईट मोड सक्रीय'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              आपल्या पसंतीनुसार अ‍ॅपची व्हिज्युअल थीम लाईट मोड (Light) किंवा डार्क मोड (Dark) मध्ये बदला.
+            </p>
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => onToggleTheme && theme !== 'light' && onToggleTheme()}
+                className={`p-3 rounded-xl border flex items-center justify-center gap-2 font-bold text-xs cursor-pointer transition-all ${
+                  theme === 'light'
+                    ? 'bg-amber-50 border-amber-500 text-amber-950 shadow-xs ring-2 ring-amber-400/50'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <Sun className="w-4 h-4 text-amber-500" />
+                <span>☀️ लाईट मोड (Light)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleTheme && theme !== 'dark' && onToggleTheme()}
+                className={`p-3 rounded-xl border flex items-center justify-center gap-2 font-bold text-xs cursor-pointer transition-all ${
+                  theme === 'dark'
+                    ? 'bg-slate-900 border-amber-500 text-amber-400 shadow-xs ring-2 ring-amber-400/50'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <Moon className="w-4 h-4 text-amber-400" />
+                <span>🌙 डार्क मोड (Dark)</span>
+              </button>
+            </div>
+          </div>
+
           {/* Custom Income Types Section */}
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
@@ -144,6 +192,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               )}
             </div>
           </div>
+
+          {/* Data Backup Section */}
+          {onDownloadBackup && (
+            <div className="pt-4 border-t border-slate-200 space-y-2">
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-emerald-600" />
+                <h4 className="font-bold text-slate-800">डेटा सुरक्षितता व बॅकअप (Data Backup & Safety)</h4>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                मंडळाच्या सर्व जमा, खर्च, सभासद व उत्सव कामांचा संपूर्ण JSON बॅकअप संगणकावर / मोबाईलवर डाउनलोड करून सुरक्षित ठेवा.
+              </p>
+              <button
+                type="button"
+                onClick={onDownloadBackup}
+                className="w-full py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs active:scale-95 text-xs"
+              >
+                <span>💾 संपूर्ण डेटा बॅकअप डाउनलोड करा (Download Backup JSON)</span>
+              </button>
+            </div>
+          )}
 
           {/* Admin Transaction Reset Section */}
           {onClearAllTransactions && isAdmin && (
