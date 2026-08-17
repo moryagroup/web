@@ -1035,6 +1035,7 @@ export default function App() {
                 currentUser={currentUser}
                 members={members}
                 incomes={incomes}
+                expenses={expenses}
                 groupLogo={groupLogo}
                 onUpdateGroupLogo={handleUpdateGroupLogo}
                 onUpdateMember={handleUpdateMember}

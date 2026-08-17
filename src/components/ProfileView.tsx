@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Member, CurrentUser, IncomeTransaction } from '../types';
+import { Member, CurrentUser, IncomeTransaction, ExpenseTransaction } from '../types';
 import moryaLogo from '../assets/morya_logo.jpg';
 import { getMemberSubscriptionPaid, getMemberExtraDonationPaid } from '../services/storageService';
 import { hasAdminPermissions } from '../utils/rbac';
@@ -28,12 +28,14 @@ import {
   RotateCcw,
   Maximize2,
   ArrowLeft,
+  ListChecks,
 } from 'lucide-react';
 
 interface ProfileViewProps {
   currentUser: CurrentUser;
   members: Member[];
   incomes: IncomeTransaction[];
+  expenses?: ExpenseTransaction[];
   groupLogo?: string;
   onUpdateGroupLogo?: (logoUrl: string) => void;
   onUpdateMember: (updatedMember: Member) => void;
@@ -46,6 +48,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   currentUser,
   members,
   incomes,
+  expenses = [],
   groupLogo,
   onUpdateGroupLogo,
   onUpdateMember,
@@ -258,6 +261,28 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const totalContributed = subscriptionPaid + donationPaid;
   const target = currentProfile.annualTargetAmount || 6000;
   const pendingTarget = Math.max(0, target - subscriptionPaid);
+
+  const [historyTab, setHistoryTab] = useState<'credit' | 'debit'>('credit');
+
+  const memberIncomes = useMemo(() => {
+    const nameNorm = (currentProfile.fullName || '').trim().toLowerCase();
+    return incomes.filter((i) => {
+      const isLinked = i.linkedMemberId === currentProfile.id;
+      const isDepositor = (i.depositorName || '').trim().toLowerCase().includes(nameNorm);
+      const isCreator = (i.createdBy || '').trim().toLowerCase().includes(nameNorm);
+      return isLinked || isDepositor || isCreator;
+    });
+  }, [incomes, currentProfile]);
+
+  const memberExpenses = useMemo(() => {
+    const nameNorm = (currentProfile.fullName || '').trim().toLowerCase();
+    return expenses.filter((e) => {
+      const isLinked = e.linkedMemberId === currentProfile.id;
+      const isRecipient = (e.recipientName || '').trim().toLowerCase().includes(nameNorm);
+      const isCreator = (e.createdBy || '').trim().toLowerCase().includes(nameNorm);
+      return isLinked || isRecipient || isCreator;
+    });
+  }, [expenses, currentProfile]);
 
   const formattedBirthDate = currentProfile.birthDate
     ? new Date(currentProfile.birthDate).toLocaleDateString('mr-IN', {
@@ -775,6 +800,151 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </p>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Member Credit & Debit History Section */}
+            {currentProfile.id !== 'm-admin' && (
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <ListChecks className="w-5 h-5 text-amber-600" />
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900">
+                        {currentProfile.fullName} यांचे क्रेडिट & डेबिट व्यवहार ({memberIncomes.length + memberExpenses.length})
+                      </h3>
+                      <p className="text-[11px] text-slate-500">
+                        सदस्याने नोंदवलेले, जमा केलेले किंवा प्राप्त केलेले सर्व व्यवहार
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Tab switchers */}
+                  <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setHistoryTab('credit')}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        historyTab === 'credit'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      📥 जमा व्यवहार ({memberIncomes.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryTab('debit')}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        historyTab === 'debit'
+                          ? 'bg-rose-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      📤 खर्च व्यवहार ({memberExpenses.length})
+                    </button>
+                  </div>
+                </div>
+
+                {/* Credit Tab */}
+                {historyTab === 'credit' && (
+                  <div>
+                    {memberIncomes.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic text-center py-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        या सदस्याशी संबंधित कोणतीही जमा (Credit) नोंद उपलब्ध नाही.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                              <th className="p-2.5">दिनांक</th>
+                              <th className="p-2.5">प्रकार</th>
+                              <th className="p-2.5">जमाकर्ते नाव</th>
+                              <th className="p-2.5 text-right">रक्कम</th>
+                              <th className="p-2.5 text-center">स्थिती</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                            {memberIncomes.map((inc) => (
+                              <tr key={inc.id} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="p-2.5 whitespace-nowrap text-slate-500 font-mono text-[11px]">
+                                  {inc.transactionDate}
+                                </td>
+                                <td className="p-2.5 font-bold text-slate-700">{inc.incomeType}</td>
+                                <td className="p-2.5 font-bold">{inc.depositorName}</td>
+                                <td className="p-2.5 text-right font-black text-emerald-700">
+                                  + ₹{inc.amount.toLocaleString('en-IN')}
+                                </td>
+                                <td className="p-2.5 text-center">
+                                  {inc.approvalStatus === 'मंजूर' ? (
+                                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">
+                                      ✓ मंजूर
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded font-bold text-[10px]">
+                                      ⏳ प्रलंबित
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Debit Tab */}
+                {historyTab === 'debit' && (
+                  <div>
+                    {memberExpenses.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic text-center py-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        या सदस्याशी संबंधित कोणतीही खर्च (Debit) नोंद उपलब्ध नाही.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                              <th className="p-2.5">दिनांक</th>
+                              <th className="p-2.5">प्रवर्ग</th>
+                              <th className="p-2.5">प्राप्तकर्ते नाव</th>
+                              <th className="p-2.5 text-right">रक्कम</th>
+                              <th className="p-2.5 text-center">स्थिती</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
+                            {memberExpenses.map((exp) => (
+                              <tr key={exp.id} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="p-2.5 whitespace-nowrap text-slate-500 font-mono text-[11px]">
+                                  {exp.expenseDate}
+                                </td>
+                                <td className="p-2.5 font-bold text-slate-700">{exp.expenseCategory}</td>
+                                <td className="p-2.5 font-bold">{exp.recipientName}</td>
+                                <td className="p-2.5 text-right font-black text-rose-700">
+                                  - ₹{exp.amount.toLocaleString('en-IN')}
+                                </td>
+                                <td className="p-2.5 text-center">
+                                  {exp.approvalStatus === 'मंजूर' ? (
+                                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">
+                                      ✓ मंजूर
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded font-bold text-[10px]">
+                                      ⏳ प्रलंबित
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
