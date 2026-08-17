@@ -174,7 +174,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     occasion: OccasionEvent,
     task: EventTask,
     newStatus: 'प्रलंबित' | 'प्रक्रियेत' | 'पूर्ण' | 'अडचण',
-    obstacleNote?: string
+    obstacleNote?: string,
+    obstacleSolution?: string
   ) => {
     if (!onUpdateOccasion) return;
     let updatedTasks = [...(occasion.tasks || [])];
@@ -184,6 +185,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       ...task,
       status: newStatus,
       obstacleNote: obstacleNote !== undefined ? obstacleNote : task.obstacleNote,
+      obstacleSolution: obstacleSolution !== undefined ? obstacleSolution : task.obstacleSolution,
     };
 
     if (taskIndex >= 0) {
@@ -193,6 +195,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
 
     onUpdateOccasion({ ...occasion, tasks: updatedTasks });
+  };
+
+  const handleRevertObstacle = (occasion: OccasionEvent, task: EventTask) => {
+    handleUpdateTaskStatus(occasion, task, 'प्रक्रियेत', '', '');
   };
 
   const displayIncomes = Array.isArray(incomes) ? incomes : [];
@@ -429,7 +435,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                   {/* Display Obstacle Alert note if reported */}
                   {(task.obstacleNote || task.status === 'अडचण') && (
-                    <div className="p-2 bg-rose-900/80 border border-rose-600/70 text-rose-200 rounded-lg text-[11px] font-bold space-y-1">
+                    <div className="p-2.5 bg-rose-900/80 border border-rose-600/70 text-rose-200 rounded-lg text-[11px] font-bold space-y-1.5">
                       <div className="flex justify-between items-center">
                         <span className="flex items-center gap-1 text-rose-300">
                           <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
@@ -438,36 +444,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         {onUpdateOccasion && (
                           <button
                             type="button"
-                            onClick={() => handleUpdateTaskStatus(occasion, task, task.status === 'अडचण' ? 'प्रक्रियेत' : task.status, '')}
-                            className="text-[10px] bg-rose-800 hover:bg-rose-700 text-white px-2 py-0.5 rounded cursor-pointer"
+                            onClick={() => handleRevertObstacle(occasion, task)}
+                            className="text-[10px] bg-rose-800 hover:bg-rose-700 text-white px-2 py-0.5 rounded cursor-pointer flex items-center gap-1 font-bold"
+                            title="अडचण पूर्ववत करा व काम पुन्हा सुरु करा"
                           >
-                            ✕ अडचण हटवा
+                            <span>↩️ अडचण पूर्ववत करा</span>
                           </button>
                         )}
                       </div>
                       <p className="text-white font-medium">{task.obstacleNote || 'अडचण प्रलंबित आहे'}</p>
+
+                      {/* Display Solution / Revert Suggestion if present */}
+                      {task.obstacleSolution && (
+                        <div className="mt-1 pt-1.5 border-t border-rose-700/60 text-emerald-300">
+                          <span className="font-bold text-[10px] text-emerald-400">💡 सुचवलेला उपाय / उत्तर: </span>
+                          <span className="text-white font-medium">{task.obstacleSolution}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* 3 Status Option Buttons & Obstacle Report Button */}
+                {/* 3 Status Option Buttons & Obstacle / Solution Buttons */}
                 {onUpdateOccasion && (
                   <div className="pt-2 border-t border-slate-800/80 space-y-2">
                     <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold">
                       <span>स्थिती बदला (Change Status):</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const note = window.prompt('उत्सव कामातील अडचण/समस्या थोडक्यात प्रविष्ट करा (उदा. लाईट वायर अपुरी आहे, साहित्याची गरज आहे):');
-                          if (note && note.trim() !== '') {
-                            handleUpdateTaskStatus(occasion, task, 'अडचण', note.trim());
-                          }
-                        }}
-                        className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30"
-                      >
-                        <AlertTriangle className="w-3 h-3 text-amber-400" />
-                        <span>⚠️ अडचण नोंदवा</span>
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {(task.obstacleNote || task.status === 'अडचण') && (
+                          <button
+                            type="button"
+                            onClick={() => handleRevertObstacle(occasion, task)}
+                            className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 cursor-pointer bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30"
+                          >
+                            <span>↩️ पूर्ववत करा</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const note = window.prompt('उत्सव कामातील अडचण/समस्या थोडक्यात प्रविष्ट करा (उदा. लाईट वायर अपुरी आहे, साहित्याची गरज आहे):');
+                            if (note && note.trim() !== '') {
+                              handleUpdateTaskStatus(occasion, task, 'अडचण', note.trim());
+                            }
+                          }}
+                          className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30"
+                        >
+                          <AlertTriangle className="w-3 h-3 text-amber-400" />
+                          <span>⚠️ अडचण नोंदवा</span>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-1.5 text-[10px]">
@@ -539,24 +565,69 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {committeeObstacles.map(({ occasion, task }) => (
               <div
                 key={`comm-obs-${task.id}`}
-                className="bg-slate-900/90 p-3.5 rounded-xl border border-rose-500/50 space-y-1.5 shadow-md"
+                className="bg-slate-900/90 p-3.5 rounded-xl border border-rose-500/50 space-y-2 shadow-md flex flex-col justify-between"
               >
-                <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 bg-purple-500/30 text-purple-300 font-bold text-[10px] rounded border border-purple-400/40">
-                    {occasion.name}
-                  </span>
-                  <span className="px-2 py-0.5 bg-rose-600 text-white font-black text-[10px] rounded-full border border-rose-400">
-                    ⚠️ {task.status}
-                  </span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 bg-purple-500/30 text-purple-300 font-bold text-[10px] rounded border border-purple-400/40">
+                      {occasion.name}
+                    </span>
+                    <span className="px-2 py-0.5 bg-rose-600 text-white font-black text-[10px] rounded-full border border-rose-400">
+                      ⚠️ {task.status}
+                    </span>
+                  </div>
+                  <p className="font-black text-amber-300 text-sm">{task.taskTitle}</p>
+                  <p className="text-[10px] text-slate-300">
+                    जबाबदार सदस्य: <span className="text-white font-bold">{task.assignedMemberName}</span> ({task.assignedMemberRole || 'सभासद'})
+                  </p>
+                  <div className="p-2 bg-rose-900/90 border border-rose-700 text-rose-100 rounded-lg text-[11px] font-bold">
+                    <span>⚠️ नोंदवलेली अडचण: </span>
+                    <span className="text-white">{task.obstacleNote || task.notes || 'अडचण प्रलंबित आहे'}</span>
+                  </div>
+
+                  {/* Display Solution / Revert Suggestion if present */}
+                  {task.obstacleSolution && (
+                    <div className="p-2 bg-emerald-950/80 border border-emerald-600/70 text-emerald-200 rounded-lg text-[11px] font-bold">
+                      <span>💡 सुचवलेला उपाय / उत्तर: </span>
+                      <span className="text-white font-medium">{task.obstacleSolution}</span>
+                    </div>
+                  )}
                 </div>
-                <p className="font-black text-amber-300 text-sm">{task.taskTitle}</p>
-                <p className="text-[10px] text-slate-300">
-                  जबाबदार सदस्य: <span className="text-white font-bold">{task.assignedMemberName}</span> ({task.assignedMemberRole || 'सभासद'})
-                </p>
-                <div className="p-2 bg-rose-900/90 border border-rose-700 text-rose-100 rounded-lg text-[11px] font-bold mt-1">
-                  <span>⚠️ नोंदवलेली अडचण: </span>
-                  <span className="text-white">{task.obstacleNote || task.notes || 'अडचण प्रलंबित आहे'}</span>
-                </div>
+
+                {/* Committee Actions: Suggest Solution or Revert Obstacle */}
+                {onUpdateOccasion && (
+                  <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const solutionText = window.prompt(
+                          `अडचणीवर उपाय / सुचवणी प्रविष्ट करा (${currentUser.name}):`,
+                          task.obstacleSolution || ''
+                        );
+                        if (solutionText && solutionText.trim() !== '') {
+                          handleUpdateTaskStatus(
+                            occasion,
+                            task,
+                            task.status,
+                            task.obstacleNote,
+                            `${currentUser.name} (${currentUser.role}): ${solutionText.trim()}`
+                          );
+                        }
+                      }}
+                      className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg font-bold cursor-pointer transition-colors"
+                    >
+                      💡 उपाय / सुचवणी द्या
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRevertObstacle(occasion, task)}
+                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-sm cursor-pointer transition-all active:scale-95"
+                    >
+                      ↩️ अडचण पूर्ववत करा
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

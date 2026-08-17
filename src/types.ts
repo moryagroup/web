@@ -95,6 +95,7 @@ export interface EventTask {
   status: 'प्रलंबित' | 'प्रक्रियेत' | 'पूर्ण' | 'अडचण';
   notes?: string;
   obstacleNote?: string; // Obstacle / Issue reported by assigned member
+  obstacleSolution?: string; // Solution / Revert suggestion provided by committee member
 }
 
 export interface OccasionEvent {
