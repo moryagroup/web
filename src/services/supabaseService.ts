@@ -137,30 +137,41 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
     console.error('[Supabase] fetchIncomes error:', error);
     return [];
   }
-  return (data || []).map((row) => ({
-    id: row.id,
-    transactionNo: row.transaction_no,
-    financialYear: row.financial_year,
-    incomeType: row.income_type,
-    depositorName: row.depositor_name,
-    depositorType: row.depositor_type,
-    linkedMemberId: row.linked_member_id,
-    amount: Number(row.amount),
-    transactionDate: row.transaction_date,
-    paymentMethod: row.payment_method,
-    paymentReference: row.payment_reference,
-    receiptNumber: row.receipt_number,
-    reason: row.reason,
-    notes: row.notes,
-    createdBy: row.recorded_by || 'ॲडमिन',
-    createdAt: row.created_at || new Date().toISOString(),
-    updatedAt: row.updated_at,
-  }));
+  return (data || []).map((row) => {
+    let attachmentUrl = row.attachment_url || row.bill_photo_url || row.photo_url || undefined;
+    let cleanReason = row.reason || '';
+    if (!attachmentUrl && cleanReason.includes('__ATTACHMENT__:')) {
+      const parts = cleanReason.split('__ATTACHMENT__:');
+      cleanReason = parts[0].trim();
+      attachmentUrl = parts[1].trim();
+    }
+    return {
+      id: row.id,
+      transactionNo: row.transaction_no,
+      financialYear: row.financial_year,
+      incomeType: row.income_type,
+      depositorName: row.depositor_name,
+      depositorType: row.depositor_type,
+      linkedMemberId: row.linked_member_id,
+      amount: Number(row.amount),
+      transactionDate: row.transaction_date,
+      paymentMethod: row.payment_method,
+      paymentReference: row.payment_reference,
+      receiptNumber: row.receipt_number,
+      reason: cleanReason,
+      notes: row.notes,
+      attachmentUrl,
+      createdBy: row.recorded_by || 'ॲडमिन',
+      createdAt: row.created_at || new Date().toISOString(),
+      updatedAt: row.updated_at,
+    };
+  });
 }
 
 export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<void> {
   if (!isSupabaseConfigured) return;
-  const row = {
+  const dbAttachmentUrl = income.attachmentUrl || null;
+  const row: any = {
     id: income.id,
     transaction_no: income.transactionNo,
     financial_year: income.financialYear,
@@ -177,9 +188,32 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
     notes: income.notes || null,
     recorded_by: income.createdBy || 'ॲडमिन',
     updated_at: new Date().toISOString(),
+    attachment_url: dbAttachmentUrl,
+    bill_photo_url: dbAttachmentUrl,
   };
   const { error } = await supabase.from('incomes').upsert(row);
-  if (error) console.error('[Supabase] saveIncome error:', error);
+  if (error) {
+    console.warn('[Supabase] saveIncome primary error, trying core columns fallback:', error.message);
+    const fallbackRow = {
+      id: income.id,
+      transaction_no: income.transactionNo,
+      financial_year: income.financialYear,
+      income_type: income.incomeType,
+      depositor_name: income.depositorName,
+      depositor_type: income.depositorType,
+      linked_member_id: income.linkedMemberId || null,
+      amount: income.amount,
+      transaction_date: income.transactionDate,
+      payment_method: income.paymentMethod,
+      payment_reference: income.paymentReference || null,
+      receipt_number: income.receiptNumber || null,
+      reason: dbAttachmentUrl ? `${income.reason}\n__ATTACHMENT__:${dbAttachmentUrl}` : income.reason,
+      notes: income.notes || null,
+      recorded_by: income.createdBy || 'ॲडमिन',
+      updated_at: new Date().toISOString(),
+    };
+    await supabase.from('incomes').upsert(fallbackRow);
+  }
 }
 
 export async function deleteIncomeFromSupabase(id: string): Promise<void> {
@@ -197,32 +231,43 @@ export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]>
     console.error('[Supabase] fetchExpenses error:', error);
     return [];
   }
-  return (data || []).map((row) => ({
-    id: row.id,
-    transactionNo: row.transaction_no,
-    financialYear: row.financial_year,
-    expenseCategory: row.expense_category,
-    recipientType: 'व्यक्ती' as const,
-    recipientName: row.recipient_name,
-    linkedMemberId: row.linked_member_id,
-    amount: Number(row.amount),
-    expenseDate: row.expense_date,
-    paymentMethod: row.payment_method,
-    billNumber: row.bill_number,
-    reason: row.reason,
-    approvalStatus: row.approval_status || 'प्रलंबित',
-    approvedBy: row.approved_by,
-    approvedByRole: row.approved_by_role,
-    approvedAt: row.approved_at,
-    createdBy: row.recorded_by || 'ॲडमिन',
-    createdAt: row.created_at || new Date().toISOString(),
-    updatedAt: row.updated_at,
-  }));
+  return (data || []).map((row) => {
+    let attachmentUrl = row.attachment_url || row.bill_photo_url || row.photo_url || undefined;
+    let cleanReason = row.reason || '';
+    if (!attachmentUrl && cleanReason.includes('__ATTACHMENT__:')) {
+      const parts = cleanReason.split('__ATTACHMENT__:');
+      cleanReason = parts[0].trim();
+      attachmentUrl = parts[1].trim();
+    }
+    return {
+      id: row.id,
+      transactionNo: row.transaction_no,
+      financialYear: row.financial_year,
+      expenseCategory: row.expense_category,
+      recipientType: 'व्यक्ती' as const,
+      recipientName: row.recipient_name,
+      linkedMemberId: row.linked_member_id,
+      amount: Number(row.amount),
+      expenseDate: row.expense_date,
+      paymentMethod: row.payment_method,
+      billNumber: row.bill_number,
+      reason: cleanReason,
+      approvalStatus: row.approval_status || 'प्रलंबित',
+      approvedBy: row.approved_by,
+      approvedByRole: row.approved_by_role,
+      approvedAt: row.approved_at,
+      attachmentUrl,
+      createdBy: row.recorded_by || 'ॲडमिन',
+      createdAt: row.created_at || new Date().toISOString(),
+      updatedAt: row.updated_at,
+    };
+  });
 }
 
 export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promise<void> {
   if (!isSupabaseConfigured) return;
-  const row = {
+  const dbAttachmentUrl = expense.attachmentUrl || null;
+  const row: any = {
     id: expense.id,
     transaction_no: expense.transactionNo,
     financial_year: expense.financialYear,
@@ -240,9 +285,33 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
     approved_at: expense.approvedAt || null,
     recorded_by: expense.createdBy || 'ॲडमिन',
     updated_at: new Date().toISOString(),
+    attachment_url: dbAttachmentUrl,
+    bill_photo_url: dbAttachmentUrl,
   };
   const { error } = await supabase.from('expenses').upsert(row);
-  if (error) console.error('[Supabase] saveExpense error:', error);
+  if (error) {
+    console.warn('[Supabase] saveExpense primary error, trying core columns fallback:', error.message);
+    const fallbackRow = {
+      id: expense.id,
+      transaction_no: expense.transactionNo,
+      financial_year: expense.financialYear,
+      expense_category: expense.expenseCategory,
+      recipient_name: expense.recipientName,
+      linked_member_id: expense.linkedMemberId || null,
+      amount: expense.amount,
+      expense_date: expense.expenseDate,
+      payment_method: expense.paymentMethod,
+      bill_number: expense.billNumber || null,
+      reason: dbAttachmentUrl ? `${expense.reason}\n__ATTACHMENT__:${dbAttachmentUrl}` : expense.reason,
+      approval_status: expense.approvalStatus,
+      approved_by: expense.approvedBy || null,
+      approved_by_role: expense.approvedByRole || null,
+      approved_at: expense.approvedAt || null,
+      recorded_by: expense.createdBy || 'ॲडमिन',
+      updated_at: new Date().toISOString(),
+    };
+    await supabase.from('expenses').upsert(fallbackRow);
+  }
 }
 
 export async function deleteExpenseFromSupabase(id: string): Promise<void> {
