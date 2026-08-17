@@ -57,6 +57,26 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   const [selectedIncomeDetail, setSelectedIncomeDetail] = useState<IncomeTransaction | null>(null);
   const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
 
+  const [showFilters, setShowFilters] = useState(false);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedYear !== 'ALL') count++;
+    if (selectedType !== 'ALL') count++;
+    if (selectedDepositorType !== 'ALL') count++;
+    if (selectedPaymentMethod !== 'ALL') count++;
+    if (selectedMemberId !== 'ALL') count++;
+    return count;
+  }, [selectedYear, selectedType, selectedDepositorType, selectedPaymentMethod, selectedMemberId]);
+
+  const handleResetFilters = () => {
+    setSelectedYear('ALL');
+    setSelectedType('ALL');
+    setSelectedDepositorType('ALL');
+    setSelectedPaymentMethod('ALL');
+    setSelectedMemberId('ALL');
+  };
+
   const handleProofClick = (url: string) => {
     if (!url) return;
     if (isGoogleDriveUrl(url)) {
@@ -97,32 +117,19 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   const canViewAll = currentUser ? canApproveFinancialTransactions(currentUser.role) : false;
 
   const baseIncomes = useMemo(() => {
-    if (canViewAll) {
-      return incomes;
-    }
-    const userNameNorm = (currentUser?.name || '').trim().toLowerCase();
-    return incomes.filter((i) => {
-      const isLinkedMember = currentMember && i.linkedMemberId === currentMember.id;
-      const isDepositor = (i.depositorName || '').trim().toLowerCase().includes(userNameNorm);
-      const isCreator = (i.createdBy || '').trim().toLowerCase().includes(userNameNorm);
-      return isLinkedMember || isDepositor || isCreator;
-    });
-  }, [incomes, canViewAll, currentMember, currentUser]);
+    return incomes;
+  }, [incomes]);
 
-  // Unique list of income types in dataset
   const availableIncomeTypes = useMemo(() => {
     const types = new Set<string>();
     baseIncomes.forEach((i) => types.add(i.incomeType));
     return Array.from(types);
   }, [baseIncomes]);
 
-  // Filter logic
   const filteredIncomes = useMemo(() => {
     return baseIncomes.filter((item) => {
-      // Calendar Year match (Jan - Dec)
       if (selectedYear !== 'ALL' && !isDateInSelectedYear(item.transactionDate, selectedYear, item.financialYear)) return false;
 
-      // Search match
       const query = searchTerm.toLowerCase();
       const matchSearch =
         !searchTerm ||
@@ -133,19 +140,11 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
         (item.receiptNumber && item.receiptNumber.toLowerCase().includes(query));
 
       if (!matchSearch) return false;
-
-      // Income type filter
       if (selectedType !== 'ALL' && item.incomeType !== selectedType) return false;
-
-      // Depositor type filter
       if (selectedDepositorType !== 'ALL' && item.depositorType !== selectedDepositorType)
         return false;
-
-      // Payment method filter
       if (selectedPaymentMethod !== 'ALL' && item.paymentMethod !== selectedPaymentMethod)
         return false;
-
-      // Member filter
       if (selectedMemberId !== 'ALL' && item.linkedMemberId !== selectedMemberId) return false;
 
       return true;
@@ -166,7 +165,6 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
 
   return (
     <div className="space-y-6 my-4">
-      {/* Top Banner & Quick Metrics */}
       <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3">
           {onNavigate && (
@@ -213,7 +211,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
 
       {/* Filter Toolbar */}
       <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
-        <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex gap-2.5 items-center">
           {/* Search Bar */}
           <div className="flex-1 relative">
             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
@@ -222,109 +220,165 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="नाव, व्यवहार क्र., पावती क्र. किंवा कारणाने शोधा..."
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full pl-9 pr-8 py-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
                 className="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-slate-600"
+                title="शोध मजकूर काढा"
               >
                 ✕
               </button>
             )}
           </div>
 
-          {/* Financial Year Filter */}
-          <div className="w-full md:w-44">
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="ALL">सर्व वर्षे (All Years)</option>
-              <option value="२०२६">२०२६ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२५">२०२५ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२४">२०२४ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२७">२०२७ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२६-२७">२०२६-२७ (आर्थिक वर्ष)</option>
-              <option value="२०२५-२६">२०२५-२६ (आर्थिक वर्ष)</option>
-            </select>
-          </div>
-
-          {/* Income Type Filter */}
-          <div className="w-full md:w-48">
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="ALL">सर्व जमा प्रकार</option>
-              {availableIncomeTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Compact Filter Toggle Icon Button */}
+          <button
+            type="button"
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 active:scale-95 ${
+              showFilters || activeFilterCount > 0
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700 shadow-xs'
+                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'
+            }`}
+            title="फिल्टर्स दाखवा किंवा लपवा"
+          >
+            <Filter className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="hidden sm:inline">फिल्टर्स</span>
+            {activeFilterCount > 0 && (
+              <span className="bg-emerald-600 text-white rounded-full px-1.5 py-0.2 text-[10px] font-black">
+                {activeFilterCount}
+              </span>
+            )}
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                showFilters ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
         </div>
 
-        {/* Secondary Filter Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100 text-xs">
-          <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-              जमा करणारा प्रकार:
-            </label>
-            <select
-              value={selectedDepositorType}
-              onChange={(e) => setSelectedDepositorType(e.target.value)}
-              className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-            >
-              <option value="ALL">सर्व प्रकार</option>
-              <option value="सभासद">सभासद</option>
-              <option value="माजी सभासद">माजी सभासद</option>
-              <option value="व्यक्ती / देणगीदार">व्यक्ती / देणगीदार</option>
-              <option value="संस्था">संस्था</option>
-              <option value="व्यवसाय / दुकान">व्यवसाय / दुकान</option>
-              <option value="प्रायोजक">प्रायोजक</option>
-              <option value="अज्ञात / नाव न सांगणारे">अज्ञात देणगीदार</option>
-            </select>
-          </div>
+        {/* Collapsible Filter Panel containing ALL filters */}
+        {showFilters && (
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-700/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <Filter className="w-3 h-3 text-emerald-500" />
+                सर्व फिल्टर पर्याय (All Filters):
+              </span>
+              {activeFilterCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  सर्व फिल्टर्स काढा (Reset)
+                </button>
+              )}
+            </div>
 
-          <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-              सभासद फिल्टर:
-            </label>
-            <select
-              value={selectedMemberId}
-              onChange={(e) => setSelectedMemberId(e.target.value)}
-              className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-            >
-              <option value="ALL">सर्व सभासद</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.fullName} ({m.memberCode})
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+              {/* Year Filter */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">
+                  वर्ष (Year):
+                </label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="ALL">सर्व वर्षे (All Years)</option>
+                  <option value="२०२६">२०२६ (१ जाने - ३१ डिसे)</option>
+                  <option value="२०२५">२०२५ (१ जाने - ३१ डिसे)</option>
+                  <option value="२०२४">२०२४ (१ जाने - ३१ डिसे)</option>
+                  <option value="२०२७">२०२७ (१ जाने - ३१ डिसे)</option>
+                  <option value="२०२६-२७">२०२६-२७ (आर्थिक वर्ष)</option>
+                  <option value="२०२५-२६">२०२५-२६ (आर्थिक वर्ष)</option>
+                </select>
+              </div>
 
-          <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-              पेमेंट पद्धत:
-            </label>
-            <select
-              value={selectedPaymentMethod}
-              onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-              className="w-full p-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-            >
-              <option value="ALL">सर्व पेमेंट पद्धती</option>
-              <option value="रोख">रोख (Cash)</option>
-              <option value="UPI">UPI / PhonePe</option>
-              <option value="बँक ट्रान्सफर">बँक ट्रान्सफर</option>
-              <option value="चेक">चेक</option>
-            </select>
+              {/* Income Type Filter */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">
+                  जमा प्रकार:
+                </label>
+                <select
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="ALL">सर्व जमा प्रकार</option>
+                  {availableIncomeTypes.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Depositor Type Filter */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">
+                  जमा करणारा प्रकार:
+                </label>
+                <select
+                  value={selectedDepositorType}
+                  onChange={(e) => setSelectedDepositorType(e.target.value)}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="ALL">सर्व प्रकार</option>
+                  <option value="सभासद">सभासद</option>
+                  <option value="माजी सभासद">माजी सभासद</option>
+                  <option value="व्यक्ती / देणगीदार">व्यक्ती / देणगीदार</option>
+                  <option value="संस्था">संस्था</option>
+                  <option value="व्यवसाय / दुकान">व्यवसाय / दुकान</option>
+                  <option value="प्रायोजक">प्रायोजक</option>
+                  <option value="अज्ञात / नाव न सांगणारे">अज्ञात देणगीदार</option>
+                </select>
+              </div>
+
+              {/* Member Filter */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">
+                  सभासद फिल्टर:
+                </label>
+                <select
+                  value={selectedMemberId}
+                  onChange={(e) => setSelectedMemberId(e.target.value)}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="ALL">सर्व सभासद</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.fullName} ({m.memberCode})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Payment Method Filter */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">
+                  पेमेंट पद्धत:
+                </label>
+                <select
+                  value={selectedPaymentMethod}
+                  onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="ALL">सर्व पेमेंट पद्धती</option>
+                  <option value="रोख">रोख (Cash)</option>
+                  <option value="UPI">UPI / PhonePe</option>
+                  <option value="बँक ट्रान्सफर">बँक ट्रान्सफर</option>
+                  <option value="चेक">चेक</option>
+                </select>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Income Table */}

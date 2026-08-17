@@ -8,6 +8,9 @@ import { ProofLightboxModal } from './ProofLightboxModal';
 import { isGoogleDriveUrl } from '../services/googleDriveService';
 import {
   Search,
+  Filter,
+  ChevronDown,
+  RotateCcw,
   ArrowUpRight,
   CheckCircle,
   Clock,
@@ -57,6 +60,24 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
   );
   const [editingExpense, setEditingExpense] = useState<ExpenseTransaction | null>(null);
   const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
+
+  const [showFilters, setShowFilters] = useState(false);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedYear !== 'ALL') count++;
+    if (selectedCategory !== 'ALL') count++;
+    if (selectedStatus !== 'ALL') count++;
+    if (selectedPaymentMethod !== 'ALL') count++;
+    return count;
+  }, [selectedYear, selectedCategory, selectedStatus, selectedPaymentMethod]);
+
+  const handleResetFilters = () => {
+    setSelectedYear('ALL');
+    setSelectedCategory('ALL');
+    setSelectedStatus('ALL');
+    setSelectedPaymentMethod('ALL');
+  };
 
   const handleProofClick = (url: string) => {
     if (!url) return;
@@ -171,13 +192,13 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
   };
 
   const handleExportCSV = () => {
-    const filename = `MoryaGroup_Expenses_${selectedYear}_${Date.now()}.csv`;
+    const filename = `morya_kharch_itahas_${selectedYear}_${new Date().toISOString().split('T')[0]}.csv`;
     const headers = [
-      'अ क्र.',
+      'अ.क्र.',
       'तारीख',
       'व्यवहार क्र.',
-      'प्राप्तकर्ता (कोणाला दिले)',
-      'प्राप्तकर्ता प्रकार',
+      'प्राप्तकर्ता / Vendor',
+      'प्रकार',
       'खर्च प्रकार',
       'कारण / तपशील',
       'रक्कम (₹)',
@@ -272,7 +293,7 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
 
       {/* Filter Toolbar */}
       <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
-        <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex gap-2.5 items-center">
           {/* Search */}
           <div className="flex-1 relative">
             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
@@ -281,56 +302,141 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="प्राप्तकर्ता नाव, बिल क्र., कारणाने शोधा..."
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full pl-9 pr-8 py-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-slate-600"
+                title="शोध मजकूर काढा"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
-          {/* Year */}
-          <div className="w-full md:w-44">
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
-            >
-              <option value="ALL">सर्व वर्षे (All Years)</option>
-              <option value="२०२६">२०२६ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२५">२०२५ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२४">२०२४ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२७">२०२७ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२६-२७">२०२६-२७ (आर्थिक वर्ष)</option>
-              <option value="२०२५-२६">२०२५-२६ (आर्थिक वर्ष)</option>
-            </select>
-          </div>
-
-          {/* Category */}
-          <div className="w-full md:w-48">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
-            >
-              <option value="ALL">सर्व खर्च प्रकार</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Approval Status Filter */}
-          <div className="w-full md:w-40">
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
-            >
-              <option value="ALL">सर्व मंजुरी स्थिती</option>
-              <option value="मंजूर">मंजूर (Approved)</option>
-              <option value="प्रलंबित">प्रलंबित (Pending)</option>
-            </select>
-          </div>
+          {/* Compact Filter Toggle Icon Button */}
+          <button
+            type="button"
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 active:scale-95 ${
+              showFilters || activeFilterCount > 0
+                ? 'bg-rose-50 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-700 shadow-xs'
+                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600'
+            }`}
+            title="फिल्टर्स दाखवा किंवा लपवा"
+          >
+            <Filter className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+            <span className="hidden sm:inline">फिल्टर्स</span>
+            {activeFilterCount > 0 && (
+              <span className="bg-rose-600 text-white rounded-full px-1.5 py-0.2 text-[10px] font-black">
+                {activeFilterCount}
+              </span>
+            )}
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                showFilters ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
         </div>
+
+        {/* Collapsible Secondary Filter Panel */}
+        {showFilters && (
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-700/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <Filter className="w-3 h-3 text-rose-500" />
+                सर्व खर्च फिल्टर पर्याय (All Expense Filters):
+              </span>
+              {activeFilterCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  सर्व फिल्टर्स काढा (Reset)
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              {/* Year Filter */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">
+                  वर्ष (Year):
+                </label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                >
+                  <option value="ALL">सर्व वर्षे (All Years)</option>
+                  <option value="२०२६">२०२६ (१ जाने - ३१ डिसे)</option>
+                  <option value="२०२५">२०२५ (१ जाने - ३१ डिसे)</option>
+                  <option value="२०२४">२०२४ (१ जाने - ३१ डिसे)</option>
+                  <option value="२०२७">२०२७ (१ जाने - ३१ डिसे)</option>
+                  <option value="२०२६-२७">२०२६-२७ (आर्थिक वर्ष)</option>
+                  <option value="२०२५-२६">२०२५-२६ (आर्थिक वर्ष)</option>
+                </select>
+              </div>
+
+              {/* Category Filter */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">
+                  खर्च प्रकार (Category):
+                </label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500"
+                >
+                  <option value="ALL">सर्व खर्च प्रकार</option>
+                  {categories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Approval Status Filter */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">
+                  मंजुरी स्थिती:
+                </label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500"
+                >
+                  <option value="ALL">सर्व मंजुरी स्थिती</option>
+                  <option value="मंजूर">मंजूर (Approved)</option>
+                  <option value="प्रलंबित">प्रलंबित (Pending)</option>
+                </select>
+              </div>
+
+              {/* Payment Method Filter */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">
+                  पेमेंट पद्धत:
+                </label>
+                <select
+                  value={selectedPaymentMethod}
+                  onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500"
+                >
+                  <option value="ALL">सर्व पेमेंट पद्धती</option>
+                  <option value="रोख">रोख (Cash)</option>
+                  <option value="UPI">UPI / PhonePe</option>
+                  <option value="बँक ट्रान्सफर">बँक ट्रान्सफर</option>
+                  <option value="चेक">चेक</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Expense Table */}
