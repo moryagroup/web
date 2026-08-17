@@ -93,21 +93,10 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
     );
   }, [members, currentUser]);
 
-  const canViewAll = currentUser ? isBadgedMember(currentUser.role) || isCoreMemberRole(currentUser.role) : false;
-
-  // Core members & Admin see all expenses. Regular members see their linked or created expenses.
+  // All logged-in members see full Expense history
   const baseExpenses = useMemo(() => {
-    if (canViewAll) {
-      return expenses;
-    }
-    const userNameNorm = (currentUser?.name || '').trim().toLowerCase();
-    return expenses.filter((e) => {
-      const isLinkedMember = currentMember && e.linkedMemberId === currentMember.id;
-      const isRecipient = (e.recipientName || '').trim().toLowerCase().includes(userNameNorm);
-      const isCreator = (e.createdBy || '').trim().toLowerCase().includes(userNameNorm);
-      return isLinkedMember || isRecipient || isCreator;
-    });
-  }, [expenses, canViewAll, currentMember, currentUser]);
+    return expenses;
+  }, [expenses]);
 
   const categories = useMemo(() => {
     const cats = new Set<string>();
