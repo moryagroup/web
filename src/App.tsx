@@ -566,7 +566,11 @@ export default function App() {
 
   // Add Income Transaction
   const handleAddIncome = (newIncome: IncomeTransaction) => {
-    setIncomes((prev) => [newIncome, ...prev.filter((i) => i.id !== newIncome.id)]);
+    setIncomes((prev) => {
+      const updated = [newIncome, ...prev.filter((i) => i.id !== newIncome.id)];
+      saveIncomes(updated);
+      return updated;
+    });
     saveIncome(newIncome).catch(console.error);
     cloudSaveIncome(newIncome).catch(console.error);
     saveIncomeToSupabase(newIncome).catch(console.error);
@@ -574,7 +578,11 @@ export default function App() {
 
   // Update Income Transaction (Admin Only)
   const handleUpdateIncome = (updatedIncome: IncomeTransaction) => {
-    setIncomes((prev) => prev.map((i) => (i.id === updatedIncome.id ? updatedIncome : i)));
+    setIncomes((prev) => {
+      const updated = prev.map((i) => (i.id === updatedIncome.id ? updatedIncome : i));
+      saveIncomes(updated);
+      return updated;
+    });
     saveIncome(updatedIncome).catch(console.error);
     cloudSaveIncome(updatedIncome).catch(console.error);
     saveIncomeToSupabase(updatedIncome).catch(console.error);
@@ -606,7 +614,11 @@ export default function App() {
 
   // Delete Income Transaction (Admin Only)
   const handleDeleteIncome = (incomeId: string) => {
-    setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
+    setIncomes((prev) => {
+      const updated = prev.filter((i) => i.id !== incomeId);
+      saveIncomes(updated);
+      return updated;
+    });
     deleteIncome(incomeId).catch(console.error);
     cloudDeleteIncome(incomeId).catch(console.error);
     deleteIncomeFromSupabase(incomeId).catch(console.error);
@@ -739,7 +751,11 @@ export default function App() {
 
   // Add Expense Transaction
   const handleAddExpense = (newExpense: ExpenseTransaction) => {
-    setExpenses((prev) => [newExpense, ...prev.filter((e) => e.id !== newExpense.id)]);
+    setExpenses((prev) => {
+      const updated = [newExpense, ...prev.filter((e) => e.id !== newExpense.id)];
+      saveExpenses(updated);
+      return updated;
+    });
     saveExpense(newExpense).catch(console.error);
     cloudSaveExpense(newExpense).catch(console.error);
     saveExpenseToSupabase(newExpense).catch(console.error);
@@ -747,7 +763,11 @@ export default function App() {
 
   // Update Expense Transaction (Admin Only)
   const handleUpdateExpense = (updatedExpense: ExpenseTransaction) => {
-    setExpenses((prev) => prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e)));
+    setExpenses((prev) => {
+      const updated = prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e));
+      saveExpenses(updated);
+      return updated;
+    });
     saveExpense(updatedExpense).catch(console.error);
     cloudSaveExpense(updatedExpense).catch(console.error);
     saveExpenseToSupabase(updatedExpense).catch(console.error);
@@ -755,7 +775,11 @@ export default function App() {
 
   // Delete Expense Transaction (Admin Only)
   const handleDeleteExpense = (expenseId: string) => {
-    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+    setExpenses((prev) => {
+      const updated = prev.filter((e) => e.id !== expenseId);
+      saveExpenses(updated);
+      return updated;
+    });
     deleteExpense(expenseId).catch(console.error);
     cloudDeleteExpense(expenseId).catch(console.error);
     deleteExpenseFromSupabase(expenseId).catch(console.error);
@@ -772,7 +796,11 @@ export default function App() {
       approvedByRole: approverRole,
       approvedAt: new Date().toISOString(),
     };
-    setExpenses((prev) => prev.map((e) => (e.id === expId ? updated : e)));
+    setExpenses((prev) => {
+      const arr = prev.map((e) => (e.id === expId ? updated : e));
+      saveExpenses(arr);
+      return arr;
+    });
     saveExpense(updated).catch(console.error);
     cloudSaveExpense(updated).catch(console.error);
     saveExpenseToSupabase(updated).catch(console.error);
@@ -789,7 +817,11 @@ export default function App() {
       approvedByRole: approverRole,
       approvedAt: new Date().toISOString(),
     };
-    setExpenses((prev) => prev.map((e) => (e.id === expId ? updated : e)));
+    setExpenses((prev) => {
+      const arr = prev.map((e) => (e.id === expId ? updated : e));
+      saveExpenses(arr);
+      return arr;
+    });
     saveExpense(updated).catch(console.error);
     cloudSaveExpense(updated).catch(console.error);
     saveExpenseToSupabase(updated).catch(console.error);
