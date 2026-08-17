@@ -9,7 +9,7 @@ import {
   CurrentUser,
 } from '../types';
 import { hasFullFinancialAccess, sortMembersByDesignation } from '../utils/rbac';
-import { getFinancialYearFromDate } from '../utils/dateUtils';
+import { getFinancialYearFromDate, getCalendarYearFromDate } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft } from 'lucide-react';
 
@@ -237,8 +237,8 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
             </p>
           </div>
         </div>
-        <span className="text-xs px-3 py-1 bg-slate-100 text-slate-600 font-mono rounded-full border border-slate-200">
-          वर्ष: {financialYear}
+        <span className="text-xs px-3 py-1 bg-slate-100 text-slate-700 font-bold rounded-full border border-slate-200">
+          वर्ष: {getCalendarYearFromDate(transactionDate)}
         </span>
       </div>
 
