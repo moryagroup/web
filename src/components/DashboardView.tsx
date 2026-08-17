@@ -31,6 +31,7 @@ import {
   User,
   Camera,
   ListChecks,
+  Paperclip,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -435,20 +436,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <span className="text-slate-500">
                       ({exp.expenseCategory} - {exp.reason})
                     </span>
-                    {exp.attachmentUrl && (
+                    {exp.attachmentUrl ? (
                       <a
                         href={exp.attachmentUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-2 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-400 rounded text-[10px] font-bold flex items-center gap-1 hover:bg-emerald-200 transition-colors"
-                        title="Google Drive पुरावा पाहा (Click to view Google Drive attachment proof)"
+                        className="px-2.5 py-1 bg-emerald-100 text-emerald-900 border border-emerald-400 rounded-lg text-[11px] font-bold flex items-center gap-1 hover:bg-emerald-200 shadow-2xs transition-colors"
+                        title="पावती/बिल पुरावा पहा (Click to view attachment proof)"
                       >
-                        <span>📎 Google Drive पुरावा पाहा</span>
+                        <Paperclip className="w-3.5 h-3.5 text-emerald-700" />
+                        <span>📎 पावती/बिल पुरावा पाहा (Attachment Link)</span>
                       </a>
+                    ) : (
+                      <span className="text-[10px] text-amber-800 italic bg-amber-100/70 px-2 py-0.5 rounded border border-amber-300">
+                        (कोणताही पुरावा जोडलेला नाही)
+                      </span>
                     )}
                   </div>
                   <span className="block text-[10px] text-slate-400 mt-0.5">
-                    तारीख: {exp.expenseDate} | बिल: {exp.billNumber || 'नाही'}
+                    तारीख: {exp.expenseDate} {exp.billNumber ? `| बिल क्र: ${exp.billNumber}` : ''}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
