@@ -48,8 +48,10 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
   const [paymentReference, setPaymentReference] = useState<string>('');
   const [billNumber, setBillNumber] = useState<string>('');
-  const [financialYear, setFinancialYear] = useState<string>('2026-2027');
-  const [autoApprove, setAutoApprove] = useState<boolean>(true);
+  const isAuthorizedFinancialRole = ['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'उप-खजिनदार', 'ॲडमिन', 'Admin'].includes(
+    currentUser.role
+  );
+  const [autoApprove, setAutoApprove] = useState<boolean>(isAuthorizedFinancialRole);
   const [attachmentUrl, setAttachmentUrl] = useState<string>('');
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,7 +98,8 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
       .toTimeString()
       .split(' ')[0]}`;
 
-    const status: ApprovalStatus = autoApprove ? 'मंजूर' : 'प्रलंबित';
+    const isApproved = autoApprove && isAuthorizedFinancialRole;
+    const status: ApprovalStatus = isApproved ? 'मंजूर' : 'प्रलंबित';
 
     onSubmit({
       transactionNo: autoTransNo,
@@ -115,9 +118,9 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
       attachmentUrl: attachmentUrl || undefined,
       financialYear: getFinancialYearFromDate(expenseDate),
       approvalStatus: status,
-      approvedBy: autoApprove ? currentUser.name : undefined,
-      approvedByRole: autoApprove ? currentUser.role : undefined,
-      approvedAt: autoApprove ? formattedCreatedAt : undefined,
+      approvedBy: isApproved ? currentUser.name : undefined,
+      approvedByRole: isApproved ? currentUser.role : undefined,
+      approvedAt: isApproved ? formattedCreatedAt : undefined,
       createdBy: `${currentUser.name} (${currentUser.role})`,
       createdAt: formattedCreatedAt,
     });
@@ -384,23 +387,25 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             )}
           </div>
 
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Info className="w-4 h-4 text-amber-700" />
-              <span className="text-xs font-semibold text-amber-900">
-                अध्यक्ष / खजिनदार / सचिव कोणत्याही एकाची मंजुरी पुरेशी आहे.
-              </span>
+          {isAuthorizedFinancialRole && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-amber-700" />
+                <span className="text-xs font-semibold text-amber-900">
+                  अध्यक्ष / खजिनदार / सचिव कोणत्याही एकाची मंजुरी पुरेशी आहे.
+                </span>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-amber-900">
+                <input
+                  type="checkbox"
+                  checked={autoApprove}
+                  onChange={(e) => setAutoApprove(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded"
+                />
+                <span>आत्ताच मंजूर करा ({currentUser.name})</span>
+              </label>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-amber-900">
-              <input
-                type="checkbox"
-                checked={autoApprove}
-                onChange={(e) => setAutoApprove(e.target.checked)}
-                className="w-4 h-4 text-emerald-600 rounded"
-              />
-              <span>आत्ताच मंजूर करा ({currentUser.name})</span>
-            </label>
-          </div>
+          )}
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
             <button

@@ -279,6 +279,18 @@ export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]>
       }
     }
 
+    // Fallback: If recorded by a non-admin/treasurer role and not explicitly approved_by a financial authority, mark pending
+    const recorder = (row.recorded_by || '').toLowerCase();
+    const isAuthRecorder =
+      recorder.includes('ॲडमिन') ||
+      recorder.includes('admin') ||
+      recorder.includes('खजिनदार') ||
+      recorder.includes('अध्यक्ष') ||
+      recorder.includes('सचिव');
+    if (!row.approved_by && !isAuthRecorder) {
+      statusVal = 'प्रलंबित';
+    }
+
     return {
       id: row.id,
       transactionNo: row.transaction_no,
