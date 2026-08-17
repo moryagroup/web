@@ -9,11 +9,12 @@ import {
   CurrentUser,
 } from '../types';
 import { hasFullFinancialAccess, sortMembersByDesignation } from '../utils/rbac';
-import { getFinancialYearFromDate, getCalendarYearFromDate } from '../utils/dateUtils';
+import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextTransactionNo } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft } from 'lucide-react';
 
 interface IncomeFormProps {
+  incomes?: IncomeTransaction[];
   members: Member[];
   occasions: OccasionEvent[];
   customTypes: string[];
@@ -27,6 +28,7 @@ interface IncomeFormProps {
 }
 
 export const IncomeForm: React.FC<IncomeFormProps> = ({
+  incomes = [],
   members,
   occasions,
   customTypes,
@@ -117,12 +119,19 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
     }
   };
 
-  // File upload simulation
+  // File upload handler
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setAttachmentUrl(URL.createObjectURL(file));
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('फाइलची साईझ १० MB पेक्षा लहान असावी.');
+      return;
     }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAttachmentUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -154,9 +163,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
     }
 
     const selectedOccasion = occasions.find((o) => o.id === occasionId);
-    const transactionNo = `MG-${new Date().getFullYear()}-${Math.floor(
-      1000 + Math.random() * 9000
-    )}`;
+    const transactionNo = generateNextTransactionNo('CR', transactionDate, incomes);
 
     const isAuthorizedRole = ['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(
       currentUser.role

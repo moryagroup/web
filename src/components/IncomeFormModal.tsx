@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Plus, User, Info, CheckCircle, Upload, Paperclip, Trash2 } from 'lucide-react';
-import { getFinancialYearFromDate } from '../utils/dateUtils';
+import { getFinancialYearFromDate, generateNextTransactionNo } from '../utils/dateUtils';
 import {
   IncomeTransaction,
   DepositorType,
@@ -15,6 +15,7 @@ interface IncomeFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (transaction: Omit<IncomeTransaction, 'id'>) => void;
+  incomes?: IncomeTransaction[];
   members: Member[];
   occasions: OccasionEvent[];
   incomeTypes: string[];
@@ -26,6 +27,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  incomes = [],
   members,
   occasions,
   incomeTypes,
@@ -35,10 +37,10 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
   if (!isOpen) return null;
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const autoTransNo = `MG-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
-
   const [amount, setAmount] = useState<number | ''>('');
   const [transactionDate, setTransactionDate] = useState<string>(todayStr);
+
+  const autoTransNo = generateNextTransactionNo('CR', transactionDate, incomes);
   const [depositorType, setDepositorType] = useState<DepositorType>('सभासद');
   const [depositorName, setDepositorName] = useState<string>('');
   const [linkedMemberId, setLinkedMemberId] = useState<string>('');

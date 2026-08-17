@@ -158,7 +158,7 @@ import { LoginModal } from './components/LoginModal';
 import { OccasionModal } from './components/OccasionModal';
 import { SettingsModal } from './components/SettingsModal';
 import { isBadgedMember, hasAdminPermissions } from './utils/rbac';
-import { isDateInSelectedYear } from './utils/dateUtils';
+import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { Menu, Sun, Moon } from 'lucide-react';
 
@@ -221,14 +221,16 @@ export default function App() {
     const unsubscribers = [
       subscribeToIncomes((data) => {
         if (data && data.length > 0) {
-          setIncomes(data);
-          saveIncomes(data);
+          const formatted = formatIncomeTransactionsNo(data);
+          setIncomes(formatted);
+          saveIncomes(formatted);
         }
       }),
       subscribeToExpenses((data) => {
         if (data && data.length > 0) {
-          setExpenses(data);
-          saveExpenses(data);
+          const formatted = formatExpenseTransactionsNo(data);
+          setExpenses(formatted);
+          saveExpenses(formatted);
         }
       }),
       subscribeToMembers((data) => {
@@ -290,14 +292,14 @@ export default function App() {
             setIncomes((prev) => {
               const dbIds = new Set(inc.map((i) => i.id));
               const localOnly = prev.filter((i) => !dbIds.has(i.id));
-              return [...localOnly, ...inc];
+              return formatIncomeTransactionsNo([...localOnly, ...inc]);
             });
           }
           if (exp && exp.length > 0) {
             setExpenses((prev) => {
               const dbIds = new Set(exp.map((e) => e.id));
               const localOnly = prev.filter((e) => !dbIds.has(e.id));
-              return [...localOnly, ...exp];
+              return formatExpenseTransactionsNo([...localOnly, ...exp]);
             });
           }
           if (occ && occ.length > 0) {
@@ -921,6 +923,7 @@ export default function App() {
 
             {activeTab === 'income-form' && (
               <IncomeForm
+                incomes={incomes}
                 members={members}
                 occasions={occasions}
                 customTypes={customIncomeTypes}
@@ -936,6 +939,7 @@ export default function App() {
 
             {activeTab === 'expense-form' && (
               <ExpenseForm
+                expenses={expenses}
                 occasions={occasions}
                 members={members}
                 currentUser={currentUser}

@@ -458,13 +458,16 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                       )}
                     </td>
                     <td className="p-3.5 text-[11px] text-slate-600">
-                      {item.approvalStatus === 'प्रलंबित' ? (
-                        <span className="text-slate-400 italic">मंजुरीची वाट पाहत आहे</span>
-                      ) : (
-                        <div>
-                          <span className="font-semibold text-slate-800">{item.approvedBy || item.createdBy}</span>
-                        </div>
-                      )}
+                      <div>
+                        {item.approvedBy && (
+                          <span className="font-semibold text-emerald-800 block text-xs">
+                            ✓ {item.approvedBy}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-slate-500 font-medium block">
+                          नोंद: {item.createdBy || 'अज्ञात'}
+                        </span>
+                      </div>
                     </td>
                     <td className="p-3.5 text-center">
                       <div className="flex items-center justify-center gap-1">

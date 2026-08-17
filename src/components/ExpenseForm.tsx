@@ -9,11 +9,12 @@ import {
   Member,
 } from '../types';
 import { hasFullFinancialAccess, sortMembersByDesignation } from '../utils/rbac';
-import { getFinancialYearFromDate, getCalendarYearFromDate } from '../utils/dateUtils';
+import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextTransactionNo } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { ArrowUpRight, CheckCircle2, Upload, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 
 interface ExpenseFormProps {
+  expenses?: ExpenseTransaction[];
   occasions: OccasionEvent[];
   members: Member[];
   currentUser: CurrentUser;
@@ -25,6 +26,7 @@ interface ExpenseFormProps {
 }
 
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({
+  expenses = [],
   occasions,
   members,
   currentUser,
@@ -69,9 +71,16 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setAttachmentUrl(URL.createObjectURL(file));
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('फाइलची साईझ १० MB पेक्षा लहान असावी.');
+      return;
     }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAttachmentUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRecipientTypeChange = (type: RecipientType) => {
@@ -102,9 +111,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
     }
 
     const selectedOccasion = occasions.find((o) => o.id === occasionId);
-    const transactionNo = `EXP-${new Date().getFullYear()}-${Math.floor(
-      1000 + Math.random() * 9000
-    )}`;
+    const transactionNo = generateNextTransactionNo('DR', expenseDate, expenses);
 
     // Approval status:
     // Any authorized role (अध्यक्ष/खजिनदार/सचिव/ॲडमिन) can approve directly

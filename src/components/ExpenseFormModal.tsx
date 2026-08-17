@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, MinusCircle, CheckCircle, Info, Upload, Paperclip, Trash2 } from 'lucide-react';
-import { getFinancialYearFromDate } from '../utils/dateUtils';
+import { getFinancialYearFromDate, generateNextTransactionNo } from '../utils/dateUtils';
 import {
   ExpenseTransaction,
   RecipientType,
@@ -15,6 +15,7 @@ interface ExpenseFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (transaction: Omit<ExpenseTransaction, 'id'>) => void;
+  expenses?: ExpenseTransaction[];
   occasions: OccasionEvent[];
   expenseCategories: string[];
   onAddCustomExpenseCategory: (newCategory: string) => void;
@@ -25,6 +26,7 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  expenses = [],
   occasions,
   expenseCategories,
   onAddCustomExpenseCategory,
@@ -33,10 +35,10 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   if (!isOpen) return null;
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const autoTransNo = `EXP-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
-
   const [amount, setAmount] = useState<number | ''>('');
   const [expenseDate, setExpenseDate] = useState<string>(todayStr);
+
+  const autoTransNo = generateNextTransactionNo('DR', expenseDate, expenses);
   const [recipientType, setRecipientType] = useState<RecipientType>('दुकान / Vendor');
   const [recipientName, setRecipientName] = useState<string>('');
   const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>('मंडप व सजावट');
