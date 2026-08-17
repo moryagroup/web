@@ -243,14 +243,22 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
   const { error } = await supabase.from('incomes').upsert(row);
   if (error) {
     console.error('[Supabase] saveIncome error:', error);
+    // Minimal fallback containing core mandatory columns present in all schemas
     const fallbackRow = {
-      ...row,
-      attachment_url: null,
+      id: income.id,
+      transaction_no: income.transactionNo,
+      financial_year: income.financialYear,
+      income_type: income.incomeType,
+      depositor_name: income.depositorName,
+      depositor_type: income.depositorType,
+      linked_member_id: income.linkedMemberId || null,
+      amount: income.amount,
+      transaction_date: income.transactionDate,
+      payment_method: income.paymentMethod,
+      reason: income.reason,
+      recorded_by: income.createdBy || 'ॲडमिन',
+      updated_at: new Date().toISOString(),
     };
-    delete (fallbackRow as any).approval_status;
-    delete (fallbackRow as any).approved_by;
-    delete (fallbackRow as any).approved_by_role;
-    delete (fallbackRow as any).approved_at;
 
     const { error: fallbackErr } = await supabase.from('incomes').upsert(fallbackRow);
     if (fallbackErr) {
@@ -290,7 +298,11 @@ export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]>
       }
     }
 
-    // Fallback: If recorded by a non-admin/treasurer role and not explicitly approved_by a financial authority, mark pending
+    if (cleanNotes.includes('__APPROVAL__:')) {
+      cleanNotes = cleanNotes.split('__APPROVAL__:')[0].trim();
+    }
+
+    // Fallback ONLY if approval status was missing/unspecified and not approved by financial authority
     const recorder = (row.recorded_by || '').toLowerCase();
     const isAuthRecorder =
       recorder.includes('ॲडमिन') ||
@@ -298,7 +310,7 @@ export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]>
       recorder.includes('खजिनदार') ||
       recorder.includes('अध्यक्ष') ||
       recorder.includes('सचिव');
-    if (!row.approved_by && !isAuthRecorder) {
+    if (!statusVal && !row.approved_by && !isAuthRecorder) {
       statusVal = 'प्रलंबित';
     }
 
@@ -307,19 +319,24 @@ export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]>
       transactionNo: row.transaction_no,
       financialYear: row.financial_year,
       expenseCategory: row.expense_category,
-      recipientType: 'व्यक्ती' as const,
+      recipientType: row.recipient_type || 'व्यक्ती',
       recipientName: row.recipient_name,
-      linkedMemberId: row.linked_member_id,
+      linkedMemberId: row.linked_member_id || undefined,
       amount: Number(row.amount),
       expenseDate: row.expense_date,
       paymentMethod: row.payment_method,
-      billNumber: row.bill_number,
+      paymentReference: row.payment_reference || undefined,
+      billNumber: row.bill_number || undefined,
+      occasionId: row.occasion_id || undefined,
+      occasionName: row.occasion_name || undefined,
       reason: row.reason,
-      attachmentUrl: row.attachment_url || row.attachment_path || row.attachmentUrl || undefined,
+      description: row.description || undefined,
+      notes: cleanNotes || undefined,
+      attachmentUrl: row.attachment_url || row.bill_photo_url || row.attachment_path || row.attachmentUrl || undefined,
       approvalStatus: statusVal as any,
-      approvedBy: row.approved_by,
-      approvedByRole: row.approved_by_role,
-      approvedAt: row.approved_at,
+      approvedBy: row.approved_by || undefined,
+      approvedByRole: row.approved_by_role || undefined,
+      approvedAt: row.approved_at || undefined,
       createdBy: row.recorded_by || 'ॲडमिन',
       createdAt: row.created_at || new Date().toISOString(),
       updatedAt: row.updated_at,
@@ -359,15 +376,21 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
     transaction_no: expense.transactionNo,
     financial_year: expense.financialYear,
     expense_category: expense.expenseCategory,
+    recipient_type: expense.recipientType || 'व्यक्ती',
     recipient_name: expense.recipientName,
     linked_member_id: expense.linkedMemberId || null,
     amount: expense.amount,
     expense_date: expense.expenseDate,
     payment_method: expense.paymentMethod,
+    payment_reference: expense.paymentReference || null,
     bill_number: expense.billNumber || null,
+    occasion_id: expense.occasionId || null,
+    occasion_name: expense.occasionName || null,
     reason: expense.reason,
+    description: expense.description || null,
     notes: notesWithApproval,
     attachment_url: dbAttachmentUrl,
+    bill_photo_url: dbAttachmentUrl,
     approval_status: appStatus,
     approved_by: expense.approvedBy || null,
     approved_by_role: expense.approvedByRole || null,
@@ -375,17 +398,26 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
     recorded_by: expense.createdBy || 'ॲडमिन',
     updated_at: new Date().toISOString(),
   };
+
   const { error } = await supabase.from('expenses').upsert(row);
   if (error) {
     console.error('[Supabase] saveExpense error:', error);
+    // Safe fallback removing non-standard columns that might fail on older schemas
     const fallbackRow = {
-      ...row,
-      attachment_url: null,
+      id: expense.id,
+      transaction_no: expense.transactionNo,
+      financial_year: expense.financialYear,
+      expense_category: expense.expenseCategory,
+      recipient_name: expense.recipientName,
+      linked_member_id: expense.linkedMemberId || null,
+      amount: expense.amount,
+      expense_date: expense.expenseDate,
+      payment_method: expense.paymentMethod,
+      bill_number: expense.billNumber || null,
+      reason: expense.reason,
+      recorded_by: expense.createdBy || 'ॲडमिन',
+      updated_at: new Date().toISOString(),
     };
-    delete (fallbackRow as any).approval_status;
-    delete (fallbackRow as any).approved_by;
-    delete (fallbackRow as any).approved_by_role;
-    delete (fallbackRow as any).approved_at;
 
     const { error: fallbackErr } = await supabase.from('expenses').upsert(fallbackRow);
     if (fallbackErr) {

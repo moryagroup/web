@@ -221,16 +221,24 @@ export default function App() {
     const unsubscribers = [
       subscribeToIncomes((data) => {
         if (data && data.length > 0) {
-          const formatted = formatIncomeTransactionsNo(data);
-          setIncomes(formatted);
-          saveIncomes(formatted);
+          setIncomes((prev) => {
+            const dbIds = new Set(data.map((i) => i.id));
+            const localOnly = prev.filter((i) => !dbIds.has(i.id));
+            const formatted = formatIncomeTransactionsNo([...localOnly, ...data]);
+            saveIncomes(formatted);
+            return formatted;
+          });
         }
       }),
       subscribeToExpenses((data) => {
         if (data && data.length > 0) {
-          const formatted = formatExpenseTransactionsNo(data);
-          setExpenses(formatted);
-          saveExpenses(formatted);
+          setExpenses((prev) => {
+            const dbIds = new Set(data.map((e) => e.id));
+            const localOnly = prev.filter((e) => !dbIds.has(e.id));
+            const formatted = formatExpenseTransactionsNo([...localOnly, ...data]);
+            saveExpenses(formatted);
+            return formatted;
+          });
         }
       }),
       subscribeToMembers((data) => {
@@ -336,8 +344,20 @@ export default function App() {
           fetchGalleryFromSupabase(),
         ]);
         if (m && m.length > 0) setMembers(m);
-        if (inc) setIncomes(inc);
-        if (exp) setExpenses(exp);
+        if (inc && inc.length > 0) {
+          setIncomes((prev) => {
+            const dbIds = new Set(inc.map((i) => i.id));
+            const localOnly = prev.filter((i) => !dbIds.has(i.id));
+            return formatIncomeTransactionsNo([...localOnly, ...inc]);
+          });
+        }
+        if (exp && exp.length > 0) {
+          setExpenses((prev) => {
+            const dbIds = new Set(exp.map((e) => e.id));
+            const localOnly = prev.filter((e) => !dbIds.has(e.id));
+            return formatExpenseTransactionsNo([...localOnly, ...exp]);
+          });
+        }
         if (occ && occ.length > 0) {
           setOccasions((prev) => {
             const merged = mergeOccasionsPreservingTasks(occ, prev);
@@ -357,11 +377,19 @@ export default function App() {
     });
 
     const unsubCloud = subscribeToCloudDatabase((cloudDb) => {
-      if (Array.isArray(cloudDb.incomes)) {
-        setIncomes(cloudDb.incomes);
+      if (Array.isArray(cloudDb.incomes) && cloudDb.incomes.length > 0) {
+        setIncomes((prev) => {
+          const dbIds = new Set(cloudDb.incomes.map((i) => i.id));
+          const localOnly = prev.filter((i) => !dbIds.has(i.id));
+          return formatIncomeTransactionsNo([...localOnly, ...cloudDb.incomes]);
+        });
       }
-      if (Array.isArray(cloudDb.expenses)) {
-        setExpenses(cloudDb.expenses);
+      if (Array.isArray(cloudDb.expenses) && cloudDb.expenses.length > 0) {
+        setExpenses((prev) => {
+          const dbIds = new Set(cloudDb.expenses.map((e) => e.id));
+          const localOnly = prev.filter((e) => !dbIds.has(e.id));
+          return formatExpenseTransactionsNo([...localOnly, ...cloudDb.expenses]);
+        });
       }
       if (Array.isArray(cloudDb.members) && cloudDb.members.length > 0) {
         setMembers(cloudDb.members);

@@ -32,12 +32,43 @@ export const STORAGE_KEYS = {
   CUSTOM_INCOME_TYPES: 'morya_mandal_custom_income_types_v2',
 };
 
-// Initial state fallbacks (All domain persistence is 100% Supabase DB & CDN)
-export const getStoredIncomes = (): IncomeTransaction[] => INITIAL_INCOMES;
-export const saveIncomes = (_incomes: IncomeTransaction[]) => {};
+export const getStoredIncomes = (): IncomeTransaction[] => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.INCOMES);
+    if (!data) return INITIAL_INCOMES;
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_INCOMES;
+  } catch {
+    return INITIAL_INCOMES;
+  }
+};
 
-export const getStoredExpenses = (): ExpenseTransaction[] => INITIAL_EXPENSES;
-export const saveExpenses = (_expenses: ExpenseTransaction[]) => {};
+export const saveIncomes = (incomes: IncomeTransaction[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.INCOMES, JSON.stringify(incomes));
+  } catch (err) {
+    console.warn('Failed to save incomes to localStorage:', err);
+  }
+};
+
+export const getStoredExpenses = (): ExpenseTransaction[] => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.EXPENSES);
+    if (!data) return INITIAL_EXPENSES;
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_EXPENSES;
+  } catch {
+    return INITIAL_EXPENSES;
+  }
+};
+
+export const saveExpenses = (expenses: ExpenseTransaction[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
+  } catch (err) {
+    console.warn('Failed to save expenses to localStorage:', err);
+  }
+};
 
 export const getStoredMembers = (): Member[] => INITIAL_MEMBERS;
 export const saveMembers = (_members: Member[]) => {};

@@ -479,7 +479,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
           </div>
 
           {/* Approval toggle option for authorized officer */}
-          {['अध्यक्ष', 'खजिनदार', 'सचिव'].includes(currentUser.role) && (
+          {['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'उप-खजिनदार', 'ॲडमिन', 'Admin'].includes(currentUser.role) && (
             <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-amber-700 shrink-0" />
