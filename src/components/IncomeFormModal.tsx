@@ -55,6 +55,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
   );
   const [notes, setNotes] = useState<string>('');
   const [financialYear, setFinancialYear] = useState<string>('2026-2027');
+  const [autoApprove, setAutoApprove] = useState<boolean>(false);
 
   const handleMemberChange = (memberId: string) => {
     setLinkedMemberId(memberId);
@@ -115,7 +116,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       .toTimeString()
       .split(' ')[0]}`;
 
-    const isAutoApproved = canApproveFinancialTransactions(currentUser.role);
+    const isApproved = canApproveFinancialTransactions(currentUser.role) && autoApprove;
 
     onSubmit({
       transactionNo: autoTransNo,
@@ -137,10 +138,10 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       receiptNumber: receiptNumber.trim() || undefined,
       notes: notes.trim() || undefined,
       financialYear: getFinancialYearFromDate(transactionDate),
-      approvalStatus: isAutoApproved ? 'मंजूर' : 'प्रलंबित',
-      approvedBy: isAutoApproved ? currentUser.name : undefined,
-      approvedByRole: isAutoApproved ? currentUser.role : undefined,
-      approvedAt: isAutoApproved ? new Date().toISOString() : undefined,
+      approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
+      approvedBy: isApproved ? currentUser.name : undefined,
+      approvedByRole: isApproved ? currentUser.role : undefined,
+      approvedAt: isApproved ? new Date().toISOString() : undefined,
       createdBy: `${currentUser.name} (${currentUser.role})`,
       createdAt: formattedCreatedAt,
     });

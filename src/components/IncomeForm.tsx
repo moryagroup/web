@@ -11,7 +11,7 @@ import {
 import { hasFullFinancialAccess, sortMembersByDesignation, canApproveFinancialTransactions } from '../utils/rbac';
 import { getFinancialYearFromDate, getCalendarYearFromDate } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
-import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft } from 'lucide-react';
+import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { uploadFileToGoogleDrive, isGoogleDriveUrl } from '../services/googleDriveService';
 
 interface IncomeFormProps {
@@ -73,6 +73,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
   const [receiptNumber, setReceiptNumber] = useState<string>('');
   const [attachmentUrl, setAttachmentUrl] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
+  const [autoApprove, setAutoApprove] = useState<boolean>(false);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
@@ -168,7 +169,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       1000 + Math.random() * 9000
     )}`;
 
-    const isAutoApproved = canApproveFinancialTransactions(currentUser.role);
+    const isApproved = canApproveFinancialTransactions(currentUser.role) && autoApprove;
 
     const newIncome: IncomeTransaction = {
       id: `inc-${Date.now()}`,
@@ -189,10 +190,10 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       attachmentUrl: attachmentUrl || undefined,
       notes: notes.trim() || undefined,
       financialYear: getFinancialYearFromDate(transactionDate),
-      approvalStatus: isAutoApproved ? 'मंजूर' : 'प्रलंबित',
-      approvedBy: isAutoApproved ? currentUser.name : undefined,
-      approvedByRole: isAutoApproved ? currentUser.role : undefined,
-      approvedAt: isAutoApproved ? new Date().toISOString() : undefined,
+      approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
+      approvedBy: isApproved ? currentUser.name : undefined,
+      approvedByRole: isApproved ? currentUser.role : undefined,
+      approvedAt: isApproved ? new Date().toISOString() : undefined,
       createdBy: `${currentUser.name} (${currentUser.role})`,
       createdAt: new Date().toISOString(),
     };
@@ -557,6 +558,32 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Approval toggle option for authorized officer */}
+        {canApproveFinancialTransactions(currentUser.role) && (
+          <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-700 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-amber-700 dark:text-amber-400 shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                  अधिकृत मंजुरी अधिकार ({currentUser.role} - {currentUser.name})
+                </p>
+                <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                  तुम्ही {currentUser.role} आहात. ही जमा नोंद तुम्ही आताच परस्पर मंजूर करू शकता.
+                </p>
+              </div>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-amber-900 dark:text-amber-200">
+              <input
+                type="checkbox"
+                checked={autoApprove}
+                onChange={(e) => setAutoApprove(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+              />
+              <span>परस्पर मंजूर करा (Auto Approve)</span>
+            </label>
+          </div>
+        )}
 
         {/* Form Metadata System Banner */}
         <div className="p-3 bg-slate-100/70 dark:bg-slate-900/90 rounded-xl text-xs text-slate-500 dark:text-slate-400 flex flex-wrap justify-between items-center gap-2 border border-slate-200 dark:border-slate-700">

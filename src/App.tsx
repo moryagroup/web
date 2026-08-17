@@ -480,13 +480,13 @@ export default function App() {
 
   // Add Income Transaction
   const handleAddIncome = (newIncome: IncomeTransaction) => {
-    const isAutoApproved = canApproveFinancialTransactions(currentUser.role);
+    const isApproved = newIncome.approvalStatus === 'मंजूर';
     const finalIncome: IncomeTransaction = {
       ...newIncome,
-      approvalStatus: newIncome.approvalStatus || (isAutoApproved ? 'मंजूर' : 'प्रलंबित'),
-      approvedBy: newIncome.approvalStatus === 'मंजूर' ? (newIncome.approvedBy || currentUser.name) : undefined,
-      approvedByRole: newIncome.approvalStatus === 'मंजूर' ? (newIncome.approvedByRole || currentUser.role) : undefined,
-      approvedAt: newIncome.approvalStatus === 'मंजूर' ? (newIncome.approvedAt || new Date().toISOString()) : undefined,
+      approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
+      approvedBy: isApproved ? (newIncome.approvedBy || currentUser.name) : undefined,
+      approvedByRole: isApproved ? (newIncome.approvedByRole || currentUser.role) : undefined,
+      approvedAt: isApproved ? (newIncome.approvedAt || new Date().toISOString()) : undefined,
     };
     setIncomes((prev) => [finalIncome, ...prev.filter((i) => i.id !== finalIncome.id)]);
     saveIncome(finalIncome).catch(console.error);
@@ -637,13 +637,13 @@ export default function App() {
 
   // Add Expense Transaction
   const handleAddExpense = (newExpense: ExpenseTransaction) => {
-    const isAutoApproved = canApproveFinancialTransactions(currentUser.role);
+    const isApproved = newExpense.approvalStatus === 'मंजूर';
     const finalExpense: ExpenseTransaction = {
       ...newExpense,
-      approvalStatus: newExpense.approvalStatus || (isAutoApproved ? 'मंजूर' : 'प्रलंबित'),
-      approvedBy: newExpense.approvalStatus === 'मंजूर' ? (newExpense.approvedBy || currentUser.name) : undefined,
-      approvedByRole: newExpense.approvalStatus === 'मंजूर' ? (newExpense.approvedByRole || currentUser.role) : undefined,
-      approvedAt: newExpense.approvalStatus === 'मंजूर' ? (newExpense.approvedAt || new Date().toISOString()) : undefined,
+      approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
+      approvedBy: isApproved ? (newExpense.approvedBy || currentUser.name) : undefined,
+      approvedByRole: isApproved ? (newExpense.approvedByRole || currentUser.role) : undefined,
+      approvedAt: isApproved ? (newExpense.approvedAt || new Date().toISOString()) : undefined,
     };
     setExpenses((prev) => [finalExpense, ...prev.filter((e) => e.id !== finalExpense.id)]);
     saveExpense(finalExpense).catch(console.error);

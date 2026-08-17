@@ -63,7 +63,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const [billNumber, setBillNumber] = useState<string>('');
   const [attachmentUrl, setAttachmentUrl] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
-  const [autoApprove, setAutoApprove] = useState<boolean>(true);
+  const [autoApprove, setAutoApprove] = useState<boolean>(false);
 
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
