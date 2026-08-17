@@ -484,12 +484,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <div className="flex items-center gap-1.5">
                         <p className="font-bold text-slate-800">{item.recipientName}</p>
                         {item.approvalStatus === 'मंजूर' ? (
-                          <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 rounded text-[9px] font-bold">
-                            मंजूर
+                          <span className="px-2 py-0.5 bg-emerald-600 text-white border border-emerald-500 rounded-md text-[10px] font-black shadow-xs">
+                            ✓ मंजूर
                           </span>
                         ) : (
-                          <span className="px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded text-[9px] font-bold">
-                            प्रलंबित
+                          <span className="px-2 py-0.5 bg-amber-500 text-slate-950 border border-amber-400 rounded-md text-[10px] font-black shadow-xs">
+                            ⏳ प्रलंबित
                           </span>
                         )}
                       </div>
