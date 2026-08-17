@@ -137,30 +137,57 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
     console.error('[Supabase] fetchIncomes error:', error);
     return [];
   }
-  return (data || []).map((row) => ({
-    id: row.id,
-    transactionNo: row.transaction_no,
-    financialYear: row.financial_year,
-    incomeType: row.income_type,
-    depositorName: row.depositor_name,
-    depositorType: row.depositor_type,
-    linkedMemberId: row.linked_member_id,
-    amount: Number(row.amount),
-    transactionDate: row.transaction_date,
-    paymentMethod: row.payment_method,
-    paymentReference: row.payment_reference,
-    receiptNumber: row.receipt_number,
-    reason: row.reason,
-    notes: row.notes,
-    attachmentUrl: row.attachment_url || row.attachment_path || row.attachmentUrl || undefined,
-    approvalStatus: row.approval_status || 'मंजूर',
-    approvedBy: row.approved_by,
-    approvedByRole: row.approved_by_role,
-    approvedAt: row.approved_at,
-    createdBy: row.recorded_by || 'ॲडमिन',
-    createdAt: row.created_at || new Date().toISOString(),
-    updatedAt: row.updated_at,
-  }));
+  return (data || []).map((row) => {
+    let cleanNotes = row.notes || '';
+    let statusVal = row.approval_status;
+
+    if (!statusVal || statusVal.trim() === '') {
+      if (cleanNotes.includes('__APPROVAL__:प्रलंबित') || (row.reason && row.reason.includes('__APPROVAL__:प्रलंबित'))) {
+        statusVal = 'प्रलंबित';
+      } else if (cleanNotes.includes('__APPROVAL__:नाकारले')) {
+        statusVal = 'नाकारले';
+      } else if (cleanNotes.includes('__APPROVAL__:मंजूर')) {
+        statusVal = 'मंजूर';
+      } else {
+        // Fallback: If recorded by a non-admin/treasurer and no approval status exists, default to pending
+        const recorder = (row.recorded_by || '').toLowerCase();
+        if (recorder && !recorder.includes('ॲडमिन') && !recorder.includes('admin') && !recorder.includes('खजिनदार') && !recorder.includes('अध्यक्ष')) {
+          statusVal = 'प्रलंबित';
+        } else {
+          statusVal = 'मंजूर';
+        }
+      }
+    }
+
+    if (cleanNotes.includes('__APPROVAL__:')) {
+      cleanNotes = cleanNotes.split('__APPROVAL__:')[0].trim();
+    }
+
+    return {
+      id: row.id,
+      transactionNo: row.transaction_no,
+      financialYear: row.financial_year,
+      incomeType: row.income_type,
+      depositorName: row.depositor_name,
+      depositorType: row.depositor_type,
+      linkedMemberId: row.linked_member_id,
+      amount: Number(row.amount),
+      transactionDate: row.transaction_date,
+      paymentMethod: row.payment_method,
+      paymentReference: row.payment_reference,
+      receiptNumber: row.receipt_number,
+      reason: row.reason,
+      notes: cleanNotes,
+      attachmentUrl: row.attachment_url || row.attachment_path || row.attachmentUrl || undefined,
+      approvalStatus: statusVal as any,
+      approvedBy: row.approved_by,
+      approvedByRole: row.approved_by_role,
+      approvedAt: row.approved_at,
+      createdBy: row.recorded_by || 'ॲडमिन',
+      createdAt: row.created_at || new Date().toISOString(),
+      updatedAt: row.updated_at,
+    };
+  });
 }
 
 export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<void> {
@@ -178,6 +205,9 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
     }
   }
 
+  const appStatus = income.approvalStatus || 'मंजूर';
+  const notesWithApproval = `${income.notes || ''}\n__APPROVAL__:${appStatus}`.trim();
+
   const row = {
     id: income.id,
     transaction_no: income.transactionNo,
@@ -192,9 +222,9 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
     payment_reference: income.paymentReference || null,
     receipt_number: income.receiptNumber || null,
     reason: income.reason,
-    notes: income.notes || null,
+    notes: notesWithApproval,
     attachment_url: finalAttachmentUrl,
-    approval_status: income.approvalStatus || 'मंजूर',
+    approval_status: appStatus,
     approved_by: income.approvedBy || null,
     approved_by_role: income.approvedByRole || null,
     approved_at: income.approvedAt || null,
@@ -204,11 +234,17 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
   const { error } = await supabase.from('incomes').upsert(row);
   if (error) {
     console.error('[Supabase] saveIncome error:', error);
+    const fallbackRow = { ...row };
     if (error.message && error.message.includes('attachment_url')) {
-      const fallbackRow = { ...row };
       delete (fallbackRow as any).attachment_url;
-      await supabase.from('incomes').upsert(fallbackRow);
     }
+    if (error.message && error.message.includes('approval_status')) {
+      delete (fallbackRow as any).approval_status;
+      delete (fallbackRow as any).approved_by;
+      delete (fallbackRow as any).approved_by_role;
+      delete (fallbackRow as any).approved_at;
+    }
+    await supabase.from('incomes').upsert(fallbackRow);
   }
 }
 
@@ -227,28 +263,45 @@ export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]>
     console.error('[Supabase] fetchExpenses error:', error);
     return [];
   }
-  return (data || []).map((row) => ({
-    id: row.id,
-    transactionNo: row.transaction_no,
-    financialYear: row.financial_year,
-    expenseCategory: row.expense_category,
-    recipientType: 'व्यक्ती' as const,
-    recipientName: row.recipient_name,
-    linkedMemberId: row.linked_member_id,
-    amount: Number(row.amount),
-    expenseDate: row.expense_date,
-    paymentMethod: row.payment_method,
-    billNumber: row.bill_number,
-    reason: row.reason,
-    attachmentUrl: row.attachment_url || row.attachment_path || row.attachmentUrl || undefined,
-    approvalStatus: row.approval_status || 'प्रलंबित',
-    approvedBy: row.approved_by,
-    approvedByRole: row.approved_by_role,
-    approvedAt: row.approved_at,
-    createdBy: row.recorded_by || 'ॲडमिन',
-    createdAt: row.created_at || new Date().toISOString(),
-    updatedAt: row.updated_at,
-  }));
+  return (data || []).map((row) => {
+    let cleanNotes = row.notes || '';
+    let statusVal = row.approval_status;
+
+    if (!statusVal || statusVal.trim() === '') {
+      if (cleanNotes.includes('__APPROVAL__:प्रलंबित') || (row.reason && row.reason.includes('__APPROVAL__:प्रलंबित'))) {
+        statusVal = 'प्रलंबित';
+      } else if (cleanNotes.includes('__APPROVAL__:नाकारले')) {
+        statusVal = 'नाकारले';
+      } else if (cleanNotes.includes('__APPROVAL__:मंजूर')) {
+        statusVal = 'मंजूर';
+      } else {
+        statusVal = 'प्रलंबित';
+      }
+    }
+
+    return {
+      id: row.id,
+      transactionNo: row.transaction_no,
+      financialYear: row.financial_year,
+      expenseCategory: row.expense_category,
+      recipientType: 'व्यक्ती' as const,
+      recipientName: row.recipient_name,
+      linkedMemberId: row.linked_member_id,
+      amount: Number(row.amount),
+      expenseDate: row.expense_date,
+      paymentMethod: row.payment_method,
+      billNumber: row.bill_number,
+      reason: row.reason,
+      attachmentUrl: row.attachment_url || row.attachment_path || row.attachmentUrl || undefined,
+      approvalStatus: statusVal as any,
+      approvedBy: row.approved_by,
+      approvedByRole: row.approved_by_role,
+      approvedAt: row.approved_at,
+      createdBy: row.recorded_by || 'ॲडमिन',
+      createdAt: row.created_at || new Date().toISOString(),
+      updatedAt: row.updated_at,
+    };
+  });
 }
 
 export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promise<void> {
@@ -266,6 +319,9 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
     }
   }
 
+  const appStatus = expense.approvalStatus || 'प्रलंबित';
+  const notesWithApproval = `${expense.notes || ''}\n__APPROVAL__:${appStatus}`.trim();
+
   const row = {
     id: expense.id,
     transaction_no: expense.transactionNo,
@@ -278,8 +334,9 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
     payment_method: expense.paymentMethod,
     bill_number: expense.billNumber || null,
     reason: expense.reason,
+    notes: notesWithApproval,
     attachment_url: finalAttachmentUrl,
-    approval_status: expense.approvalStatus,
+    approval_status: appStatus,
     approved_by: expense.approvedBy || null,
     approved_by_role: expense.approvedByRole || null,
     approved_at: expense.approvedAt || null,
@@ -289,11 +346,17 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
   const { error } = await supabase.from('expenses').upsert(row);
   if (error) {
     console.error('[Supabase] saveExpense error:', error);
+    const fallbackRow = { ...row };
     if (error.message && error.message.includes('attachment_url')) {
-      const fallbackRow = { ...row };
       delete (fallbackRow as any).attachment_url;
-      await supabase.from('expenses').upsert(fallbackRow);
     }
+    if (error.message && error.message.includes('approval_status')) {
+      delete (fallbackRow as any).approval_status;
+      delete (fallbackRow as any).approved_by;
+      delete (fallbackRow as any).approved_by_role;
+      delete (fallbackRow as any).approved_at;
+    }
+    await supabase.from('expenses').upsert(fallbackRow);
   }
 }
 

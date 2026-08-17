@@ -14,7 +14,7 @@ import {
 import { HeaderStats } from './HeaderStats';
 import { EventGallerySection } from './EventGallerySection';
 import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
-import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions } from '../utils/rbac';
+import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions, isTreasurerOrViceTreasurer } from '../utils/rbac';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -32,6 +32,7 @@ import {
   Camera,
   ListChecks,
   AlertTriangle,
+  XCircle,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -48,7 +49,9 @@ interface DashboardViewProps {
   onSaveGallery: (gallery: EventGalleryImage[]) => void;
   onNavigate: (tab: string) => void;
   onApproveExpense: (expId: string, name: string, role: any) => void;
+  onRejectExpense?: (expId: string, name: string, role: any) => void;
   onApproveIncome?: (incId: string, name: string, role: any) => void;
+  onRejectIncome?: (incId: string, name: string, role: any) => void;
   onLogout?: () => void;
   onOpenLogin?: () => void;
   onUpdateOccasion?: (occasion: OccasionEvent) => void;
@@ -68,7 +71,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSaveGallery,
   onNavigate,
   onApproveExpense,
+  onRejectExpense,
   onApproveIncome,
+  onRejectIncome,
   onLogout,
   onOpenLogin,
   onUpdateOccasion,
@@ -206,11 +211,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const recentIncomes = displayIncomes.slice(0, 5);
   const recentExpenses = displayExpenses.slice(0, 5);
 
-  const pendingExpenses = isFullAccess
+  const showPendingVerificationBanners = isTreasurerOrViceTreasurer(currentUser.role);
+
+  const pendingExpenses = showPendingVerificationBanners
     ? expenses.filter((e) => e.approvalStatus === 'प्रलंबित')
     : [];
 
-  const pendingIncomes = isFullAccess
+  const pendingIncomes = showPendingVerificationBanners
     ? incomes.filter((i) => i.approvalStatus === 'प्रलंबित')
     : [];
 
@@ -634,13 +641,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       )}
 
-      {/* Pending Income Approvals Banner (If any) */}
+      {/* Pending Income Approvals Banner (Visible strictly to Treasurer & Vice Treasurer) */}
       {pendingIncomes.length > 0 && (
         <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl shadow-xs">
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-emerald-200/60">
             <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
               <ShieldAlert className="w-5 h-5 text-emerald-600 animate-bounce" />
-              <span>जमा मंजुरी प्रलंबित ({pendingIncomes.length} व्यवहार)</span>
+              <span>खजिनदार / उपखजिनदार जमा मंजुरी प्रलंबित ({pendingIncomes.length} व्यवहार)</span>
             </div>
             <button
               onClick={() => onNavigate('income-history')}
@@ -663,21 +670,35 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     ({inc.incomeType} - {inc.reason})
                   </span>
                   <span className="block text-[10px] text-slate-400">
-                    तारीख: {inc.transactionDate} | पावती: {inc.receiptNumber || 'नाही'}
+                    तारीख: {inc.transactionDate} | पावती: {inc.receiptNumber || 'नाही'} | नोंद: {inc.createdBy}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="font-black text-emerald-700 text-sm">
                     + ₹{inc.amount.toLocaleString('en-IN')}
                   </span>
-                  {canApprove && onApproveIncome && (
-                    <button
-                      onClick={() => onApproveIncome(inc.id, currentUser.name, currentUser.role)}
-                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer"
-                    >
-                      मंजूर करा
-                    </button>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    {onApproveIncome && (
+                      <button
+                        onClick={() => onApproveIncome(inc.id, currentUser.name, currentUser.role)}
+                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer flex items-center gap-1"
+                        title="व्यवहार मंजूर करा"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>मंजूर करा</span>
+                      </button>
+                    )}
+                    {onRejectIncome && (
+                      <button
+                        onClick={() => onRejectIncome(inc.id, currentUser.name, currentUser.role)}
+                        className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer flex items-center gap-1"
+                        title="व्यवहार नाकारा"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>नाकारा</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -685,13 +706,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       )}
 
-      {/* Pending Expense Approvals Banner (If any) */}
+      {/* Pending Expense Approvals Banner (Visible strictly to Treasurer & Vice Treasurer) */}
       {pendingExpenses.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl shadow-xs">
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-amber-200/60">
             <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
               <ShieldAlert className="w-5 h-5 text-amber-600 animate-bounce" />
-              <span>खर्च मंजुरी प्रलंबित ({pendingExpenses.length} व्यवहार)</span>
+              <span>खजिनदार / उपखजिनदार खर्च मंजुरी प्रलंबित ({pendingExpenses.length} व्यवहार)</span>
             </div>
             <button
               onClick={() => onNavigate('expense-history')}
@@ -714,21 +735,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     ({exp.expenseCategory} - {exp.reason})
                   </span>
                   <span className="block text-[10px] text-slate-400">
-                    तारीख: {exp.expenseDate} | बिल: {exp.billNumber || 'नाही'}
+                    तारीख: {exp.expenseDate} | बिल: {exp.billNumber || 'नाही'} | नोंद: {exp.createdBy}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="font-black text-rose-700 text-sm">
                     ₹{exp.amount.toLocaleString('en-IN')}
                   </span>
-                  {canApprove && (
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => onApproveExpense(exp.id, currentUser.name, currentUser.role)}
-                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer"
+                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer flex items-center gap-1"
+                      title="खर्च मंजूर करा"
                     >
-                      मंजूर करा
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      <span>मंजूर करा</span>
                     </button>
-                  )}
+                    {onRejectExpense && (
+                      <button
+                        onClick={() => onRejectExpense(exp.id, currentUser.name, currentUser.role)}
+                        className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer flex items-center gap-1"
+                        title="खर्च नाकारा"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>नाकारा</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

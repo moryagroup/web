@@ -506,6 +506,18 @@ export default function App() {
     });
   };
 
+  const handleRejectIncome = (incId: string, name: string, role: any) => {
+    const item = incomes.find((i) => i.id === incId);
+    if (!item) return;
+    handleUpdateIncome({
+      ...item,
+      approvalStatus: 'नाकारले',
+      approvedBy: `${name} (${role})`,
+      approvedByRole: role,
+      approvedAt: new Date().toISOString(),
+    });
+  };
+
   // Delete Income Transaction (Admin Only)
   const handleDeleteIncome = (incomeId: string) => {
     setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
@@ -670,6 +682,23 @@ export default function App() {
     const updated = {
       ...expense,
       approvalStatus: 'मंजूर' as const,
+      approvedBy: `${approverName} (${approverRole})`,
+      approvedByRole: approverRole,
+      approvedAt: new Date().toISOString(),
+    };
+    setExpenses((prev) => prev.map((e) => (e.id === expId ? updated : e)));
+    saveExpense(updated).catch(console.error);
+    cloudSaveExpense(updated).catch(console.error);
+    saveExpenseToSupabase(updated).catch(console.error);
+  };
+
+  // Reject Expense
+  const handleRejectExpense = (expId: string, approverName: string, approverRole: any) => {
+    const expense = expenses.find((e) => e.id === expId);
+    if (!expense) return;
+    const updated = {
+      ...expense,
+      approvalStatus: 'नाकारले' as const,
       approvedBy: `${approverName} (${approverRole})`,
       approvedByRole: approverRole,
       approvedAt: new Date().toISOString(),
@@ -869,7 +898,9 @@ export default function App() {
                 onSaveGallery={handleSaveGallery}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onApproveExpense={handleApproveExpense}
+                onRejectExpense={handleRejectExpense}
                 onApproveIncome={handleApproveIncome}
+                onRejectIncome={handleRejectIncome}
                 onLogout={handleLogout}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
                 onUpdateOccasion={handleUpdateOccasion}
