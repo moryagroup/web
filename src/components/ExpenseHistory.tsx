@@ -380,7 +380,7 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                       </span>
                     </td>
                     <td className="p-3.5">
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-semibold">
+                      <span className="px-2 py-0.5 bg-slate-800 text-slate-200 border border-slate-700 rounded text-[10px] font-bold">
                         {item.expenseCategory}
                       </span>
                     </td>

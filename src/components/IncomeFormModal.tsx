@@ -427,15 +427,15 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
           </div>
 
           {/* Attachment Upload Section */}
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-            <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <Paperclip className="w-4 h-4 text-emerald-600" />
+          <div className="p-4 bg-slate-900 border border-slate-700 rounded-xl space-y-2">
+            <label className="block text-xs font-bold text-slate-200 flex items-center gap-1.5">
+              <Paperclip className="w-4 h-4 text-emerald-400" />
               <span>पावती / स्क्रीनशॉट / बिल पुरावा अपलोड (Attachment Proof)</span>
             </label>
 
             <div className="flex items-center gap-3">
-              <label className="flex-1 flex items-center justify-center gap-2 p-3 bg-white border border-dashed border-slate-300 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer hover:bg-emerald-50/50 hover:border-emerald-400 transition-colors shadow-xs">
-                <Upload className="w-4 h-4 text-emerald-600" />
+              <label className="flex-1 flex items-center justify-center gap-2 p-3 bg-slate-950 border border-dashed border-slate-700 rounded-xl text-xs font-semibold text-slate-200 cursor-pointer hover:bg-emerald-950/40 hover:border-emerald-500 transition-colors shadow-xs">
+                <Upload className="w-4 h-4 text-emerald-400" />
                 <span>फोटो किंवा PDF पुरावा निवडा</span>
                 <input
                   type="file"

@@ -393,7 +393,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                       )}
                     </td>
                     <td className="p-3.5">
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-semibold">
+                      <span className="px-2 py-0.5 bg-slate-800 text-slate-200 border border-slate-700 rounded text-[10px] font-bold">
                         {item.depositorType}
                       </span>
                     </td>
@@ -401,8 +401,8 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                           item.incomeType === 'सभासद वर्गणी'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-blue-600 text-white border border-blue-500 shadow-xs'
+                            : 'bg-emerald-600 text-white border border-emerald-500 shadow-xs'
                         }`}
                       >
                         {item.incomeType}
