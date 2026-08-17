@@ -325,23 +325,23 @@ export default function App() {
             fetchGroupLogoFromSupabase(),
             fetchGalleryFromSupabase(),
           ]);
+          // Supabase is the source of truth — replace state with DB data directly
           if (m && m.length > 0) setMembers(m);
           if (inc && inc.length > 0) {
             setIncomes((prev) => {
-              const dbIds = new Set(inc.map((i) => i.id));
-              const localOnly = prev.filter((i) => !dbIds.has(i.id));
-              const merged = mergeIncomesPreservingAttachments(inc, prev);
-              const formatted = formatIncomeTransactionsNo([...localOnly, ...merged]);
+              // Only preserve local attachment URLs for items already in Supabase
+              const formatted = formatIncomeTransactionsNo(
+                mergeIncomesPreservingAttachments(inc, prev)
+              );
               saveIncomes(formatted);
               return formatted;
             });
           }
           if (exp && exp.length > 0) {
             setExpenses((prev) => {
-              const dbIds = new Set(exp.map((e) => e.id));
-              const localOnly = prev.filter((e) => !dbIds.has(e.id));
-              const merged = mergeExpensesPreservingAttachments(exp, prev);
-              const formatted = formatExpenseTransactionsNo([...localOnly, ...merged]);
+              const formatted = formatExpenseTransactionsNo(
+                mergeExpensesPreservingAttachments(exp, prev)
+              );
               saveExpenses(formatted);
               return formatted;
             });
@@ -382,20 +382,18 @@ export default function App() {
         if (m && m.length > 0) setMembers(m);
         if (inc && inc.length > 0) {
           setIncomes((prev) => {
-            const dbIds = new Set(inc.map((i) => i.id));
-            const localOnly = prev.filter((i) => !dbIds.has(i.id));
-            const merged = mergeIncomesPreservingAttachments(inc, prev);
-            const formatted = formatIncomeTransactionsNo([...localOnly, ...merged]);
+            const formatted = formatIncomeTransactionsNo(
+              mergeIncomesPreservingAttachments(inc, prev)
+            );
             saveIncomes(formatted);
             return formatted;
           });
         }
         if (exp && exp.length > 0) {
           setExpenses((prev) => {
-            const dbIds = new Set(exp.map((e) => e.id));
-            const localOnly = prev.filter((e) => !dbIds.has(e.id));
-            const merged = mergeExpensesPreservingAttachments(exp, prev);
-            const formatted = formatExpenseTransactionsNo([...localOnly, ...merged]);
+            const formatted = formatExpenseTransactionsNo(
+              mergeExpensesPreservingAttachments(exp, prev)
+            );
             saveExpenses(formatted);
             return formatted;
           });
