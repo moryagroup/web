@@ -6,6 +6,8 @@ import { RbacGuard } from './RbacGuard';
 import {
   Search,
   Filter,
+  ChevronDown,
+  RotateCcw,
   ArrowDownLeft,
   Calendar,
   Receipt,
@@ -91,10 +93,21 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     );
   }, [members, currentUser]);
 
-  // All logged-in members see full Jama history
+  // Authorized officers (Treasurer, Vice Treasurer, Admin) see all incomes. Regular members see ONLY their own incomes.
+  const canViewAll = currentUser ? canApproveFinancialTransactions(currentUser.role) : false;
+
   const baseIncomes = useMemo(() => {
-    return incomes;
-  }, [incomes]);
+    if (canViewAll) {
+      return incomes;
+    }
+    const userNameNorm = (currentUser?.name || '').trim().toLowerCase();
+    return incomes.filter((i) => {
+      const isLinkedMember = currentMember && i.linkedMemberId === currentMember.id;
+      const isDepositor = (i.depositorName || '').trim().toLowerCase().includes(userNameNorm);
+      const isCreator = (i.createdBy || '').trim().toLowerCase().includes(userNameNorm);
+      return isLinkedMember || isDepositor || isCreator;
+    });
+  }, [incomes, canViewAll, currentMember, currentUser]);
 
   // Unique list of income types in dataset
   const availableIncomeTypes = useMemo(() => {

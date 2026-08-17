@@ -93,10 +93,21 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
     );
   }, [members, currentUser]);
 
-  // All logged-in members see full Expense history
+  // Authorized officers (Treasurer, Vice Treasurer, Admin) see all expenses. Regular members see ONLY their own expenses.
+  const canViewAll = currentUser ? canApproveFinancialTransactions(currentUser.role) : false;
+
   const baseExpenses = useMemo(() => {
-    return expenses;
-  }, [expenses]);
+    if (canViewAll) {
+      return expenses;
+    }
+    const userNameNorm = (currentUser?.name || '').trim().toLowerCase();
+    return expenses.filter((e) => {
+      const isLinkedMember = currentMember && e.linkedMemberId === currentMember.id;
+      const isRecipient = (e.recipientName || '').trim().toLowerCase().includes(userNameNorm);
+      const isCreator = (e.createdBy || '').trim().toLowerCase().includes(userNameNorm);
+      return isLinkedMember || isRecipient || isCreator;
+    });
+  }, [expenses, canViewAll, currentMember, currentUser]);
 
   const categories = useMemo(() => {
     const cats = new Set<string>();

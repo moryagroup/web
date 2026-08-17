@@ -173,12 +173,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return myTasks;
   }, [occasions, currentUser, currentMember]);
 
-  const displayIncomes = Array.isArray(incomes) ? incomes : [];
-  const displayExpenses = Array.isArray(expenses) ? expenses : [];
+  const canApprove = canApproveFinancialTransactions(currentUser.role);
+
+  const displayIncomes = useMemo(() => {
+    if (!Array.isArray(incomes)) return [];
+    if (canApprove) return incomes;
+    const userNorm = (currentUser?.name || '').trim().toLowerCase();
+    return incomes.filter(
+      (i) =>
+        (currentMember && i.linkedMemberId === currentMember.id) ||
+        (i.depositorName || '').trim().toLowerCase().includes(userNorm) ||
+        (i.createdBy || '').trim().toLowerCase().includes(userNorm)
+    );
+  }, [incomes, canApprove, currentMember, currentUser]);
+
+  const displayExpenses = useMemo(() => {
+    if (!Array.isArray(expenses)) return [];
+    if (canApprove) return expenses;
+    const userNorm = (currentUser?.name || '').trim().toLowerCase();
+    return expenses.filter(
+      (e) =>
+        (currentMember && e.linkedMemberId === currentMember.id) ||
+        (e.recipientName || '').trim().toLowerCase().includes(userNorm) ||
+        (e.createdBy || '').trim().toLowerCase().includes(userNorm)
+    );
+  }, [expenses, canApprove, currentMember, currentUser]);
+
   const recentIncomes = displayIncomes.slice(0, 5);
   const recentExpenses = displayExpenses.slice(0, 5);
-
-  const canApprove = canApproveFinancialTransactions(currentUser.role);
 
   const pendingIncomes = canApprove
     ? incomes.filter((i) => i.approvalStatus === 'प्रलंबित')
