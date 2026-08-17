@@ -75,30 +75,82 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const isFullAccess = hasFullFinancialAccess(currentUser.role);
   const isBadged = isBadgedMember(currentUser.role);
 
-  const currentMember = (Array.isArray(members) ? members : []).find(
-    (m) =>
-      m &&
-      (((m.fullName || '').trim() === (currentUser?.name || '').trim()) ||
-        (currentUser?.phone && m.phone === currentUser.phone))
-  );
+  const currentMember = useMemo(() => {
+    const list = Array.isArray(members) ? members : [];
+    const userName = (currentUser?.name || '').trim().toLowerCase();
+    const userPhone = currentUser?.phone || '';
+    return list.find((m) => {
+      if (!m) return false;
+      const memName = (m.fullName || '').trim().toLowerCase();
+      const memPhone = m.phone || '';
+      return (
+        (userName && memName === userName) ||
+        (userPhone && memPhone === userPhone) ||
+        (userName && memName && (memName.includes(userName) || userName.includes(memName)))
+      );
+    });
+  }, [members, currentUser]);
+
   const memberPhoto = currentMember?.photoUrl;
 
-  // Compute assigned tasks for the currently logged in member
+  // Helper to normalize strings for robust comparison across English/Marathi names
+  const normalizeText = (str?: string) =>
+    (str || '').toLowerCase().replace(/\s+/g, '').replace(/[()]/g, '').trim();
+
+  // Compute assigned tasks for the currently logged in member (sub-tasks + main occasion responsibilities)
   const assignedTasksForMe = useMemo(() => {
-    if (!currentUser.isLoggedIn) return [];
+    if (!currentUser || currentUser.isLoggedIn === false) return [];
     const myTasks: Array<{ occasion: OccasionEvent; task: EventTask }> = [];
+    const userNorm = normalizeText(currentUser?.name);
+    const memberNorm = normalizeText(currentMember?.fullName);
+    const memberCodeNorm = normalizeText(currentMember?.memberCode);
+
     (occasions || []).forEach((occ) => {
+      // 1. Check Sub-tasks array (occ.tasks)
       (occ.tasks || []).forEach((t) => {
-        const matchesMemberId = currentMember && t.assignedMemberId === currentMember.id;
-        const matchesMemberName =
-          t.assignedMemberName &&
-          t.assignedMemberName.trim().toLowerCase() === (currentUser.name || '').trim().toLowerCase();
-        const matchesPhone = currentMember && t.assignedMemberPhone && t.assignedMemberPhone === currentMember.phone;
-        if (matchesMemberId || matchesMemberName || matchesPhone) {
+        const taskNameNorm = normalizeText(t.assignedMemberName);
+        const matchesMemberId = Boolean(currentMember && t.assignedMemberId && t.assignedMemberId === currentMember.id);
+        const matchesPhone = Boolean(currentMember && t.assignedMemberPhone && currentMember.phone && t.assignedMemberPhone === currentMember.phone);
+        const matchesName = Boolean(
+          (taskNameNorm && userNorm && (taskNameNorm === userNorm || taskNameNorm.includes(userNorm) || userNorm.includes(taskNameNorm))) ||
+          (taskNameNorm && memberNorm && (taskNameNorm === memberNorm || taskNameNorm.includes(memberNorm) || memberNorm.includes(taskNameNorm))) ||
+          (taskNameNorm && memberCodeNorm && taskNameNorm.includes(memberCodeNorm))
+        );
+
+        if (matchesMemberId || matchesPhone || matchesName) {
           myTasks.push({ occasion: occ, task: t });
         }
       });
+
+      // 2. Check Occasion-level Main Responsible Manager (occ.responsiblePerson)
+      const occRespNorm = normalizeText(occ.responsiblePerson);
+      if (occRespNorm) {
+        const matchesRespName = Boolean(
+          (userNorm && (occRespNorm === userNorm || occRespNorm.includes(userNorm) || userNorm.includes(occRespNorm))) ||
+          (memberNorm && (occRespNorm === memberNorm || occRespNorm.includes(memberNorm) || memberNorm.includes(occRespNorm)))
+        );
+
+        if (matchesRespName) {
+          const alreadyInSubTasks = myTasks.some((item) => item.occasion.id === occ.id);
+          if (!alreadyInSubTasks) {
+            myTasks.push({
+              occasion: occ,
+              task: {
+                id: `occ-main-${occ.id}`,
+                taskTitle: occ.workDetails || `प्रमुख उत्सव जबाबदारी: ${occ.name}`,
+                assignedMemberId: currentMember?.id || '',
+                assignedMemberName: occ.responsiblePerson || currentUser.name,
+                assignedMemberRole: currentMember?.designation || 'उत्सव प्रमुख',
+                assignedMemberPhone: currentMember?.phone || '',
+                status: 'प्रक्रियेत',
+                notes: 'उत्सव प्रमुख जबाबदार व्यक्ती',
+              },
+            });
+          }
+        }
+      }
     });
+
     return myTasks;
   }, [occasions, currentUser, currentMember]);
 
@@ -327,9 +379,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <button
                       onClick={() => {
                         const newStatus = task.status === 'पूर्ण' ? 'प्रलंबित' : 'पूर्ण';
-                        const updatedTasks = (occasion.tasks || []).map((t) =>
-                          t.id === task.id ? { ...t, status: newStatus as any } : t
-                        );
+                        let updatedTasks = [...(occasion.tasks || [])];
+                        if (task.id.startsWith('occ-main-')) {
+                          const existingIdx = updatedTasks.findIndex((t) => t.id === task.id);
+                          if (existingIdx >= 0) {
+                            updatedTasks[existingIdx] = { ...updatedTasks[existingIdx], status: newStatus as any };
+                          } else {
+                            updatedTasks.push({ ...task, status: newStatus as any });
+                          }
+                        } else {
+                          updatedTasks = updatedTasks.map((t) =>
+                            t.id === task.id ? { ...t, status: newStatus as any } : t
+                          );
+                        }
                         onUpdateOccasion({ ...occasion, tasks: updatedTasks });
                       }}
                       className="block w-full px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10px] rounded-lg shadow cursor-pointer transition-all active:scale-95 text-center"

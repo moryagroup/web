@@ -308,13 +308,28 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                   <label className="block font-bold text-slate-700 uppercase mb-1">
                     प्रमुख / जबाबदार व्यक्ती (Responsible Manager)
                   </label>
-                  <input
-                    type="text"
-                    value={responsiblePerson}
-                    onChange={(e) => setResponsiblePerson(e.target.value)}
-                    placeholder="उदा. महेश पाटील (अध्यक्ष) / श्रीकांत (खजिनदार)"
-                    className="w-full p-2 border border-slate-300 rounded-lg font-bold"
-                  />
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) setResponsiblePerson(e.target.value);
+                      }}
+                      className="p-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 bg-white cursor-pointer"
+                    >
+                      <option value="">-- सभासद निवडा --</option>
+                      {sortMembersByDesignation(members).map((m) => (
+                        <option key={m.id} value={m.fullName}>
+                          {m.memberCode} - {m.fullName} ({m.designation || 'सभासद'})
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      value={responsiblePerson}
+                      onChange={(e) => setResponsiblePerson(e.target.value)}
+                      placeholder="किंवा नाव टाईप करा (उदा. किशोर गर्दी)"
+                      className="flex-1 p-2 border border-slate-300 rounded-lg font-bold"
+                    />
+                  </div>
                 </div>
               </div>
 
