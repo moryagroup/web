@@ -249,6 +249,7 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
       transaction_date: income.transactionDate,
       payment_method: income.paymentMethod,
       reason: income.reason,
+      attachment_url: dbAttachmentUrl,
       recorded_by: income.createdBy || 'ॲडमिन',
       updated_at: new Date().toISOString(),
     };
@@ -401,6 +402,8 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
       payment_method: expense.paymentMethod,
       bill_number: expense.billNumber || null,
       reason: expense.reason,
+      attachment_url: dbAttachmentUrl,
+      bill_photo_url: dbAttachmentUrl,
       recorded_by: expense.createdBy || 'ॲडमिन',
       updated_at: new Date().toISOString(),
     };
