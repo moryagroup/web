@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, MinusCircle, CheckCircle, Info } from 'lucide-react';
-import { getFinancialYearFromDate } from '../utils/dateUtils';
+import { getFinancialYearFromDate, generateNextExpenseTransactionNo } from '../utils/dateUtils';
 import {
   ExpenseTransaction,
   RecipientType,
@@ -17,6 +17,7 @@ interface ExpenseFormModalProps {
   onSubmit: (transaction: Omit<ExpenseTransaction, 'id'>) => void;
   occasions: OccasionEvent[];
   expenseCategories: string[];
+  expenses?: ExpenseTransaction[];
   onAddCustomExpenseCategory: (newCategory: string) => void;
   currentUser: CurrentUser;
 }
@@ -27,13 +28,13 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   onSubmit,
   occasions,
   expenseCategories,
+  expenses = [],
   onAddCustomExpenseCategory,
   currentUser,
 }) => {
   if (!isOpen) return null;
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const autoTransNo = `EXP-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
 
   const [amount, setAmount] = useState<number | ''>('');
   const [expenseDate, setExpenseDate] = useState<string>(todayStr);
@@ -82,9 +83,10 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
       .split(' ')[0]}`;
 
     const status: ApprovalStatus = autoApprove ? 'मंजूर' : 'प्रलंबित';
+    const finalTransNo = generateNextExpenseTransactionNo(expenseDate, expenses);
 
     onSubmit({
-      transactionNo: autoTransNo,
+      transactionNo: finalTransNo,
       amount: Number(amount),
       expenseDate,
       recipientType,

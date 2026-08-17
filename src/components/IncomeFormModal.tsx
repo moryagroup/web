@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Plus, User, Info, CheckCircle } from 'lucide-react';
-import { getFinancialYearFromDate } from '../utils/dateUtils';
+import { getFinancialYearFromDate, generateNextIncomeTransactionNo } from '../utils/dateUtils';
 import {
   IncomeTransaction,
   DepositorType,
@@ -19,6 +19,7 @@ interface IncomeFormModalProps {
   members: Member[];
   occasions: OccasionEvent[];
   incomeTypes: string[];
+  incomes?: IncomeTransaction[];
   onAddCustomIncomeType: (newType: string) => void;
   currentUser: CurrentUser;
 }
@@ -30,13 +31,14 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
   members,
   occasions,
   incomeTypes,
+  incomes = [],
   onAddCustomIncomeType,
   currentUser,
 }) => {
   if (!isOpen) return null;
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const autoTransNo = `MG-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
+  const autoTransNo = generateNextIncomeTransactionNo(incomes);
 
   const [amount, setAmount] = useState<number | ''>('');
   const [transactionDate, setTransactionDate] = useState<string>(todayStr);
@@ -116,10 +118,10 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       .toTimeString()
       .split(' ')[0]}`;
 
-    const isApproved = canApproveFinancialTransactions(currentUser.role) && autoApprove;
+    const finalTransNo = generateNextIncomeTransactionNo(transactionDate, incomes);
 
     onSubmit({
-      transactionNo: autoTransNo,
+      transactionNo: finalTransNo,
       amount: Number(amount),
       transactionDate,
       depositorType,

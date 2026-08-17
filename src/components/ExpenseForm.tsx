@@ -9,7 +9,7 @@ import {
   Member,
 } from '../types';
 import { hasFullFinancialAccess, sortMembersByDesignation, canApproveFinancialTransactions } from '../utils/rbac';
-import { getFinancialYearFromDate, getCalendarYearFromDate } from '../utils/dateUtils';
+import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextExpenseTransactionNo } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { ArrowUpRight, CheckCircle2, Upload, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { uploadFileToGoogleDrive } from '../services/googleDriveService';
@@ -19,6 +19,7 @@ interface ExpenseFormProps {
   members: Member[];
   currentUser: CurrentUser;
   financialYear: string;
+  expenses?: ExpenseTransaction[];
   onAddExpense: (expense: ExpenseTransaction) => void;
   onSuccessNavigate?: () => void;
   onNavigate?: (tab: string) => void;
@@ -30,6 +31,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
   members,
   currentUser,
   financialYear,
+  expenses = [],
   onAddExpense,
   onSuccessNavigate,
   onNavigate,
@@ -112,9 +114,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
     }
 
     const selectedOccasion = occasions.find((o) => o.id === occasionId);
-    const transactionNo = `EXP-${new Date().getFullYear()}-${Math.floor(
-      1000 + Math.random() * 9000
-    )}`;
+    const transactionNo = generateNextExpenseTransactionNo(expenseDate, expenses);
 
     // Approval status:
     // Any authorized role (अध्यक्ष/खजिनदार/सचिव/ॲडमिन) can approve directly

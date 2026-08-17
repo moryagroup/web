@@ -158,7 +158,7 @@ import { LoginModal } from './components/LoginModal';
 import { OccasionModal } from './components/OccasionModal';
 import { SettingsModal } from './components/SettingsModal';
 import { isBadgedMember, hasAdminPermissions, canApproveFinancialTransactions } from './utils/rbac';
-import { isDateInSelectedYear } from './utils/dateUtils';
+import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { Menu, Sun, Moon } from 'lucide-react';
 
@@ -463,7 +463,6 @@ export default function App() {
     setCurrentUser(user);
     setIsLoginModalOpen(false);
   };
-
   // Logout handler
   const handleLogout = () => {
     setCurrentUser(DEFAULT_USER);
@@ -471,12 +470,20 @@ export default function App() {
     setActiveTab('dashboard');
   };
 
+  // Formatted Sequential Transaction Numbers (CR-YY-N for Income, EXP-YY-N for Expense)
+  const formattedIncomes = useMemo(() => formatIncomeTransactionsNo(incomes), [incomes]);
+  const formattedExpenses = useMemo(() => formatExpenseTransactionsNo(expenses), [expenses]);
+
   // Financial Summary Calculation
   const summary = useMemo(() => {
-    const yearIncomes = incomes.filter((i) => isDateInSelectedYear(i.transactionDate, selectedYear, i.financialYear));
-    const yearExpenses = expenses.filter((e) => isDateInSelectedYear(e.expenseDate, selectedYear, e.financialYear));
+    const yearIncomes = formattedIncomes.filter((i) =>
+      isDateInSelectedYear(i.transactionDate, selectedYear, i.financialYear)
+    );
+    const yearExpenses = formattedExpenses.filter((e) =>
+      isDateInSelectedYear(e.expenseDate, selectedYear, e.financialYear)
+    );
     return calculateFinancialSummary(yearIncomes, yearExpenses);
-  }, [incomes, expenses, selectedYear]);
+  }, [formattedIncomes, formattedExpenses, selectedYear]);
 
   // Add Income Transaction
   const handleAddIncome = (newIncome: IncomeTransaction) => {
@@ -878,8 +885,8 @@ export default function App() {
             {activeTab === 'dashboard' && (
               <DashboardView
                 summary={summary}
-                incomes={incomes}
-                expenses={expenses}
+                incomes={formattedIncomes}
+                expenses={formattedExpenses}
                 members={members}
                 occasions={occasions}
                 currentUser={currentUser}
@@ -904,6 +911,7 @@ export default function App() {
                 customTypes={customIncomeTypes}
                 currentUser={currentUser}
                 financialYear={selectedYear}
+                incomes={formattedIncomes}
                 onAddIncome={handleAddIncome}
                 onAddCustomIncomeType={handleAddCustomIncomeType}
                 onSuccessNavigate={() => setActiveTab('income-history')}
@@ -918,6 +926,7 @@ export default function App() {
                 members={members}
                 currentUser={currentUser}
                 financialYear={selectedYear}
+                expenses={formattedExpenses}
                 onAddExpense={handleAddExpense}
                 onSuccessNavigate={() => setActiveTab('expense-history')}
                 onNavigate={(tab) => setActiveTab(tab)}
@@ -927,7 +936,7 @@ export default function App() {
 
             {activeTab === 'income-history' && (
               <IncomeHistory
-                incomes={incomes}
+                incomes={formattedIncomes}
                 members={members}
                 financialYear={selectedYear}
                 currentUser={currentUser}
@@ -940,7 +949,7 @@ export default function App() {
 
             {activeTab === 'expense-history' && (
               <ExpenseHistory
-                expenses={expenses}
+                expenses={formattedExpenses}
                 members={members}
                 currentUser={currentUser}
                 financialYear={selectedYear}
@@ -956,7 +965,7 @@ export default function App() {
               (isBadgedMember(currentUser.role) ? (
                 <MemberSubscriptionsView
                   members={members}
-                  incomes={incomes}
+                  incomes={formattedIncomes}
                   financialYear={selectedYear}
                   currentUser={currentUser}
                   onAddMember={handleAddMember}
@@ -968,8 +977,8 @@ export default function App() {
               ) : (
                 <DashboardView
                   summary={summary}
-                  incomes={incomes}
-                  expenses={expenses}
+                  incomes={formattedIncomes}
+                  expenses={formattedExpenses}
                   members={members}
                   currentUser={currentUser}
                   gallery={gallery}
@@ -985,8 +994,8 @@ export default function App() {
 
             {activeTab === 'month-wise-reports' && (
               <MonthWiseReportsView
-                incomes={incomes}
-                expenses={expenses}
+                incomes={formattedIncomes}
+                expenses={formattedExpenses}
                 financialYear={selectedYear}
                 currentUser={currentUser}
                 onNavigate={(tab) => setActiveTab(tab)}
@@ -996,8 +1005,8 @@ export default function App() {
 
             {activeTab === 'all-years-data' && (
               <AllYearsDataView
-                incomes={incomes}
-                expenses={expenses}
+                incomes={formattedIncomes}
+                expenses={formattedExpenses}
                 currentUser={currentUser}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
@@ -1007,8 +1016,8 @@ export default function App() {
             {activeTab === 'core-summary' && (
               <CoreSummaryView
                 summary={summary}
-                incomes={incomes}
-                expenses={expenses}
+                incomes={formattedIncomes}
+                expenses={formattedExpenses}
                 selectedYear={selectedYear}
                 setSelectedYear={setSelectedYear}
                 currentUser={currentUser}
@@ -1034,8 +1043,8 @@ export default function App() {
               <ProfileView
                 currentUser={currentUser}
                 members={members}
-                incomes={incomes}
-                expenses={expenses}
+                incomes={formattedIncomes}
+                expenses={formattedExpenses}
                 groupLogo={groupLogo}
                 onUpdateGroupLogo={handleUpdateGroupLogo}
                 onUpdateMember={handleUpdateMember}

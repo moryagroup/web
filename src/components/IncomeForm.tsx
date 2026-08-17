@@ -9,7 +9,7 @@ import {
   CurrentUser,
 } from '../types';
 import { hasFullFinancialAccess, sortMembersByDesignation, canApproveFinancialTransactions } from '../utils/rbac';
-import { getFinancialYearFromDate, getCalendarYearFromDate } from '../utils/dateUtils';
+import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextIncomeTransactionNo } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { uploadFileToGoogleDrive, isGoogleDriveUrl } from '../services/googleDriveService';
@@ -20,6 +20,7 @@ interface IncomeFormProps {
   customTypes: string[];
   currentUser: CurrentUser;
   financialYear: string;
+  incomes?: IncomeTransaction[];
   onAddIncome: (income: IncomeTransaction) => void;
   onAddCustomIncomeType: (newType: string) => void;
   onSuccessNavigate?: () => void;
@@ -33,6 +34,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
   customTypes,
   currentUser,
   financialYear,
+  incomes = [],
   onAddIncome,
   onAddCustomIncomeType,
   onSuccessNavigate,
@@ -165,9 +167,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
     }
 
     const selectedOccasion = occasions.find((o) => o.id === occasionId);
-    const transactionNo = `MG-${new Date().getFullYear()}-${Math.floor(
-      1000 + Math.random() * 9000
-    )}`;
+    const transactionNo = generateNextIncomeTransactionNo(transactionDate, incomes);
 
     const isApproved = canApproveFinancialTransactions(currentUser.role) && autoApprove;
 
