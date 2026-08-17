@@ -32,60 +32,71 @@ export const STORAGE_KEYS = {
   CUSTOM_INCOME_TYPES: 'morya_mandal_custom_income_types_v2',
 };
 
-export const getStoredIncomes = (): IncomeTransaction[] => {
+/**
+ * Purges all financial and entity data from local storage so all data is strictly live from online DB
+ */
+export const clearAllLocalStorageFinancialData = () => {
   try {
-    const data = localStorage.getItem(STORAGE_KEYS.INCOMES);
-    if (!data) return INITIAL_INCOMES;
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_INCOMES;
-  } catch {
-    return INITIAL_INCOMES;
+    const keysToRemove = [
+      STORAGE_KEYS.INCOMES,
+      STORAGE_KEYS.EXPENSES,
+      STORAGE_KEYS.MEMBERS,
+      STORAGE_KEYS.OCCASIONS,
+      STORAGE_KEYS.GALLERY,
+      STORAGE_KEYS.GROUP_LOGO,
+      STORAGE_KEYS.CUSTOM_INCOME_TYPES,
+      'morya_mandal_incomes',
+      'morya_mandal_expenses',
+      'morya_mandal_incomes_v2',
+      'morya_mandal_expenses_v2',
+      'morya_mandal_occasions',
+      'morya_mandal_occasions_v2',
+      'morya_mandal_gallery_v2',
+      'morya_mandal_group_logo_v2',
+      'morya_mandal_custom_income_types_v2',
+      'morya_mandal_members_v2',
+      'morya_group_backup_latest',
+      'morya_group_backup_history',
+    ];
+    keysToRemove.forEach((key) => {
+      localStorage.removeItem(key);
+    });
+  } catch (err) {
+    console.warn('Failed to clear local storage:', err);
   }
 };
 
-export const saveIncomes = (incomes: IncomeTransaction[]) => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.INCOMES, JSON.stringify(incomes));
-  } catch (err) {
-    console.warn('Failed to save incomes to localStorage:', err);
-  }
+// Execute purge immediately on script evaluation
+clearAllLocalStorageFinancialData();
+
+export const getStoredIncomes = (): IncomeTransaction[] => {
+  clearAllLocalStorageFinancialData();
+  return INITIAL_INCOMES;
+};
+
+export const saveIncomes = (_incomes: IncomeTransaction[]) => {
+  clearAllLocalStorageFinancialData();
 };
 
 export const getStoredExpenses = (): ExpenseTransaction[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.EXPENSES);
-    if (!data) return INITIAL_EXPENSES;
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_EXPENSES;
-  } catch {
-    return INITIAL_EXPENSES;
-  }
+  clearAllLocalStorageFinancialData();
+  return INITIAL_EXPENSES;
 };
 
-export const saveExpenses = (expenses: ExpenseTransaction[]) => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
-  } catch (err) {
-    console.warn('Failed to save expenses to localStorage:', err);
-  }
+export const saveExpenses = (_expenses: ExpenseTransaction[]) => {
+  clearAllLocalStorageFinancialData();
 };
 
 export const getStoredMembers = (): Member[] => INITIAL_MEMBERS;
 export const saveMembers = (_members: Member[]) => {};
 
 export const getStoredOccasions = (): OccasionEvent[] => {
-  try {
-    localStorage.removeItem(STORAGE_KEYS.OCCASIONS);
-    localStorage.removeItem('morya_mandal_occasions_v2');
-    localStorage.removeItem('morya_mandal_occasions');
-  } catch {}
+  clearAllLocalStorageFinancialData();
   return INITIAL_OCCASIONS;
 };
 
 export const saveOccasions = (_occasions: OccasionEvent[]) => {
-  try {
-    localStorage.removeItem(STORAGE_KEYS.OCCASIONS);
-  } catch {}
+  clearAllLocalStorageFinancialData();
 };
 
 export const getCustomIncomeTypes = (): string[] => [];
@@ -107,56 +118,41 @@ export const getStoredUser = (): CurrentUser => {
 };
 
 export const saveUser = (user: CurrentUser) => {
-  localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+  try {
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+  } catch (err) {
+    console.warn('Failed to save user session:', err);
+  }
 };
 
 export const getStoredEventGallery = (): EventGalleryImage[] => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.GALLERY);
-    if (!data) return INITIAL_EVENT_GALLERY;
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_EVENT_GALLERY;
-  } catch {
-    return INITIAL_EVENT_GALLERY;
-  }
+  clearAllLocalStorageFinancialData();
+  return INITIAL_EVENT_GALLERY;
 };
 
-export const saveEventGallery = (gallery: EventGalleryImage[]) => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(gallery));
-  } catch (err) {
-    console.error('Failed to save gallery to localStorage:', err);
-  }
+export const saveEventGallery = (_gallery: EventGalleryImage[]) => {
+  clearAllLocalStorageFinancialData();
 };
 
-export const getStoredGroupLogo = (): string => {
-  try {
-    return localStorage.getItem(STORAGE_KEYS.GROUP_LOGO) || '';
-  } catch {
-    return '';
-  }
-};
+export const getStoredGroupLogo = (): string => '';
 
-export const saveGroupLogo = (logoUrl: string) => {
-  try {
-    if (logoUrl) {
-      localStorage.setItem(STORAGE_KEYS.GROUP_LOGO, logoUrl);
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.GROUP_LOGO);
-    }
-  } catch (err) {
-    console.error('Failed to save group logo to localStorage:', err);
-  }
+export const saveGroupLogo = (_logoUrl: string) => {
+  clearAllLocalStorageFinancialData();
 };
 
 export const getStoredSuggestions = (): MemberSuggestion[] => INITIAL_SUGGESTIONS;
 export const saveSuggestions = (_suggestions: MemberSuggestion[]) => {};
 
 export const resetToDemoData = () => {
-  localStorage.removeItem(STORAGE_KEYS.USER);
+  try {
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    clearAllLocalStorageFinancialData();
+  } catch {}
 };
 
-export const clearAllTransactionsFromStorage = () => {};
+export const clearAllTransactionsFromStorage = () => {
+  clearAllLocalStorageFinancialData();
+};
 
 // Financial Calculation Helpers
 export const calculateFinancialSummary = (

@@ -30,6 +30,7 @@ import {
   DEFAULT_USER,
   calculateFinancialSummary,
   clearAllTransactionsFromStorage,
+  clearAllLocalStorageFinancialData,
 } from './services/storageService';
 import { createLocalBackupSnapshot, downloadBackupJSON } from './utils/backupUtils';
 
@@ -241,6 +242,7 @@ export default function App() {
 
   // Subscribe to Firestore collections & trigger seed in background
   useEffect(() => {
+    clearAllLocalStorageFinancialData();
     // Hide loading screen after max 1 second safety window
     const timer = setTimeout(() => {
       setIsLoading(false);
