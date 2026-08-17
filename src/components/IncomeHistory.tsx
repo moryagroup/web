@@ -21,6 +21,10 @@ import {
   Clock,
   XCircle,
   Check,
+  Paperclip,
+  Upload,
+  FileText,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { NativeService } from '../services/nativeService';
 
@@ -402,7 +406,22 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                       </span>
                     </td>
                     <td className="p-3.5 max-w-xs truncate" title={item.reason}>
-                      {item.reason}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span>{item.reason}</span>
+                        {item.attachmentUrl && (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedIncomeDetail(item);
+                            }}
+                            className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer hover:bg-emerald-200 shrink-0"
+                            title="पावती/पुरावा जोडला आहे (Click to view attachment)"
+                          >
+                            <Paperclip className="w-3 h-3 text-emerald-600" />
+                            <span>पुरावा</span>
+                          </span>
+                        )}
+                      </div>
                       {item.occasionName && (
                         <span className="block text-[10px] text-slate-400">
                           उत्सव: {item.occasionName}
@@ -598,6 +617,44 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               )}
             </div>
 
+            {/* Attached Receipt / Screenshot Proof */}
+            {selectedIncomeDetail.attachmentUrl && (
+              <div className="space-y-1.5 pt-3 border-t border-slate-200">
+                <span className="text-slate-700 font-bold text-xs flex items-center gap-1.5">
+                  <Paperclip className="w-4 h-4 text-emerald-600" />
+                  <span>जोडलेली पावती / बिल / स्क्रीनशॉट (Attachment Proof):</span>
+                </span>
+                {selectedIncomeDetail.attachmentUrl.startsWith('data:application/pdf') || selectedIncomeDetail.attachmentUrl.endsWith('.pdf') ? (
+                  <a
+                    href={selectedIncomeDetail.attachmentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-2 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-emerald-100 transition-colors w-fit"
+                  >
+                    <FileText className="w-4 h-4 text-emerald-600" />
+                    <span>📄 PDF पावती पाहा / डाउनलोड करा</span>
+                  </a>
+                ) : (
+                  <div className="relative group rounded-xl overflow-hidden border border-slate-300 bg-slate-900 max-h-64 flex items-center justify-center">
+                    <img
+                      src={selectedIncomeDetail.attachmentUrl}
+                      alt="पावती पुरावा"
+                      className="max-h-60 object-contain cursor-pointer"
+                      onClick={() => window.open(selectedIncomeDetail.attachmentUrl, '_blank')}
+                    />
+                    <a
+                      href={selectedIncomeDetail.attachmentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="absolute bottom-2 right-2 bg-slate-900/80 text-amber-300 text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-900 transition-colors"
+                    >
+                      🔍 पूर्ण आकारात पहा
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="pt-2 text-[11px] text-slate-400 border-t border-slate-100 flex justify-between">
               <span>नोंद करणारे: {selectedIncomeDetail.createdBy}</span>
               <span>
@@ -745,6 +802,48 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                     className="w-full p-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-amber-500 outline-none"
                   />
                 </div>
+              </div>
+
+              {/* Attachment File Upload in Admin Edit Modal */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Paperclip className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>पावती / स्क्रीनशॉट पुरावा जोडा किंवा बदला (Attachment)</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <label className="flex-1 flex items-center justify-center gap-2 p-2 bg-white border border-dashed border-slate-300 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer hover:bg-emerald-50">
+                    <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>नवी फाईल निवडा</span>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setEditingIncome({ ...editingIncome, attachmentUrl: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                  {editingIncome.attachmentUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingIncome({ ...editingIncome, attachmentUrl: undefined })}
+                      className="px-2 py-1 bg-rose-100 text-rose-800 border border-rose-300 rounded-lg text-[10px] font-bold"
+                    >
+                      हटवा
+                    </button>
+                  )}
+                </div>
+                {editingIncome.attachmentUrl && editingIncome.attachmentUrl.startsWith('data:image/') && (
+                  <div className="w-16 h-16 rounded overflow-hidden border border-slate-300">
+                    <img src={editingIncome.attachmentUrl} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">

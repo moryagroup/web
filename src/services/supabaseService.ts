@@ -152,6 +152,7 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
     receiptNumber: row.receipt_number,
     reason: row.reason,
     notes: row.notes,
+    attachmentUrl: row.attachment_url || row.attachment_path || row.attachmentUrl || undefined,
     approvalStatus: row.approval_status || 'मंजूर',
     approvedBy: row.approved_by,
     approvedByRole: row.approved_by_role,
@@ -164,6 +165,19 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
 
 export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<void> {
   if (!isSupabaseConfigured) return;
+  let finalAttachmentUrl = income.attachmentUrl || null;
+  if (finalAttachmentUrl && finalAttachmentUrl.startsWith('data:')) {
+    try {
+      finalAttachmentUrl = await uploadBase64ImageToSupabase(
+        finalAttachmentUrl,
+        'bills',
+        `income-${income.id}.png`
+      );
+    } catch (err) {
+      console.warn('[Supabase] Failed to upload income attachment image to storage:', err);
+    }
+  }
+
   const row = {
     id: income.id,
     transaction_no: income.transactionNo,
@@ -179,6 +193,7 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
     receipt_number: income.receiptNumber || null,
     reason: income.reason,
     notes: income.notes || null,
+    attachment_url: finalAttachmentUrl,
     approval_status: income.approvalStatus || 'मंजूर',
     approved_by: income.approvedBy || null,
     approved_by_role: income.approvedByRole || null,
@@ -187,7 +202,14 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
     updated_at: new Date().toISOString(),
   };
   const { error } = await supabase.from('incomes').upsert(row);
-  if (error) console.error('[Supabase] saveIncome error:', error);
+  if (error) {
+    console.error('[Supabase] saveIncome error:', error);
+    if (error.message && error.message.includes('attachment_url')) {
+      const fallbackRow = { ...row };
+      delete (fallbackRow as any).attachment_url;
+      await supabase.from('incomes').upsert(fallbackRow);
+    }
+  }
 }
 
 export async function deleteIncomeFromSupabase(id: string): Promise<void> {
@@ -218,6 +240,7 @@ export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]>
     paymentMethod: row.payment_method,
     billNumber: row.bill_number,
     reason: row.reason,
+    attachmentUrl: row.attachment_url || row.attachment_path || row.attachmentUrl || undefined,
     approvalStatus: row.approval_status || 'प्रलंबित',
     approvedBy: row.approved_by,
     approvedByRole: row.approved_by_role,
@@ -230,6 +253,19 @@ export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]>
 
 export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promise<void> {
   if (!isSupabaseConfigured) return;
+  let finalAttachmentUrl = expense.attachmentUrl || null;
+  if (finalAttachmentUrl && finalAttachmentUrl.startsWith('data:')) {
+    try {
+      finalAttachmentUrl = await uploadBase64ImageToSupabase(
+        finalAttachmentUrl,
+        'bills',
+        `expense-${expense.id}.png`
+      );
+    } catch (err) {
+      console.warn('[Supabase] Failed to upload expense attachment image to storage:', err);
+    }
+  }
+
   const row = {
     id: expense.id,
     transaction_no: expense.transactionNo,
@@ -242,6 +278,7 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
     payment_method: expense.paymentMethod,
     bill_number: expense.billNumber || null,
     reason: expense.reason,
+    attachment_url: finalAttachmentUrl,
     approval_status: expense.approvalStatus,
     approved_by: expense.approvedBy || null,
     approved_by_role: expense.approvedByRole || null,
@@ -250,7 +287,14 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
     updated_at: new Date().toISOString(),
   };
   const { error } = await supabase.from('expenses').upsert(row);
-  if (error) console.error('[Supabase] saveExpense error:', error);
+  if (error) {
+    console.error('[Supabase] saveExpense error:', error);
+    if (error.message && error.message.includes('attachment_url')) {
+      const fallbackRow = { ...row };
+      delete (fallbackRow as any).attachment_url;
+      await supabase.from('expenses').upsert(fallbackRow);
+    }
+  }
 }
 
 export async function deleteExpenseFromSupabase(id: string): Promise<void> {

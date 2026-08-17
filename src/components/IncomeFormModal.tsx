@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Plus, User, Info, CheckCircle } from 'lucide-react';
+import { X, Plus, User, Info, CheckCircle, Upload, Paperclip, Trash2 } from 'lucide-react';
 import { getFinancialYearFromDate } from '../utils/dateUtils';
 import {
   IncomeTransaction,
@@ -54,6 +54,21 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
   );
   const [notes, setNotes] = useState<string>('');
   const [financialYear, setFinancialYear] = useState<string>('2026-2027');
+  const [attachmentUrl, setAttachmentUrl] = useState<string>('');
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('फाइलची साईझ १० MB पेक्षा लहान असावी.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAttachmentUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleMemberChange = (memberId: string) => {
     setLinkedMemberId(memberId);
@@ -138,6 +153,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       paymentReference: paymentReference.trim() || undefined,
       receiptNumber: receiptNumber.trim() || undefined,
       notes: notes.trim() || undefined,
+      attachmentUrl: attachmentUrl || undefined,
       financialYear: getFinancialYearFromDate(transactionDate),
       approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
       approvedBy: isApproved ? `${currentUser.name} (${currentUser.role})` : undefined,
@@ -408,6 +424,47 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
                 className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none"
               />
             </div>
+          </div>
+
+          {/* Attachment Upload Section */}
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+            <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <Paperclip className="w-4 h-4 text-emerald-600" />
+              <span>पावती / स्क्रीनशॉट / बिल पुरावा अपलोड (Attachment Proof)</span>
+            </label>
+
+            <div className="flex items-center gap-3">
+              <label className="flex-1 flex items-center justify-center gap-2 p-3 bg-white border border-dashed border-slate-300 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer hover:bg-emerald-50/50 hover:border-emerald-400 transition-colors shadow-xs">
+                <Upload className="w-4 h-4 text-emerald-600" />
+                <span>फोटो किंवा PDF पुरावा निवडा</span>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+
+              {attachmentUrl && (
+                <div className="flex items-center gap-2 bg-emerald-100 text-emerald-900 border border-emerald-300 px-3 py-2 rounded-xl text-xs font-bold shrink-0">
+                  <span>✓ फाईल जोडली</span>
+                  <button
+                    type="button"
+                    onClick={() => setAttachmentUrl('')}
+                    className="p-0.5 hover:bg-emerald-200 rounded text-rose-700 cursor-pointer"
+                    title="फाईल हटवा"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {attachmentUrl && attachmentUrl.startsWith('data:image/') && (
+              <div className="mt-2 w-24 h-24 rounded-lg overflow-hidden border border-emerald-300 shadow-sm relative group">
+                <img src={attachmentUrl} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">

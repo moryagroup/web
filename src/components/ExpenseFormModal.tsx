@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, MinusCircle, CheckCircle, Info } from 'lucide-react';
+import { X, MinusCircle, CheckCircle, Info, Upload, Paperclip, Trash2 } from 'lucide-react';
 import { getFinancialYearFromDate } from '../utils/dateUtils';
 import {
   ExpenseTransaction,
@@ -50,6 +50,21 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   const [billNumber, setBillNumber] = useState<string>('');
   const [financialYear, setFinancialYear] = useState<string>('2026-2027');
   const [autoApprove, setAutoApprove] = useState<boolean>(true);
+  const [attachmentUrl, setAttachmentUrl] = useState<string>('');
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('फाइलची साईझ १० MB पेक्षा लहान असावी.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAttachmentUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleAddCustomCategory = () => {
     if (customCategoryInput.trim()) {
@@ -97,6 +112,7 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
       paymentMethod,
       paymentReference: paymentReference.trim() || undefined,
       billNumber: billNumber.trim() || undefined,
+      attachmentUrl: attachmentUrl || undefined,
       financialYear: getFinancialYearFromDate(expenseDate),
       approvalStatus: status,
       approvedBy: autoApprove ? currentUser.name : undefined,
@@ -325,6 +341,47 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
                 className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-rose-500 outline-none"
               />
             </div>
+          </div>
+
+          {/* Attachment Upload Section */}
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+            <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <Paperclip className="w-4 h-4 text-rose-600" />
+              <span>खर्च बिल / पावती / स्क्रीनशॉट अपलोड (Expense Receipt Attachment)</span>
+            </label>
+
+            <div className="flex items-center gap-3">
+              <label className="flex-1 flex items-center justify-center gap-2 p-3 bg-white border border-dashed border-slate-300 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer hover:bg-rose-50/50 hover:border-rose-400 transition-colors shadow-xs">
+                <Upload className="w-4 h-4 text-rose-600" />
+                <span>बिल फोटो किंवा PDF पुरावा निवडा</span>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+
+              {attachmentUrl && (
+                <div className="flex items-center gap-2 bg-emerald-100 text-emerald-900 border border-emerald-300 px-3 py-2 rounded-xl text-xs font-bold shrink-0">
+                  <span>✓ बिल फाईल जोडली</span>
+                  <button
+                    type="button"
+                    onClick={() => setAttachmentUrl('')}
+                    className="p-0.5 hover:bg-emerald-200 rounded text-rose-700 cursor-pointer"
+                    title="फाईल हटवा"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {attachmentUrl && attachmentUrl.startsWith('data:image/') && (
+              <div className="mt-2 w-24 h-24 rounded-lg overflow-hidden border border-rose-300 shadow-sm relative group">
+                <img src={attachmentUrl} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+            )}
           </div>
 
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
