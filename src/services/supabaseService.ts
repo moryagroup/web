@@ -205,14 +205,7 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
     }
   }
 
-  let dbAttachmentUrl: string | null = null;
-  if (finalAttachmentUrl) {
-    if (finalAttachmentUrl.startsWith('http://') || finalAttachmentUrl.startsWith('https://')) {
-      dbAttachmentUrl = finalAttachmentUrl;
-    } else {
-      dbAttachmentUrl = null;
-    }
-  }
+  const dbAttachmentUrl = finalAttachmentUrl || null;
 
   const appStatus = income.approvalStatus || 'मंजूर';
   const notesWithApproval = `${income.notes || ''}\n__APPROVAL__:${appStatus}`.trim();
@@ -359,14 +352,7 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
     }
   }
 
-  let dbAttachmentUrl: string | null = null;
-  if (finalAttachmentUrl) {
-    if (finalAttachmentUrl.startsWith('http://') || finalAttachmentUrl.startsWith('https://')) {
-      dbAttachmentUrl = finalAttachmentUrl;
-    } else {
-      dbAttachmentUrl = null;
-    }
-  }
+  const dbAttachmentUrl = finalAttachmentUrl || null;
 
   const appStatus = expense.approvalStatus || 'प्रलंबित';
   const notesWithApproval = `${expense.notes || ''}\n__APPROVAL__:${appStatus}`.trim();

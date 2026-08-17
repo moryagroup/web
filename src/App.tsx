@@ -224,7 +224,8 @@ export default function App() {
           setIncomes((prev) => {
             const dbIds = new Set(data.map((i) => i.id));
             const localOnly = prev.filter((i) => !dbIds.has(i.id));
-            const formatted = formatIncomeTransactionsNo([...localOnly, ...data]);
+            const merged = mergeIncomesPreservingAttachments(data, prev);
+            const formatted = formatIncomeTransactionsNo([...localOnly, ...merged]);
             saveIncomes(formatted);
             return formatted;
           });
@@ -235,7 +236,8 @@ export default function App() {
           setExpenses((prev) => {
             const dbIds = new Set(data.map((e) => e.id));
             const localOnly = prev.filter((e) => !dbIds.has(e.id));
-            const formatted = formatExpenseTransactionsNo([...localOnly, ...data]);
+            const merged = mergeExpensesPreservingAttachments(data, prev);
+            const formatted = formatExpenseTransactionsNo([...localOnly, ...merged]);
             saveExpenses(formatted);
             return formatted;
           });
@@ -300,14 +302,16 @@ export default function App() {
             setIncomes((prev) => {
               const dbIds = new Set(inc.map((i) => i.id));
               const localOnly = prev.filter((i) => !dbIds.has(i.id));
-              return formatIncomeTransactionsNo([...localOnly, ...inc]);
+              const merged = mergeIncomesPreservingAttachments(inc, prev);
+              return formatIncomeTransactionsNo([...localOnly, ...merged]);
             });
           }
           if (exp && exp.length > 0) {
             setExpenses((prev) => {
               const dbIds = new Set(exp.map((e) => e.id));
               const localOnly = prev.filter((e) => !dbIds.has(e.id));
-              return formatExpenseTransactionsNo([...localOnly, ...exp]);
+              const merged = mergeExpensesPreservingAttachments(exp, prev);
+              return formatExpenseTransactionsNo([...localOnly, ...merged]);
             });
           }
           if (occ && occ.length > 0) {
@@ -348,14 +352,16 @@ export default function App() {
           setIncomes((prev) => {
             const dbIds = new Set(inc.map((i) => i.id));
             const localOnly = prev.filter((i) => !dbIds.has(i.id));
-            return formatIncomeTransactionsNo([...localOnly, ...inc]);
+            const merged = mergeIncomesPreservingAttachments(inc, prev);
+            return formatIncomeTransactionsNo([...localOnly, ...merged]);
           });
         }
         if (exp && exp.length > 0) {
           setExpenses((prev) => {
             const dbIds = new Set(exp.map((e) => e.id));
             const localOnly = prev.filter((e) => !dbIds.has(e.id));
-            return formatExpenseTransactionsNo([...localOnly, ...exp]);
+            const merged = mergeExpensesPreservingAttachments(exp, prev);
+            return formatExpenseTransactionsNo([...localOnly, ...merged]);
           });
         }
         if (occ && occ.length > 0) {
@@ -381,14 +387,16 @@ export default function App() {
         setIncomes((prev) => {
           const dbIds = new Set(cloudDb.incomes.map((i) => i.id));
           const localOnly = prev.filter((i) => !dbIds.has(i.id));
-          return formatIncomeTransactionsNo([...localOnly, ...cloudDb.incomes]);
+          const merged = mergeIncomesPreservingAttachments(cloudDb.incomes, prev);
+          return formatIncomeTransactionsNo([...localOnly, ...merged]);
         });
       }
       if (Array.isArray(cloudDb.expenses) && cloudDb.expenses.length > 0) {
         setExpenses((prev) => {
           const dbIds = new Set(cloudDb.expenses.map((e) => e.id));
           const localOnly = prev.filter((e) => !dbIds.has(e.id));
-          return formatExpenseTransactionsNo([...localOnly, ...cloudDb.expenses]);
+          const merged = mergeExpensesPreservingAttachments(cloudDb.expenses, prev);
+          return formatExpenseTransactionsNo([...localOnly, ...merged]);
         });
       }
       if (Array.isArray(cloudDb.members) && cloudDb.members.length > 0) {
