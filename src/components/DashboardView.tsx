@@ -37,6 +37,8 @@ import {
   FileText,
 } from 'lucide-react';
 
+import { compressImageFile } from '../services/imageStorageService';
+
 interface DashboardViewProps {
   summary: FinancialYearSummary;
   incomes: IncomeTransaction[];
@@ -54,6 +56,8 @@ interface DashboardViewProps {
   onRejectExpense?: (expId: string, name: string, role: any) => void;
   onApproveIncome?: (incId: string, name: string, role: any) => void;
   onRejectIncome?: (incId: string, name: string, role: any) => void;
+  onUpdateIncome?: (updatedIncome: IncomeTransaction) => void;
+  onUpdateExpense?: (updatedExpense: ExpenseTransaction) => void;
   onLogout?: () => void;
   onOpenLogin?: () => void;
   onUpdateOccasion?: (occasion: OccasionEvent) => void;
@@ -76,6 +80,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onRejectExpense,
   onApproveIncome,
   onRejectIncome,
+  onUpdateIncome,
+  onUpdateExpense,
   onLogout,
   onOpenLogin,
   onUpdateOccasion,
@@ -84,6 +90,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [isMemberPhotoModalOpen, setIsMemberPhotoModalOpen] = useState(false);
   const isFullAccess = hasFullFinancialAccess(currentUser.role);
   const isBadged = isBadgedMember(currentUser.role);
+
+  const handleAttachIncomeProof = async (inc: IncomeTransaction, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onUpdateIncome) return;
+    try {
+      const compressedUrl = await compressImageFile(file);
+      onUpdateIncome({
+        ...inc,
+        attachmentUrl: compressedUrl,
+      });
+    } catch (err) {
+      console.error('Failed to attach income proof:', err);
+    }
+  };
+
+  const handleAttachExpenseProof = async (exp: ExpenseTransaction, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onUpdateExpense) return;
+    try {
+      const compressedUrl = await compressImageFile(file);
+      onUpdateExpense({
+        ...exp,
+        attachmentUrl: compressedUrl,
+      });
+    } catch (err) {
+      console.error('Failed to attach expense proof:', err);
+    }
+  };
 
   const currentMember = useMemo(() => {
     const list = Array.isArray(members) ? members : [];
@@ -673,20 +707,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       ({inc.incomeType} - {inc.reason})
                     </span>
                     {inc.attachmentUrl ? (
-                      <a
-                        href={inc.attachmentUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded text-[10px] font-bold flex items-center gap-1 hover:bg-emerald-200 transition-colors"
-                        title="खात्री करण्यासाठी पावती/स्क्रीनशॉट पहा (Click to verify attachment proof)"
-                      >
-                        <Paperclip className="w-3 h-3 text-emerald-600" />
-                        <span>📎 पावती पुरावा पाहा</span>
-                      </a>
+                      <div className="flex items-center gap-1">
+                        <a
+                          href={inc.attachmentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded text-[10px] font-bold flex items-center gap-1 hover:bg-emerald-200 transition-colors"
+                          title="खात्री करण्यासाठी पावती/स्क्रीनशॉट पहा (Click to verify attachment proof)"
+                        >
+                          <Paperclip className="w-3 h-3 text-emerald-600" />
+                          <span>📎 पावती पुरावा पाहा</span>
+                        </a>
+                        <label className="px-1.5 py-0.5 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded text-[10px] font-bold flex items-center gap-0.5 cursor-pointer transition-colors" title="पावती बदला (Change Proof)">
+                          <Camera className="w-3 h-3 text-slate-600" />
+                          <span>बदला</span>
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={(e) => handleAttachIncomeProof(inc, e)}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
                     ) : (
-                      <span className="text-[10px] text-amber-700 italic bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                        (कोणताही पुरावा जोडलेला नाही)
-                      </span>
+                      <label className="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded text-[10px] font-bold flex items-center gap-1 hover:bg-amber-200 cursor-pointer transition-colors shadow-2xs">
+                        <Camera className="w-3 h-3 text-amber-700" />
+                        <span>📷 पावती पुरावा जोडा</span>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) => handleAttachIncomeProof(inc, e)}
+                          className="hidden"
+                        />
+                      </label>
                     )}
                   </div>
                   <span className="block text-[10px] text-slate-400 mt-0.5">
@@ -756,20 +809,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       ({exp.expenseCategory} - {exp.reason})
                     </span>
                     {exp.attachmentUrl ? (
-                      <a
-                        href={exp.attachmentUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-300 rounded text-[10px] font-bold flex items-center gap-1 hover:bg-rose-200 transition-colors"
-                        title="खात्री करण्यासाठी खर्च बिल/स्क्रीनशॉट पहा (Click to verify attachment proof)"
-                      >
-                        <Paperclip className="w-3 h-3 text-rose-600" />
-                        <span>📎 बिल पुरावा पाहा</span>
-                      </a>
+                      <div className="flex items-center gap-1">
+                        <a
+                          href={exp.attachmentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-300 rounded text-[10px] font-bold flex items-center gap-1 hover:bg-rose-200 transition-colors"
+                          title="खात्री करण्यासाठी खर्च बिल/स्क्रीनशॉट पहा (Click to verify attachment proof)"
+                        >
+                          <Paperclip className="w-3 h-3 text-rose-600" />
+                          <span>📎 बिल पुरावा पाहा</span>
+                        </a>
+                        <label className="px-1.5 py-0.5 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded text-[10px] font-bold flex items-center gap-0.5 cursor-pointer transition-colors" title="पावती बदला (Change Proof)">
+                          <Camera className="w-3 h-3 text-slate-600" />
+                          <span>बदला</span>
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={(e) => handleAttachExpenseProof(exp, e)}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
                     ) : (
-                      <span className="text-[10px] text-amber-700 italic bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                        (कोणताही पुरावा जोडलेला नाही)
-                      </span>
+                      <label className="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded text-[10px] font-bold flex items-center gap-1 hover:bg-amber-200 cursor-pointer transition-colors shadow-2xs">
+                        <Camera className="w-3 h-3 text-amber-700" />
+                        <span>📷 बिल पुरावा जोडा</span>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) => handleAttachExpenseProof(exp, e)}
+                          className="hidden"
+                        />
+                      </label>
                     )}
                   </div>
                   <span className="block text-[10px] text-slate-400 mt-0.5">

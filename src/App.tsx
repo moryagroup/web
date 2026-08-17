@@ -979,6 +979,8 @@ export default function App() {
                 onRejectExpense={handleRejectExpense}
                 onApproveIncome={handleApproveIncome}
                 onRejectIncome={handleRejectIncome}
+                onUpdateIncome={handleUpdateIncome}
+                onUpdateExpense={handleUpdateExpense}
                 onLogout={handleLogout}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
                 onUpdateOccasion={handleUpdateOccasion}

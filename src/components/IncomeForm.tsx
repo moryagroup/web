@@ -12,6 +12,7 @@ import { hasFullFinancialAccess, sortMembersByDesignation } from '../utils/rbac'
 import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextTransactionNo } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft } from 'lucide-react';
+import { compressImageFile } from '../services/imageStorageService';
 
 interface IncomeFormProps {
   incomes?: IncomeTransaction[];
@@ -120,18 +121,23 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
   };
 
   // File upload handler
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       alert('फाइलची साईझ १० MB पेक्षा लहान असावी.');
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAttachmentUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressedUrl = await compressImageFile(file);
+      setAttachmentUrl(compressedUrl);
+    } catch {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAttachmentUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {

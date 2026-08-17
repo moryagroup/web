@@ -12,6 +12,7 @@ import { hasFullFinancialAccess, sortMembersByDesignation } from '../utils/rbac'
 import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextTransactionNo } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { ArrowUpRight, CheckCircle2, Upload, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { compressImageFile } from '../services/imageStorageService';
 
 interface ExpenseFormProps {
   expenses?: ExpenseTransaction[];
@@ -69,18 +70,23 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       alert('फाइलची साईझ १० MB पेक्षा लहान असावी.');
       return;
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAttachmentUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressedUrl = await compressImageFile(file);
+      setAttachmentUrl(compressedUrl);
+    } catch {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAttachmentUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleRecipientTypeChange = (type: RecipientType) => {
