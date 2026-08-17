@@ -268,11 +268,21 @@ export async function fetchOccasionsFromSupabase(): Promise<OccasionEvent[]> {
   }
   return (data || []).map((row) => {
     let parsedDetails: Partial<OccasionEvent> = {};
+    let cleanDescription = row.description || '';
+
     if (row.details) {
       try {
         parsedDetails = typeof row.details === 'string' ? JSON.parse(row.details) : row.details;
       } catch (err) {
         console.warn('Failed to parse occasion details JSON:', err);
+      }
+    } else if (cleanDescription.includes('__DETAILS__:')) {
+      const parts = cleanDescription.split('__DETAILS__:');
+      cleanDescription = parts[0].trim();
+      try {
+        parsedDetails = JSON.parse(parts[1]);
+      } catch (err) {
+        console.warn('Failed to parse details payload from description:', err);
       }
     }
 
@@ -288,7 +298,7 @@ export async function fetchOccasionsFromSupabase(): Promise<OccasionEvent[]> {
       year: row.year || parsedDetails.year || '२०२६-२७',
       startDate: row.start_date || row.event_date || parsedDetails.startDate,
       endDate: row.end_date || parsedDetails.endDate,
-      description: row.description || parsedDetails.description,
+      description: cleanDescription || parsedDetails.description,
       bannerUrl: row.banner_url || parsedDetails.bannerUrl,
       workDetails: row.work_details || parsedDetails.workDetails,
       responsiblePerson: row.responsible_person || parsedDetails.responsiblePerson,
@@ -329,11 +339,12 @@ export async function saveOccasionToSupabase(occasion: OccasionEvent): Promise<v
 
   const { error } = await supabase.from('occasions').upsert(baseRow);
   if (error) {
-    console.warn('[Supabase] saveOccasion error with details column:', error.message);
+    console.warn('[Supabase] saveOccasion error with details column, trying description payload fallback:', error.message);
+    const fallbackDescription = `${occasion.description || ''}\n__DETAILS__:${detailsPayload}`;
     const simpleRow = {
       id: occasion.id,
       title: occasion.name,
-      description: occasion.description || '',
+      description: fallbackDescription,
       event_date: occasion.startDate || new Date().toISOString().split('T')[0],
       location: 'हडपसर, पुणे',
       banner_url: occasion.bannerUrl || null,

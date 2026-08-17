@@ -37,27 +37,44 @@ function mergeOccasionsPreservingTasks(
   incoming: OccasionEvent[],
   existing: OccasionEvent[]
 ): OccasionEvent[] {
-  const existingMap = new Map(existing.map((o) => [o.id, o]));
-  return incoming.map((inc) => {
-    const prev = existingMap.get(inc.id);
-    if (!prev) return inc;
-    const tasks =
-      inc.tasks && inc.tasks.length > 0
-        ? inc.tasks
-        : prev.tasks && prev.tasks.length > 0
-        ? prev.tasks
-        : [];
-    return {
-      ...prev,
-      ...inc,
-      tasks,
-      workDetails: inc.workDetails || prev.workDetails,
-      responsiblePerson: inc.responsiblePerson || prev.responsiblePerson,
-      startDate: inc.startDate || prev.startDate,
-      endDate: inc.endDate || prev.endDate,
-      year: inc.year || prev.year,
-    };
+  const incomingMap = new Map(incoming.map((o) => [o.id, o]));
+  const mergedMap = new Map<string, OccasionEvent>();
+
+  // 1. Process existing items first (to keep local additions & tasks)
+  existing.forEach((prev) => {
+    const inc = incomingMap.get(prev.id);
+    if (!inc) {
+      // Not yet in incoming DB response -> keep existing local item intact!
+      mergedMap.set(prev.id, prev);
+    } else {
+      // Exists in both -> merge, preserving tasks & details if missing in incoming
+      const tasks =
+        inc.tasks && inc.tasks.length > 0
+          ? inc.tasks
+          : prev.tasks && prev.tasks.length > 0
+          ? prev.tasks
+          : [];
+      mergedMap.set(prev.id, {
+        ...prev,
+        ...inc,
+        tasks,
+        workDetails: inc.workDetails || prev.workDetails,
+        responsiblePerson: inc.responsiblePerson || prev.responsiblePerson,
+        startDate: inc.startDate || prev.startDate,
+        endDate: inc.endDate || prev.endDate,
+        year: inc.year || prev.year,
+      });
+    }
   });
+
+  // 2. Add any truly new items from incoming DB
+  incoming.forEach((inc) => {
+    if (!mergedMap.has(inc.id)) {
+      mergedMap.set(inc.id, inc);
+    }
+  });
+
+  return Array.from(mergedMap.values());
 }
 import {
   seedAllCollections,
@@ -229,8 +246,11 @@ export default function App() {
       }),
       subscribeToOccasions((data) => {
         if (data && data.length > 0) {
-          setOccasions(data);
-          saveOccasions(data);
+          setOccasions((prev) => {
+            const merged = mergeOccasionsPreservingTasks(data, prev);
+            saveOccasions(merged);
+            return merged;
+          });
         }
       }),
       subscribeToGallery((data) => {
