@@ -15,6 +15,7 @@ import { HeaderStats } from './HeaderStats';
 import { EventGallerySection } from './EventGallerySection';
 import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
 import { ProofLightboxModal } from './ProofLightboxModal';
+import { TaskObstacleModal } from './TaskObstacleModal';
 import { isGoogleDriveUrl } from '../services/googleDriveService';
 import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions, canApproveFinancialTransactions } from '../utils/rbac';
 import {
@@ -34,6 +35,8 @@ import {
   Camera,
   ListChecks,
   Paperclip,
+  AlertTriangle,
+  MessageSquare,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -107,6 +110,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [members, currentUser]);
 
   const memberPhoto = currentMember?.photoUrl;
+  const [activeObstacleModal, setActiveObstacleModal] = useState<{ task: EventTask; occasion: OccasionEvent } | null>(null);
 
   // Helper to normalize strings for robust comparison across English/Marathi names
   const normalizeText = (str?: string) =>
@@ -379,6 +383,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <p className="text-[10px] text-slate-400">
                     प्रमुख व्यवस्थापक: <span className="text-white font-bold">{task.assignedMemberName}</span> ({task.assignedMemberRole || 'सभासद'})
                   </p>
+                  {task.status === 'अडचण / समस्या' && (
+                    <div className="mt-2 p-2 bg-rose-950/60 border border-rose-600/60 rounded-lg text-xs space-y-1">
+                      <div className="flex items-center gap-1.5 text-rose-300 font-bold text-[11px]">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-400 animate-bounce" />
+                        <span>कामात अडचण आल्याने थांबले आहे</span>
+                      </div>
+                      {task.obstacleDetails && (
+                        <p className="text-[11px] text-rose-200 italic">
+                          "{task.obstacleDetails}"
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="text-right shrink-0 space-y-2">
@@ -388,11 +405,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                         : task.status === 'प्रक्रियेत'
                         ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                        : task.status === 'अडचण / समस्या'
+                        ? 'bg-rose-500/30 text-rose-300 border border-rose-500/60 font-black animate-pulse'
                         : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                     }`}
                   >
                     {task.status}
                   </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveObstacleModal({ task, occasion })}
+                    className="block w-full px-2.5 py-1 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 text-slate-950 font-black text-[10px] rounded-lg shadow cursor-pointer transition-all active:scale-95 text-center flex items-center justify-center gap-1"
+                  >
+                    <MessageSquare className="w-3 h-3" />
+                    <span>
+                      {task.status === 'अडचण / समस्या' ? '⚠️ अडचण / सूचना द्या' : 'कामाचे तपशील / सूचना'}
+                      {(task.suggestions?.length || 0) > 0 ? ` (${task.suggestions?.length})` : ''}
+                    </span>
+                  </button>
+
                   {onUpdateOccasion && (
                     <button
                       onClick={() => {
@@ -412,9 +444,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         }
                         onUpdateOccasion({ ...occasion, tasks: updatedTasks });
                       }}
-                      className="block w-full px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10px] rounded-lg shadow cursor-pointer transition-all active:scale-95 text-center"
+                      className="block w-full px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10px] rounded-lg border border-slate-700 shadow cursor-pointer transition-all active:scale-95 text-center"
                     >
-                      {task.status === 'पूर्ण' ? 'पुन्हा उघडा' : '✓ काम पूर्ण करा'}
+                      {task.status === 'पूर्ण' ? 'पुन्हा उघडा' : '✓ पूर्ण म्हणून चिन्हांकित करा'}
                     </button>
                   )}
                 </div>
@@ -821,6 +853,37 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         onClose={() => setProofModalUrl(null)}
         imageUrl={proofModalUrl || ''}
       />
+
+      {/* Task Obstacle & Committee Suggestions Modal */}
+      {activeObstacleModal && (
+        <TaskObstacleModal
+          isOpen={Boolean(activeObstacleModal)}
+          onClose={() => setActiveObstacleModal(null)}
+          task={activeObstacleModal.task}
+          occasion={activeObstacleModal.occasion}
+          currentUser={currentUser}
+          onUpdateTask={(updatedTask) => {
+            if (!onUpdateOccasion) return;
+            const targetOccasion = activeObstacleModal.occasion;
+            let updatedTasks = [...(targetOccasion.tasks || [])];
+            if (updatedTask.id.startsWith('occ-main-')) {
+              const existingIdx = updatedTasks.findIndex((t) => t.id === updatedTask.id);
+              if (existingIdx >= 0) {
+                updatedTasks[existingIdx] = updatedTask;
+              } else {
+                updatedTasks.push(updatedTask);
+              }
+            } else {
+              updatedTasks = updatedTasks.map((t) =>
+                t.id === updatedTask.id ? updatedTask : t
+              );
+            }
+            const updatedOccasion = { ...targetOccasion, tasks: updatedTasks };
+            onUpdateOccasion(updatedOccasion);
+            setActiveObstacleModal({ task: updatedTask, occasion: updatedOccasion });
+          }}
+        />
+      )}
     </div>
   );
 };

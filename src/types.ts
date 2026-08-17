@@ -85,6 +85,16 @@ export interface Member {
   updatedAt?: string;
 }
 
+export type TaskStatus = 'प्रलंबित' | 'प्रक्रियेत' | 'पूर्ण' | 'अडचण / समस्या';
+
+export interface TaskSuggestion {
+  id: string;
+  memberName: string;
+  memberRole?: string;
+  suggestionText: string;
+  createdAt: string;
+}
+
 export interface EventTask {
   id: string;
   taskTitle: string; // e.g. "मंडप व सजावट नियोजन"
@@ -92,8 +102,10 @@ export interface EventTask {
   assignedMemberName: string;
   assignedMemberRole?: string;
   assignedMemberPhone?: string;
-  status: 'प्रलंबित' | 'प्रक्रियेत' | 'पूर्ण';
+  status: TaskStatus;
   notes?: string;
+  obstacleDetails?: string; // Obstacle / Issue description when status is 'अडचण / समस्या'
+  suggestions?: TaskSuggestion[]; // List of suggestions posted by committee members
 }
 
 export interface OccasionEvent {
