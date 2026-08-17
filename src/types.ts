@@ -49,7 +49,7 @@ export type PaymentMethod =
   | 'चेक'
   | 'इतर';
 
-export type ApprovalStatus = 'प्रलंबित' | 'मंजूर' | 'नाकारले' | 'रद्द';
+export type ApprovalStatus = 'प्रलंबित' | 'मंजूर' | 'रद्द';
 
 export type UserDesignation =
   | 'अध्यक्ष'
@@ -92,10 +92,8 @@ export interface EventTask {
   assignedMemberName: string;
   assignedMemberRole?: string;
   assignedMemberPhone?: string;
-  status: 'प्रलंबित' | 'प्रक्रियेत' | 'पूर्ण' | 'अडचण';
+  status: 'प्रलंबित' | 'प्रक्रियेत' | 'पूर्ण';
   notes?: string;
-  obstacleNote?: string; // Obstacle / Issue reported by assigned member
-  obstacleSolution?: string; // Solution / Revert suggestion provided by committee member
 }
 
 export interface OccasionEvent {
@@ -144,10 +142,6 @@ export interface IncomeTransaction {
   attachmentUrl?: string; // Proof image or doc
   notes?: string;
   financialYear: string; // e.g., '2026-2027'
-  approvalStatus?: ApprovalStatus;
-  approvedBy?: string; // Name of approver
-  approvedByRole?: UserDesignation; // Role of approver
-  approvedAt?: string; // Timestamp when approved
   createdBy: string; // Admin / Treasurer name
   createdAt: string; // Full system timestamp ISO or formatted
   updatedAt?: string;

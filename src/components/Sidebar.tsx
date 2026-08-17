@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { CurrentUser, Member } from '../types';
 import moryaLogo from '../assets/morya_logo.jpg';
-import { hasFullFinancialAccess, hasAdminPermissions, isBadgedMember, isCoreMemberRole, isTreasurerOrViceTreasurer } from '../utils/rbac';
+import { hasFullFinancialAccess, hasAdminPermissions, isBadgedMember, isCoreMemberRole } from '../utils/rbac';
 import { ImageCropModal } from './ImageCropModal';
 import { LogoLightboxModal } from './LogoLightboxModal';
 import {
@@ -132,11 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'expense-history',
       label: 'खर्च इतिहास',
       icon: FileSpreadsheet,
-      badge:
-        (isTreasurerOrViceTreasurer(currentUser.role) || hasFullFinancialAccess(currentUser.role)) &&
-        pendingExpenseCount > 0
-          ? pendingExpenseCount
-          : null,
+      badge: pendingExpenseCount > 0 ? pendingExpenseCount : null,
     },
     {
       id: 'member-subscriptions',

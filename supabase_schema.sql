@@ -38,24 +38,10 @@ CREATE TABLE IF NOT EXISTS public.incomes (
     receipt_number TEXT,
     reason TEXT NOT NULL,
     notes TEXT,
-    attachment_url TEXT,
-    approval_status TEXT DEFAULT 'मंजूर',
-    approved_by TEXT,
-    approved_by_role TEXT,
-    approved_at TEXT,
     recorded_by TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
--- Schema Migration Fixes for existing incomes table
-ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS attachment_url TEXT;
-ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS approval_status TEXT DEFAULT 'मंजूर';
-ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS approved_by TEXT;
-ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS approved_by_role TEXT;
-ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS approved_at TEXT;
-ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS receipt_number TEXT;
-ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS payment_reference TEXT;
 
 -- 3. Expense Transactions Table
 CREATE TABLE IF NOT EXISTS public.expenses (
@@ -63,21 +49,14 @@ CREATE TABLE IF NOT EXISTS public.expenses (
     transaction_no TEXT NOT NULL,
     financial_year TEXT NOT NULL,
     expense_category TEXT NOT NULL,
-    recipient_type TEXT DEFAULT 'व्यक्ती',
     recipient_name TEXT NOT NULL,
     linked_member_id TEXT REFERENCES public.members(id) ON DELETE SET NULL,
     amount NUMERIC NOT NULL,
     expense_date TEXT NOT NULL,
     payment_method TEXT NOT NULL,
-    payment_reference TEXT,
     bill_number TEXT,
     bill_photo_url TEXT,
-    attachment_url TEXT,
-    occasion_id TEXT,
-    occasion_name TEXT,
     reason TEXT NOT NULL,
-    description TEXT,
-    notes TEXT,
     approval_status TEXT DEFAULT 'प्रलंबित',
     approved_by TEXT,
     approved_by_role TEXT,
@@ -86,16 +65,6 @@ CREATE TABLE IF NOT EXISTS public.expenses (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
--- Schema Migration Fixes for existing expenses table
-ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS recipient_type TEXT DEFAULT 'व्यक्ती';
-ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS payment_reference TEXT;
-ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS attachment_url TEXT;
-ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS occasion_id TEXT;
-ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS occasion_name TEXT;
-ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS description TEXT;
-ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS notes TEXT;
-
 
 -- 4. Occasion Events Table
 CREATE TABLE IF NOT EXISTS public.occasions (

@@ -404,10 +404,9 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                             onChange={(e) => handleUpdateTaskRow(task.id, 'status', e.target.value as any)}
                             className="w-full p-1.5 border border-slate-300 rounded-md font-bold text-slate-800"
                           >
-                            <option value="प्रलंबित">⏳ प्रलंबित</option>
-                            <option value="प्रक्रियेत">🔄 प्रक्रियेत</option>
-                            <option value="पूर्ण">✅ पूर्ण</option>
-                            <option value="अडचण">⚠️ अडचण / समस्या</option>
+                            <option value="प्रलंबित">प्रलंबित</option>
+                            <option value="प्रक्रियेत">प्रक्रियेत</option>
+                            <option value="पूर्ण">पूर्ण</option>
                           </select>
                         </div>
 
@@ -508,9 +507,7 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                           {occ.tasks.map((t) => (
                             <div
                               key={t.id}
-                              className={`p-1.5 rounded-md border border-slate-200 flex justify-between items-center ${
-                                t.status === 'अडचण' ? 'bg-rose-50' : 'bg-slate-50'
-                              }`}
+                              className="p-1.5 bg-slate-50 rounded-md border border-slate-200 flex justify-between items-center"
                             >
                               <div>
                                 <span className="font-bold text-slate-800">{t.taskTitle}</span>

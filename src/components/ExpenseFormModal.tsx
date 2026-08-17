@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, MinusCircle, CheckCircle, Info, Upload, Paperclip, Trash2 } from 'lucide-react';
-import { getFinancialYearFromDate, generateNextTransactionNo } from '../utils/dateUtils';
+import { X, MinusCircle, CheckCircle, Info } from 'lucide-react';
+import { getFinancialYearFromDate } from '../utils/dateUtils';
 import {
   ExpenseTransaction,
   RecipientType,
@@ -15,7 +15,6 @@ interface ExpenseFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (transaction: Omit<ExpenseTransaction, 'id'>) => void;
-  expenses?: ExpenseTransaction[];
   occasions: OccasionEvent[];
   expenseCategories: string[];
   onAddCustomExpenseCategory: (newCategory: string) => void;
@@ -26,7 +25,6 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  expenses = [],
   occasions,
   expenseCategories,
   onAddCustomExpenseCategory,
@@ -35,10 +33,10 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   if (!isOpen) return null;
 
   const todayStr = new Date().toISOString().split('T')[0];
+  const autoTransNo = `EXP-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
+
   const [amount, setAmount] = useState<number | ''>('');
   const [expenseDate, setExpenseDate] = useState<string>(todayStr);
-
-  const autoTransNo = generateNextTransactionNo('DR', expenseDate, expenses);
   const [recipientType, setRecipientType] = useState<RecipientType>('दुकान / Vendor');
   const [recipientName, setRecipientName] = useState<string>('');
   const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>('मंडप व सजावट');
@@ -50,25 +48,8 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
   const [paymentReference, setPaymentReference] = useState<string>('');
   const [billNumber, setBillNumber] = useState<string>('');
-  const isAuthorizedFinancialRole = ['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'उप-खजिनदार', 'ॲडमिन', 'Admin'].includes(
-    currentUser.role
-  );
-  const [autoApprove, setAutoApprove] = useState<boolean>(isAuthorizedFinancialRole);
-  const [attachmentUrl, setAttachmentUrl] = useState<string>('');
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      alert('फाइलची साईझ १० MB पेक्षा लहान असावी.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAttachmentUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
+  const [financialYear, setFinancialYear] = useState<string>('2026-2027');
+  const [autoApprove, setAutoApprove] = useState<boolean>(true);
 
   const handleAddCustomCategory = () => {
     if (customCategoryInput.trim()) {
@@ -100,8 +81,7 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
       .toTimeString()
       .split(' ')[0]}`;
 
-    const isApproved = autoApprove && isAuthorizedFinancialRole;
-    const status: ApprovalStatus = isApproved ? 'मंजूर' : 'प्रलंबित';
+    const status: ApprovalStatus = autoApprove ? 'मंजूर' : 'प्रलंबित';
 
     onSubmit({
       transactionNo: autoTransNo,
@@ -117,12 +97,11 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
       paymentMethod,
       paymentReference: paymentReference.trim() || undefined,
       billNumber: billNumber.trim() || undefined,
-      attachmentUrl: attachmentUrl || undefined,
       financialYear: getFinancialYearFromDate(expenseDate),
       approvalStatus: status,
-      approvedBy: isApproved ? currentUser.name : undefined,
-      approvedByRole: isApproved ? currentUser.role : undefined,
-      approvedAt: isApproved ? formattedCreatedAt : undefined,
+      approvedBy: autoApprove ? currentUser.name : undefined,
+      approvedByRole: autoApprove ? currentUser.role : undefined,
+      approvedAt: autoApprove ? formattedCreatedAt : undefined,
       createdBy: `${currentUser.name} (${currentUser.role})`,
       createdAt: formattedCreatedAt,
     });
@@ -348,66 +327,23 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
             </div>
           </div>
 
-          {/* Attachment Upload Section */}
-          <div className="p-4 bg-slate-900 border border-slate-700 rounded-xl space-y-2">
-            <label className="block text-xs font-bold text-slate-200 flex items-center gap-1.5">
-              <Paperclip className="w-4 h-4 text-rose-400" />
-              <span>खर्च बिल / पावती / स्क्रीनशॉट अपलोड (Expense Receipt Attachment)</span>
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Info className="w-4 h-4 text-amber-700" />
+              <span className="text-xs font-semibold text-amber-900">
+                अध्यक्ष / खजिनदार / सचिव कोणत्याही एकाची मंजुरी पुरेशी आहे.
+              </span>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-amber-900">
+              <input
+                type="checkbox"
+                checked={autoApprove}
+                onChange={(e) => setAutoApprove(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 rounded"
+              />
+              <span>आत्ताच मंजूर करा ({currentUser.name})</span>
             </label>
-
-            <div className="flex items-center gap-3">
-              <label className="flex-1 flex items-center justify-center gap-2 p-3 bg-slate-950 border border-dashed border-slate-700 rounded-xl text-xs font-semibold text-slate-200 cursor-pointer hover:bg-rose-950/40 hover:border-rose-500 transition-colors shadow-xs">
-                <Upload className="w-4 h-4 text-rose-400" />
-                <span>बिल फोटो किंवा PDF पुरावा निवडा</span>
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </label>
-
-              {attachmentUrl && (
-                <div className="flex items-center gap-2 bg-emerald-100 text-emerald-900 border border-emerald-300 px-3 py-2 rounded-xl text-xs font-bold shrink-0">
-                  <span>✓ बिल फाईल जोडली</span>
-                  <button
-                    type="button"
-                    onClick={() => setAttachmentUrl('')}
-                    className="p-0.5 hover:bg-emerald-200 rounded text-rose-700 cursor-pointer"
-                    title="फाईल हटवा"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {attachmentUrl && attachmentUrl.startsWith('data:image/') && (
-              <div className="mt-2 w-24 h-24 rounded-lg overflow-hidden border border-rose-300 shadow-sm relative group">
-                <img src={attachmentUrl} alt="Preview" className="w-full h-full object-cover" />
-              </div>
-            )}
           </div>
-
-          {isAuthorizedFinancialRole && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Info className="w-4 h-4 text-amber-700" />
-                <span className="text-xs font-semibold text-amber-900">
-                  अध्यक्ष / खजिनदार / सचिव कोणत्याही एकाची मंजुरी पुरेशी आहे.
-                </span>
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-amber-900">
-                <input
-                  type="checkbox"
-                  checked={autoApprove}
-                  onChange={(e) => setAutoApprove(e.target.checked)}
-                  className="w-4 h-4 text-emerald-600 rounded"
-                />
-                <span>आत्ताच मंजूर करा ({currentUser.name})</span>
-              </label>
-            </div>
-          )}
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
             <button

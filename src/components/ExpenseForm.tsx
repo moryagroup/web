@@ -9,13 +9,11 @@ import {
   Member,
 } from '../types';
 import { hasFullFinancialAccess, sortMembersByDesignation } from '../utils/rbac';
-import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextTransactionNo } from '../utils/dateUtils';
+import { getFinancialYearFromDate, getCalendarYearFromDate } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { ArrowUpRight, CheckCircle2, Upload, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
-import { compressImageFile } from '../services/imageStorageService';
 
 interface ExpenseFormProps {
-  expenses?: ExpenseTransaction[];
   occasions: OccasionEvent[];
   members: Member[];
   currentUser: CurrentUser;
@@ -27,7 +25,6 @@ interface ExpenseFormProps {
 }
 
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({
-  expenses = [],
   occasions,
   members,
   currentUser,
@@ -70,22 +67,10 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      alert('फाइलची साईझ १० MB पेक्षा लहान असावी.');
-      return;
-    }
-    try {
-      const compressedUrl = await compressImageFile(file);
-      setAttachmentUrl(compressedUrl);
-    } catch {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAttachmentUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (file) {
+      setAttachmentUrl(URL.createObjectURL(file));
     }
   };
 
@@ -117,7 +102,9 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
     }
 
     const selectedOccasion = occasions.find((o) => o.id === occasionId);
-    const transactionNo = generateNextTransactionNo('DR', expenseDate, expenses);
+    const transactionNo = `EXP-${new Date().getFullYear()}-${Math.floor(
+      1000 + Math.random() * 9000
+    )}`;
 
     // Approval status:
     // Any authorized role (अध्यक्ष/खजिनदार/सचिव/ॲडमिन) can approve directly
@@ -233,13 +220,13 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Section 1: Amount & Dates */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-900/90 rounded-xl border border-rose-500/40 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-rose-50/40 rounded-xl border border-rose-100">
           <div>
-            <label className="block text-xs font-bold text-rose-300 uppercase mb-1">
+            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
               खर्चाची रक्कम (₹) <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2.5 text-rose-400 font-black">₹</span>
+              <span className="absolute left-3 top-2.5 text-slate-400 font-bold">₹</span>
               <input
                 type="number"
                 step="any"
@@ -247,13 +234,13 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full pl-8 pr-3 py-2.5 bg-slate-950 border border-rose-500/50 rounded-lg text-xl font-black text-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-300 rounded-lg text-lg font-bold text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-rose-300 uppercase mb-1">
+            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
               खर्चाची प्रत्यक्ष तारीख <span className="text-rose-500">*</span>
             </label>
             <input
@@ -261,7 +248,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
               required
               value={expenseDate}
               onChange={(e) => setExpenseDate(e.target.value)}
-              className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 font-bold focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
             <p className="text-[11px] text-slate-400 mt-1">
               (प्रत्यक्ष बिल किंवा रक्कम दिल्याचा दिवस निवडा)
@@ -485,7 +472,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
           </div>
 
           {/* Approval toggle option for authorized officer */}
-          {['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'उप-खजिनदार', 'ॲडमिन', 'Admin'].includes(currentUser.role) && (
+          {['अध्यक्ष', 'खजिनदार', 'सचिव'].includes(currentUser.role) && (
             <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-amber-700 shrink-0" />

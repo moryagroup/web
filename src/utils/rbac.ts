@@ -32,19 +32,7 @@ export const hasFullFinancialAccess = (role?: string): boolean => {
 export const isTreasurerRole = (role?: string): boolean => {
   if (!role) return false;
   const trimmed = role.trim();
-  return ['खजिनदार', 'उपखजिनदार', 'उप-खजिनदार'].includes(trimmed);
-};
-
-export const isTreasurerOrViceTreasurer = (role?: string): boolean => {
-  if (!role) return false;
-  const trimmed = role.trim();
-  const lower = trimmed.toLowerCase();
-  return (
-    lower.includes('खजिनदार') ||
-    lower.includes('treasurer') ||
-    trimmed === 'ॲडमिन' ||
-    trimmed === 'Admin'
-  );
+  return ['खजिनदार', 'उपखजिनदार'].includes(trimmed);
 };
 
 export const isCoreMemberRole = (role?: string): boolean => {

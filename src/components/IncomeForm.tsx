@@ -9,13 +9,11 @@ import {
   CurrentUser,
 } from '../types';
 import { hasFullFinancialAccess, sortMembersByDesignation } from '../utils/rbac';
-import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextTransactionNo } from '../utils/dateUtils';
+import { getFinancialYearFromDate, getCalendarYearFromDate } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft } from 'lucide-react';
-import { compressImageFile } from '../services/imageStorageService';
 
 interface IncomeFormProps {
-  incomes?: IncomeTransaction[];
   members: Member[];
   occasions: OccasionEvent[];
   customTypes: string[];
@@ -29,7 +27,6 @@ interface IncomeFormProps {
 }
 
 export const IncomeForm: React.FC<IncomeFormProps> = ({
-  incomes = [],
   members,
   occasions,
   customTypes,
@@ -120,23 +117,11 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
     }
   };
 
-  // File upload handler
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // File upload simulation
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      alert('फाइलची साईझ १० MB पेक्षा लहान असावी.');
-      return;
-    }
-    try {
-      const compressedUrl = await compressImageFile(file);
-      setAttachmentUrl(compressedUrl);
-    } catch {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAttachmentUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (file) {
+      setAttachmentUrl(URL.createObjectURL(file));
     }
   };
 
@@ -169,12 +154,9 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
     }
 
     const selectedOccasion = occasions.find((o) => o.id === occasionId);
-    const transactionNo = generateNextTransactionNo('CR', transactionDate, incomes);
-
-    const isAuthorizedRole = ['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(
-      currentUser.role
-    );
-    const isApproved = isAuthorizedRole;
+    const transactionNo = `MG-${new Date().getFullYear()}-${Math.floor(
+      1000 + Math.random() * 9000
+    )}`;
 
     const newIncome: IncomeTransaction = {
       id: `inc-${Date.now()}`,
@@ -195,10 +177,6 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       attachmentUrl: attachmentUrl || undefined,
       notes: notes.trim() || undefined,
       financialYear: getFinancialYearFromDate(transactionDate),
-      approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
-      approvedBy: isApproved ? `${currentUser.name} (${currentUser.role})` : undefined,
-      approvedByRole: isApproved ? currentUser.role : undefined,
-      approvedAt: isApproved ? new Date().toISOString() : undefined,
       createdBy: `${currentUser.name} (${currentUser.role})`,
       createdAt: new Date().toISOString(),
     };
@@ -283,13 +261,13 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Section 1: Basic Amount & Dates */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-900/90 rounded-xl border border-slate-700 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50/70 rounded-xl border border-slate-100">
           <div>
-            <label className="block text-xs font-bold text-amber-300 uppercase mb-1">
+            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
               जमा रक्कम (₹) <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2.5 text-amber-400 font-black">₹</span>
+              <span className="absolute left-3 top-2.5 text-slate-400 font-bold">₹</span>
               <input
                 type="number"
                 step="any"
@@ -297,13 +275,13 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full pl-8 pr-3 py-2.5 bg-slate-950 border border-amber-500/50 rounded-lg text-xl font-black text-amber-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full pl-8 pr-3 py-2.5 bg-yellow-50/40 border border-slate-300 rounded-lg text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-amber-300 uppercase mb-1">
+            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
               प्रत्यक्ष जमा तारीख <span className="text-rose-500">*</span>
             </label>
             <input
@@ -311,7 +289,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
               required
               value={transactionDate}
               onChange={(e) => setTransactionDate(e.target.value)}
-              className="w-full p-2.5 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             <p className="text-[11px] text-slate-400 mt-1">
               (पैसे प्रत्यक्ष हाती किंवा खात्यात जमा झाले ती तारीख निवडा)
@@ -546,18 +524,12 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
         </div>
 
         {/* Form Metadata System Banner */}
-        <div className="p-4 bg-slate-900 rounded-xl text-xs text-slate-300 flex flex-wrap justify-between items-center gap-2 border border-slate-700 shadow-md">
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-400">नोंद करणारे खजिनदार/Admin:</span>
-            <span className="font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
-              {currentUser.name} ({currentUser.role})
-            </span>
+        <div className="p-3 bg-slate-100/70 rounded-xl text-xs text-slate-500 flex flex-wrap justify-between items-center gap-2 border border-slate-200">
+          <div>
+            नोंद करणारे खजिनदार/Admin: <span className="font-bold text-slate-700">{currentUser.name}</span> ({currentUser.role})
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-400">नोंद तारीख व वेळ (Automatic):</span>
-            <span className="font-mono text-amber-300 font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-              {new Date().toLocaleString('mr-IN')}
-            </span>
+          <div>
+            नोंद तारीख व वेळ (Automatic): <span className="font-mono text-slate-700">{new Date().toLocaleString('mr-IN')}</span>
           </div>
         </div>
 

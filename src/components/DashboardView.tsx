@@ -14,7 +14,7 @@ import {
 import { HeaderStats } from './HeaderStats';
 import { EventGallerySection } from './EventGallerySection';
 import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
-import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions, isTreasurerOrViceTreasurer } from '../utils/rbac';
+import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions } from '../utils/rbac';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -31,13 +31,7 @@ import {
   User,
   Camera,
   ListChecks,
-  AlertTriangle,
-  XCircle,
-  Paperclip,
-  FileText,
 } from 'lucide-react';
-
-import { compressImageFile } from '../services/imageStorageService';
 
 interface DashboardViewProps {
   summary: FinancialYearSummary;
@@ -53,11 +47,6 @@ interface DashboardViewProps {
   onSaveGallery: (gallery: EventGalleryImage[]) => void;
   onNavigate: (tab: string) => void;
   onApproveExpense: (expId: string, name: string, role: any) => void;
-  onRejectExpense?: (expId: string, name: string, role: any) => void;
-  onApproveIncome?: (incId: string, name: string, role: any) => void;
-  onRejectIncome?: (incId: string, name: string, role: any) => void;
-  onUpdateIncome?: (updatedIncome: IncomeTransaction) => void;
-  onUpdateExpense?: (updatedExpense: ExpenseTransaction) => void;
   onLogout?: () => void;
   onOpenLogin?: () => void;
   onUpdateOccasion?: (occasion: OccasionEvent) => void;
@@ -77,11 +66,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSaveGallery,
   onNavigate,
   onApproveExpense,
-  onRejectExpense,
-  onApproveIncome,
-  onRejectIncome,
-  onUpdateIncome,
-  onUpdateExpense,
   onLogout,
   onOpenLogin,
   onUpdateOccasion,
@@ -90,34 +74,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [isMemberPhotoModalOpen, setIsMemberPhotoModalOpen] = useState(false);
   const isFullAccess = hasFullFinancialAccess(currentUser.role);
   const isBadged = isBadgedMember(currentUser.role);
-
-  const handleAttachIncomeProof = async (inc: IncomeTransaction, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !onUpdateIncome) return;
-    try {
-      const compressedUrl = await compressImageFile(file);
-      onUpdateIncome({
-        ...inc,
-        attachmentUrl: compressedUrl,
-      });
-    } catch (err) {
-      console.error('Failed to attach income proof:', err);
-    }
-  };
-
-  const handleAttachExpenseProof = async (exp: ExpenseTransaction, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !onUpdateExpense) return;
-    try {
-      const compressedUrl = await compressImageFile(file);
-      onUpdateExpense({
-        ...exp,
-        attachmentUrl: compressedUrl,
-      });
-    } catch (err) {
-      console.error('Failed to attach expense proof:', err);
-    }
-  };
 
   const currentMember = useMemo(() => {
     const list = Array.isArray(members) ? members : [];
@@ -198,63 +154,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return myTasks;
   }, [occasions, currentUser, currentMember]);
 
-  // All Reported Obstacles across all active occasions for Committee Members
-  const committeeObstacles = useMemo(() => {
-    const list: Array<{ occasion: OccasionEvent; task: EventTask }> = [];
-    (occasions || []).forEach((occ) => {
-      (occ.tasks || []).forEach((t) => {
-        if (t.status === 'अडचण' || (t.obstacleNote && t.obstacleNote.trim() !== '')) {
-          list.push({ occasion: occ, task: t });
-        }
-      });
-    });
-    return list;
-  }, [occasions]);
-
-  const handleUpdateTaskStatus = (
-    occasion: OccasionEvent,
-    task: EventTask,
-    newStatus: 'प्रलंबित' | 'प्रक्रियेत' | 'पूर्ण' | 'अडचण',
-    obstacleNote?: string,
-    obstacleSolution?: string
-  ) => {
-    if (!onUpdateOccasion) return;
-    let updatedTasks = [...(occasion.tasks || [])];
-    const taskIndex = updatedTasks.findIndex((t) => t.id === task.id);
-
-    const updatedTaskItem: EventTask = {
-      ...task,
-      status: newStatus,
-      obstacleNote: obstacleNote !== undefined ? obstacleNote : task.obstacleNote,
-      obstacleSolution: obstacleSolution !== undefined ? obstacleSolution : task.obstacleSolution,
-    };
-
-    if (taskIndex >= 0) {
-      updatedTasks[taskIndex] = updatedTaskItem;
-    } else {
-      updatedTasks.push(updatedTaskItem);
-    }
-
-    onUpdateOccasion({ ...occasion, tasks: updatedTasks });
-  };
-
-  const handleRevertObstacle = (occasion: OccasionEvent, task: EventTask) => {
-    handleUpdateTaskStatus(occasion, task, 'प्रक्रियेत', '', '');
-  };
-
   const displayIncomes = Array.isArray(incomes) ? incomes : [];
   const displayExpenses = Array.isArray(expenses) ? expenses : [];
   const recentIncomes = displayIncomes.slice(0, 5);
   const recentExpenses = displayExpenses.slice(0, 5);
 
-  const showPendingVerificationBanners = isTreasurerOrViceTreasurer(currentUser.role);
-
-  const pendingExpenses = showPendingVerificationBanners
+  const pendingExpenses = isFullAccess
     ? expenses.filter((e) => e.approvalStatus === 'प्रलंबित')
-    : [];
-
-  const pendingIncomes = showPendingVerificationBanners
-    ? incomes.filter((i) => i.approvalStatus === 'प्रलंबित')
     : [];
 
   const canApprove = ['अध्यक्ष', 'खजिनदार', 'सचिव', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(
@@ -445,314 +351,54 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {assignedTasksForMe.map(({ occasion, task }) => (
               <div
                 key={task.id}
-                className={`p-4 rounded-xl border flex flex-col justify-between gap-3 shadow-md transition-all ${
-                  task.status === 'अडचण' || task.obstacleNote
-                    ? 'bg-rose-950/90 border-rose-500/60'
-                    : 'bg-slate-900/90 border-purple-500/40'
-                }`}
+                className="bg-slate-900/90 p-3.5 rounded-xl border border-purple-500/40 flex justify-between items-center gap-3 shadow-md"
               >
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="px-2 py-0.5 bg-purple-500/30 text-purple-300 font-bold text-[10px] rounded border border-purple-400/40">
-                      {occasion.name} ({occasion.year})
-                    </span>
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        task.status === 'पूर्ण'
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                          : task.status === 'प्रक्रियेत'
-                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                          : task.status === 'अडचण'
-                          ? 'bg-rose-600 text-white border border-rose-400 animate-pulse'
-                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                      }`}
-                    >
-                      {task.status}
-                    </span>
-                  </div>
-
+                <div className="space-y-1">
+                  <span className="px-2 py-0.5 bg-purple-500/30 text-purple-300 font-bold text-[10px] rounded border border-purple-400/40">
+                    {occasion.name} ({occasion.year})
+                  </span>
                   <p className="font-black text-amber-300 text-sm">{task.taskTitle}</p>
                   <p className="text-[10px] text-slate-400">
-                    जबाबदार सदस्य: <span className="text-white font-bold">{task.assignedMemberName}</span> ({task.assignedMemberRole || 'सभासद'})
+                    प्रमुख व्यवस्थापक: <span className="text-white font-bold">{task.assignedMemberName}</span> ({task.assignedMemberRole || 'सभासद'})
                   </p>
-
-                  {/* Display Obstacle Alert note if reported */}
-                  {(task.obstacleNote || task.status === 'अडचण') && (
-                    <div className="p-2.5 bg-rose-900/80 border border-rose-600/70 text-rose-200 rounded-lg text-[11px] font-bold space-y-1.5">
-                      <div className="flex justify-between items-center">
-                        <span className="flex items-center gap-1 text-rose-300">
-                          <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-                          <span>कामातील नोंदवलेली अडचण/समस्या:</span>
-                        </span>
-                        {onUpdateOccasion && (
-                          <button
-                            type="button"
-                            onClick={() => handleRevertObstacle(occasion, task)}
-                            className="text-[10px] bg-rose-800 hover:bg-rose-700 text-white px-2 py-0.5 rounded cursor-pointer flex items-center gap-1 font-bold"
-                            title="अडचण पूर्ववत करा व काम पुन्हा सुरु करा"
-                          >
-                            <span>↩️ अडचण पूर्ववत करा</span>
-                          </button>
-                        )}
-                      </div>
-                      <p className="text-white font-medium">{task.obstacleNote || 'अडचण प्रलंबित आहे'}</p>
-
-                      {/* Display Solution / Revert Suggestion if present */}
-                      {task.obstacleSolution && (
-                        <div className="mt-1 pt-1.5 border-t border-rose-700/60 text-emerald-300">
-                          <span className="font-bold text-[10px] text-emerald-400">💡 सुचवलेला उपाय / उत्तर: </span>
-                          <span className="text-white font-medium">{task.obstacleSolution}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
 
-                {/* 3 Status Option Buttons & Obstacle / Solution Buttons */}
-                {onUpdateOccasion && (
-                  <div className="pt-2 border-t border-slate-800/80 space-y-2">
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold">
-                      <span>स्थिती बदला (Change Status):</span>
-                      <div className="flex items-center gap-1.5">
-                        {(task.obstacleNote || task.status === 'अडचण') && (
-                          <button
-                            type="button"
-                            onClick={() => handleRevertObstacle(occasion, task)}
-                            className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 cursor-pointer bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30"
-                          >
-                            <span>↩️ पूर्ववत करा</span>
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const note = window.prompt('उत्सव कामातील अडचण/समस्या थोडक्यात प्रविष्ट करा (उदा. लाईट वायर अपुरी आहे, साहित्याची गरज आहे):');
-                            if (note && note.trim() !== '') {
-                              handleUpdateTaskStatus(occasion, task, 'अडचण', note.trim());
-                            }
-                          }}
-                          className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30"
-                        >
-                          <AlertTriangle className="w-3 h-3 text-amber-400" />
-                          <span>⚠️ अडचण नोंदवा</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-1.5 text-[10px]">
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateTaskStatus(occasion, task, 'प्रलंबित')}
-                        className={`py-1.5 px-2 rounded-lg font-bold cursor-pointer transition-all active:scale-95 text-center ${
-                          task.status === 'प्रलंबित'
-                            ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                        }`}
-                      >
-                        ⏳ प्रलंबित
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateTaskStatus(occasion, task, 'प्रक्रियेत')}
-                        className={`py-1.5 px-2 rounded-lg font-bold cursor-pointer transition-all active:scale-95 text-center ${
-                          task.status === 'प्रक्रियेत'
-                            ? 'bg-blue-600 text-white shadow-sm font-black'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                        }`}
-                      >
-                        🔄 प्रक्रियेत
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateTaskStatus(occasion, task, 'पूर्ण')}
-                        className={`py-1.5 px-2 rounded-lg font-bold cursor-pointer transition-all active:scale-95 text-center ${
-                          task.status === 'पूर्ण'
-                            ? 'bg-emerald-600 text-white shadow-sm font-black'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                        }`}
-                      >
-                        ✅ पूर्ण
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Committee Obstacle Alerts Banner (Visible to All Logged-in Committee Members) */}
-      {currentUser.isLoggedIn !== false && committeeObstacles.length > 0 && (
-        <div className="bg-rose-950/90 border border-rose-500/80 text-white p-5 rounded-2xl shadow-xl space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-rose-500/40">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center font-bold shadow-xs animate-bounce">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-black text-sm text-rose-300 flex items-center gap-2">
-                  <span>उत्सव कामांमधील अडचणी व समस्या अलर्ट (Committee Obstacle Alerts)</span>
-                  <span className="px-2 py-0.5 bg-rose-600 text-white border border-rose-400 rounded-full text-[10px] font-black">
-                    {committeeObstacles.length} अडचणी नोंदवल्या आहेत
+                <div className="text-right shrink-0 space-y-2">
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-block ${
+                      task.status === 'पूर्ण'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        : task.status === 'प्रक्रियेत'
+                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    }`}
+                  >
+                    {task.status}
                   </span>
-                </h3>
-                <p className="text-[11px] text-rose-200">
-                  सोपवलेल्या कामांमध्ये खालील सदस्यांनी ऑनलाईन अडचणी / समस्या नोंदवल्या आहेत:
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            {committeeObstacles.map(({ occasion, task }) => (
-              <div
-                key={`comm-obs-${task.id}`}
-                className="bg-slate-900/90 p-3.5 rounded-xl border border-rose-500/50 space-y-2 shadow-md flex flex-col justify-between"
-              >
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 bg-purple-500/30 text-purple-300 font-bold text-[10px] rounded border border-purple-400/40">
-                      {occasion.name}
-                    </span>
-                    <span className="px-2 py-0.5 bg-rose-600 text-white font-black text-[10px] rounded-full border border-rose-400">
-                      ⚠️ {task.status}
-                    </span>
-                  </div>
-                  <p className="font-black text-amber-300 text-sm">{task.taskTitle}</p>
-                  <p className="text-[10px] text-slate-300">
-                    जबाबदार सदस्य: <span className="text-white font-bold">{task.assignedMemberName}</span> ({task.assignedMemberRole || 'सभासद'})
-                  </p>
-                  <div className="p-2 bg-rose-900/90 border border-rose-700 text-rose-100 rounded-lg text-[11px] font-bold">
-                    <span>⚠️ नोंदवलेली अडचण: </span>
-                    <span className="text-white">{task.obstacleNote || task.notes || 'अडचण प्रलंबित आहे'}</span>
-                  </div>
-
-                  {/* Display Solution / Revert Suggestion if present */}
-                  {task.obstacleSolution && (
-                    <div className="p-2 bg-emerald-950/80 border border-emerald-600/70 text-emerald-200 rounded-lg text-[11px] font-bold">
-                      <span>💡 सुचवलेला उपाय / उत्तर: </span>
-                      <span className="text-white font-medium">{task.obstacleSolution}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Committee Actions: Suggest Solution or Revert Obstacle */}
-                {onUpdateOccasion && (
-                  <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2 text-[10px]">
+                  {onUpdateOccasion && (
                     <button
-                      type="button"
                       onClick={() => {
-                        const solutionText = window.prompt(
-                          `अडचणीवर उपाय / सुचवणी प्रविष्ट करा (${currentUser.name}):`,
-                          task.obstacleSolution || ''
-                        );
-                        if (solutionText && solutionText.trim() !== '') {
-                          handleUpdateTaskStatus(
-                            occasion,
-                            task,
-                            task.status,
-                            task.obstacleNote,
-                            `${currentUser.name} (${currentUser.role}): ${solutionText.trim()}`
+                        const newStatus = task.status === 'पूर्ण' ? 'प्रलंबित' : 'पूर्ण';
+                        let updatedTasks = [...(occasion.tasks || [])];
+                        if (task.id.startsWith('occ-main-')) {
+                          const existingIdx = updatedTasks.findIndex((t) => t.id === task.id);
+                          if (existingIdx >= 0) {
+                            updatedTasks[existingIdx] = { ...updatedTasks[existingIdx], status: newStatus as any };
+                          } else {
+                            updatedTasks.push({ ...task, status: newStatus as any });
+                          }
+                        } else {
+                          updatedTasks = updatedTasks.map((t) =>
+                            t.id === task.id ? { ...t, status: newStatus as any } : t
                           );
                         }
+                        onUpdateOccasion({ ...occasion, tasks: updatedTasks });
                       }}
-                      className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg font-bold cursor-pointer transition-colors"
+                      className="block w-full px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10px] rounded-lg shadow cursor-pointer transition-all active:scale-95 text-center"
                     >
-                      💡 उपाय / सुचवणी द्या
+                      {task.status === 'पूर्ण' ? 'पुन्हा उघडा' : '✓ काम पूर्ण करा'}
                     </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleRevertObstacle(occasion, task)}
-                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-sm cursor-pointer transition-all active:scale-95"
-                    >
-                      ↩️ अडचण पूर्ववत करा
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Pending Income Approvals Banner (Visible strictly to Treasurer & Vice Treasurer) */}
-      {pendingIncomes.length > 0 && (
-        <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl shadow-xs">
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-emerald-200/60">
-            <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
-              <ShieldAlert className="w-5 h-5 text-emerald-600 animate-bounce" />
-              <span>खजिनदार / उपखजिनदार जमा मंजुरी प्रलंबित ({pendingIncomes.length} व्यवहार)</span>
-            </div>
-            <button
-              onClick={() => onNavigate('income-history')}
-              className="text-xs text-emerald-800 hover:underline font-bold flex items-center gap-1 cursor-pointer"
-            >
-              <span>सर्व प्रलंबित जमा पहा</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {pendingIncomes.map((inc) => (
-              <div
-                key={inc.id}
-                className="bg-white p-3 rounded-xl border border-emerald-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
-              >
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-slate-800">{inc.depositorName}</span>
-                    <span className="text-slate-500">
-                      ({inc.incomeType} - {inc.reason})
-                    </span>
-                    {inc.attachmentUrl ? (
-                      <a
-                        href={inc.attachmentUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-2.5 py-1 bg-emerald-100 text-emerald-900 border border-emerald-400 rounded-lg text-[11px] font-bold flex items-center gap-1.5 hover:bg-emerald-200 shadow-2xs transition-colors"
-                        title="सभासदाने जोडलेली पावती/स्क्रीनशॉट पहा (Click to view proof attached by member)"
-                      >
-                        <Paperclip className="w-3.5 h-3.5 text-emerald-700" />
-                        <span>📎 सभासदाने जोडलेला पावती पुरावा पाहा</span>
-                      </a>
-                    ) : (
-                      <span className="text-[10px] text-amber-800 italic bg-amber-100/70 px-2 py-0.5 rounded border border-amber-300">
-                        (सभासदाने कोणताही पुरावा जोडलेला नाही)
-                      </span>
-                    )}
-                  </div>
-                  <span className="block text-[10px] text-slate-400 mt-0.5">
-                    तारीख: {inc.transactionDate} | पावती: {inc.receiptNumber || 'नाही'} | नोंद: {inc.createdBy}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="font-black text-emerald-700 text-sm">
-                    + ₹{inc.amount.toLocaleString('en-IN')}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    {onApproveIncome && (
-                      <button
-                        onClick={() => onApproveIncome(inc.id, currentUser.name, currentUser.role)}
-                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer flex items-center gap-1"
-                        title="व्यवहार मंजूर करा"
-                      >
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        <span>मंजूर करा</span>
-                      </button>
-                    )}
-                    {onRejectIncome && (
-                      <button
-                        onClick={() => onRejectIncome(inc.id, currentUser.name, currentUser.role)}
-                        className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer flex items-center gap-1"
-                        title="व्यवहार नाकारा"
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                        <span>नाकारा</span>
-                      </button>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -760,13 +406,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       )}
 
-      {/* Pending Expense Approvals Banner (Visible strictly to Treasurer & Vice Treasurer) */}
+      {/* Pending Expense Approvals Banner (If any) */}
       {pendingExpenses.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl shadow-xs">
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-amber-200/60">
             <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
               <ShieldAlert className="w-5 h-5 text-amber-600 animate-bounce" />
-              <span>खजिनदार / उपखजिनदार खर्च मंजुरी प्रलंबित ({pendingExpenses.length} व्यवहार)</span>
+              <span>खर्च मंजुरी प्रलंबित ({pendingExpenses.length} व्यवहार)</span>
             </div>
             <button
               onClick={() => onNavigate('expense-history')}
@@ -784,56 +430,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 className="bg-white p-3 rounded-xl border border-amber-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
               >
                 <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-slate-800">{exp.recipientName}</span>
-                    <span className="text-slate-500">
-                      ({exp.expenseCategory} - {exp.reason})
-                    </span>
-                    {exp.attachmentUrl ? (
-                      <a
-                        href={exp.attachmentUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-2.5 py-1 bg-rose-100 text-rose-900 border border-rose-400 rounded-lg text-[11px] font-bold flex items-center gap-1.5 hover:bg-rose-200 shadow-2xs transition-colors"
-                        title="सभासदाने जोडलेला खर्च बिल/स्क्रीनशॉट पहा (Click to view proof attached by member)"
-                      >
-                        <Paperclip className="w-3.5 h-3.5 text-rose-700" />
-                        <span>📎 सभासदाने जोडलेला बिल पुरावा पाहा</span>
-                      </a>
-                    ) : (
-                      <span className="text-[10px] text-amber-800 italic bg-amber-100/70 px-2 py-0.5 rounded border border-amber-300">
-                        (सभासदाने कोणताही पुरावा जोडलेला नाही)
-                      </span>
-                    )}
-                  </div>
-                  <span className="block text-[10px] text-slate-400 mt-0.5">
-                    तारीख: {exp.expenseDate} | बिल: {exp.billNumber || 'नाही'} | नोंद: {exp.createdBy}
+                  <span className="font-bold text-slate-800">{exp.recipientName}</span>
+                  <span className="text-slate-500 ml-2">
+                    ({exp.expenseCategory} - {exp.reason})
+                  </span>
+                  <span className="block text-[10px] text-slate-400">
+                    तारीख: {exp.expenseDate} | बिल: {exp.billNumber || 'नाही'}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="font-black text-rose-700 text-sm">
                     ₹{exp.amount.toLocaleString('en-IN')}
                   </span>
-                  <div className="flex items-center gap-1.5">
+                  {canApprove && (
                     <button
                       onClick={() => onApproveExpense(exp.id, currentUser.name, currentUser.role)}
-                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer flex items-center gap-1"
-                      title="खर्च मंजूर करा"
+                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer"
                     >
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      <span>मंजूर करा</span>
+                      मंजूर करा
                     </button>
-                    {onRejectExpense && (
-                      <button
-                        onClick={() => onRejectExpense(exp.id, currentUser.name, currentUser.role)}
-                        className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer flex items-center gap-1"
-                        title="खर्च नाकारा"
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                        <span>नाकारा</span>
-                      </button>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -871,22 +487,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {recentIncomes.map((item) => (
                   <div key={item.id} className="py-3 flex justify-between items-center text-xs">
                     <div>
-                      <div className="flex items-center gap-1.5">
-                        <p className="font-bold text-slate-800">{item.depositorName}</p>
-                        {item.approvalStatus === 'प्रलंबित' ? (
-                          <span className="px-2 py-0.5 bg-amber-500 text-slate-950 border border-amber-400 rounded-md text-[10px] font-black shadow-xs">
-                            ⏳ प्रलंबित
-                          </span>
-                        ) : item.approvalStatus === 'नाकारले' ? (
-                          <span className="px-2 py-0.5 bg-rose-600 text-white border border-rose-500 rounded-md text-[10px] font-black shadow-xs">
-                            ✕ नाकारले
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 bg-emerald-600 text-white border border-emerald-500 rounded-md text-[10px] font-black shadow-xs">
-                            ✓ मंजूर
-                          </span>
-                        )}
-                      </div>
+                      <p className="font-bold text-slate-800">{item.depositorName}</p>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
                         <span className="px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">
                           {item.depositorType}

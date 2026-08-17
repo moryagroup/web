@@ -30,7 +30,6 @@ import {
   DEFAULT_USER,
   calculateFinancialSummary,
   clearAllTransactionsFromStorage,
-  clearAllLocalStorageFinancialData,
 } from './services/storageService';
 import { createLocalBackupSnapshot, downloadBackupJSON } from './utils/backupUtils';
 
@@ -159,37 +158,9 @@ import { LoginModal } from './components/LoginModal';
 import { OccasionModal } from './components/OccasionModal';
 import { SettingsModal } from './components/SettingsModal';
 import { isBadgedMember, hasAdminPermissions } from './utils/rbac';
-import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo } from './utils/dateUtils';
+import { isDateInSelectedYear } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { Menu, Sun, Moon } from 'lucide-react';
-
-function mergeIncomesPreservingAttachments(
-  incoming: IncomeTransaction[],
-  prev: IncomeTransaction[]
-): IncomeTransaction[] {
-  const prevMap = new Map(prev.map((i) => [i.id, i]));
-  return incoming.map((item) => {
-    const existing = prevMap.get(item.id);
-    if (existing && existing.attachmentUrl && !item.attachmentUrl) {
-      return { ...item, attachmentUrl: existing.attachmentUrl };
-    }
-    return item;
-  });
-}
-
-function mergeExpensesPreservingAttachments(
-  incoming: ExpenseTransaction[],
-  prev: ExpenseTransaction[]
-): ExpenseTransaction[] {
-  const prevMap = new Map(prev.map((e) => [e.id, e]));
-  return incoming.map((item) => {
-    const existing = prevMap.get(item.id);
-    if (existing && existing.attachmentUrl && !item.attachmentUrl) {
-      return { ...item, attachmentUrl: existing.attachmentUrl };
-    }
-    return item;
-  });
-}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -242,7 +213,6 @@ export default function App() {
 
   // Subscribe to Firestore collections & trigger seed in background
   useEffect(() => {
-    clearAllLocalStorageFinancialData();
     // Hide loading screen after max 1 second safety window
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -251,26 +221,14 @@ export default function App() {
     const unsubscribers = [
       subscribeToIncomes((data) => {
         if (data && data.length > 0) {
-          setIncomes((prev) => {
-            const dbIds = new Set(data.map((i) => i.id));
-            const localOnly = prev.filter((i) => !dbIds.has(i.id));
-            const merged = mergeIncomesPreservingAttachments(data, prev);
-            const formatted = formatIncomeTransactionsNo([...localOnly, ...merged]);
-            saveIncomes(formatted);
-            return formatted;
-          });
+          setIncomes(data);
+          saveIncomes(data);
         }
       }),
       subscribeToExpenses((data) => {
         if (data && data.length > 0) {
-          setExpenses((prev) => {
-            const dbIds = new Set(data.map((e) => e.id));
-            const localOnly = prev.filter((e) => !dbIds.has(e.id));
-            const merged = mergeExpensesPreservingAttachments(data, prev);
-            const formatted = formatExpenseTransactionsNo([...localOnly, ...merged]);
-            saveExpenses(formatted);
-            return formatted;
-          });
+          setExpenses(data);
+          saveExpenses(data);
         }
       }),
       subscribeToMembers((data) => {
@@ -327,27 +285,9 @@ export default function App() {
             fetchGroupLogoFromSupabase(),
             fetchGalleryFromSupabase(),
           ]);
-          // Supabase is the source of truth — replace state with DB data directly
           if (m && m.length > 0) setMembers(m);
-          if (inc && inc.length > 0) {
-            setIncomes((prev) => {
-              // Only preserve local attachment URLs for items already in Supabase
-              const formatted = formatIncomeTransactionsNo(
-                mergeIncomesPreservingAttachments(inc, prev)
-              );
-              saveIncomes(formatted);
-              return formatted;
-            });
-          }
-          if (exp && exp.length > 0) {
-            setExpenses((prev) => {
-              const formatted = formatExpenseTransactionsNo(
-                mergeExpensesPreservingAttachments(exp, prev)
-              );
-              saveExpenses(formatted);
-              return formatted;
-            });
-          }
+          if (inc && inc.length > 0) setIncomes(inc);
+          if (exp && exp.length > 0) setExpenses(exp);
           if (occ && occ.length > 0) {
             setOccasions((prev) => {
               const merged = mergeOccasionsPreservingTasks(occ, prev);
@@ -382,24 +322,8 @@ export default function App() {
           fetchGalleryFromSupabase(),
         ]);
         if (m && m.length > 0) setMembers(m);
-        if (inc && inc.length > 0) {
-          setIncomes((prev) => {
-            const formatted = formatIncomeTransactionsNo(
-              mergeIncomesPreservingAttachments(inc, prev)
-            );
-            saveIncomes(formatted);
-            return formatted;
-          });
-        }
-        if (exp && exp.length > 0) {
-          setExpenses((prev) => {
-            const formatted = formatExpenseTransactionsNo(
-              mergeExpensesPreservingAttachments(exp, prev)
-            );
-            saveExpenses(formatted);
-            return formatted;
-          });
-        }
+        if (inc) setIncomes(inc);
+        if (exp) setExpenses(exp);
         if (occ && occ.length > 0) {
           setOccasions((prev) => {
             const merged = mergeOccasionsPreservingTasks(occ, prev);
@@ -419,21 +343,11 @@ export default function App() {
     });
 
     const unsubCloud = subscribeToCloudDatabase((cloudDb) => {
-      if (Array.isArray(cloudDb.incomes) && cloudDb.incomes.length > 0) {
-        setIncomes((prev) => {
-          const dbIds = new Set(cloudDb.incomes.map((i) => i.id));
-          const localOnly = prev.filter((i) => !dbIds.has(i.id));
-          const merged = mergeIncomesPreservingAttachments(cloudDb.incomes, prev);
-          return formatIncomeTransactionsNo([...localOnly, ...merged]);
-        });
+      if (Array.isArray(cloudDb.incomes)) {
+        setIncomes(cloudDb.incomes);
       }
-      if (Array.isArray(cloudDb.expenses) && cloudDb.expenses.length > 0) {
-        setExpenses((prev) => {
-          const dbIds = new Set(cloudDb.expenses.map((e) => e.id));
-          const localOnly = prev.filter((e) => !dbIds.has(e.id));
-          const merged = mergeExpensesPreservingAttachments(cloudDb.expenses, prev);
-          return formatExpenseTransactionsNo([...localOnly, ...merged]);
-        });
+      if (Array.isArray(cloudDb.expenses)) {
+        setExpenses(cloudDb.expenses);
       }
       if (Array.isArray(cloudDb.members) && cloudDb.members.length > 0) {
         setMembers(cloudDb.members);
@@ -566,11 +480,7 @@ export default function App() {
 
   // Add Income Transaction
   const handleAddIncome = (newIncome: IncomeTransaction) => {
-    setIncomes((prev) => {
-      const updated = [newIncome, ...prev.filter((i) => i.id !== newIncome.id)];
-      saveIncomes(updated);
-      return updated;
-    });
+    setIncomes((prev) => [newIncome, ...prev.filter((i) => i.id !== newIncome.id)]);
     saveIncome(newIncome).catch(console.error);
     cloudSaveIncome(newIncome).catch(console.error);
     saveIncomeToSupabase(newIncome).catch(console.error);
@@ -578,47 +488,15 @@ export default function App() {
 
   // Update Income Transaction (Admin Only)
   const handleUpdateIncome = (updatedIncome: IncomeTransaction) => {
-    setIncomes((prev) => {
-      const updated = prev.map((i) => (i.id === updatedIncome.id ? updatedIncome : i));
-      saveIncomes(updated);
-      return updated;
-    });
+    setIncomes((prev) => prev.map((i) => (i.id === updatedIncome.id ? updatedIncome : i)));
     saveIncome(updatedIncome).catch(console.error);
     cloudSaveIncome(updatedIncome).catch(console.error);
     saveIncomeToSupabase(updatedIncome).catch(console.error);
   };
 
-  const handleApproveIncome = (incId: string, name: string, role: any) => {
-    const item = incomes.find((i) => i.id === incId);
-    if (!item) return;
-    handleUpdateIncome({
-      ...item,
-      approvalStatus: 'मंजूर',
-      approvedBy: `${name} (${role})`,
-      approvedByRole: role,
-      approvedAt: new Date().toISOString(),
-    });
-  };
-
-  const handleRejectIncome = (incId: string, name: string, role: any) => {
-    const item = incomes.find((i) => i.id === incId);
-    if (!item) return;
-    handleUpdateIncome({
-      ...item,
-      approvalStatus: 'नाकारले',
-      approvedBy: `${name} (${role})`,
-      approvedByRole: role,
-      approvedAt: new Date().toISOString(),
-    });
-  };
-
   // Delete Income Transaction (Admin Only)
   const handleDeleteIncome = (incomeId: string) => {
-    setIncomes((prev) => {
-      const updated = prev.filter((i) => i.id !== incomeId);
-      saveIncomes(updated);
-      return updated;
-    });
+    setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
     deleteIncome(incomeId).catch(console.error);
     cloudDeleteIncome(incomeId).catch(console.error);
     deleteIncomeFromSupabase(incomeId).catch(console.error);
@@ -751,11 +629,7 @@ export default function App() {
 
   // Add Expense Transaction
   const handleAddExpense = (newExpense: ExpenseTransaction) => {
-    setExpenses((prev) => {
-      const updated = [newExpense, ...prev.filter((e) => e.id !== newExpense.id)];
-      saveExpenses(updated);
-      return updated;
-    });
+    setExpenses((prev) => [newExpense, ...prev.filter((e) => e.id !== newExpense.id)]);
     saveExpense(newExpense).catch(console.error);
     cloudSaveExpense(newExpense).catch(console.error);
     saveExpenseToSupabase(newExpense).catch(console.error);
@@ -763,11 +637,7 @@ export default function App() {
 
   // Update Expense Transaction (Admin Only)
   const handleUpdateExpense = (updatedExpense: ExpenseTransaction) => {
-    setExpenses((prev) => {
-      const updated = prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e));
-      saveExpenses(updated);
-      return updated;
-    });
+    setExpenses((prev) => prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e)));
     saveExpense(updatedExpense).catch(console.error);
     cloudSaveExpense(updatedExpense).catch(console.error);
     saveExpenseToSupabase(updatedExpense).catch(console.error);
@@ -775,11 +645,7 @@ export default function App() {
 
   // Delete Expense Transaction (Admin Only)
   const handleDeleteExpense = (expenseId: string) => {
-    setExpenses((prev) => {
-      const updated = prev.filter((e) => e.id !== expenseId);
-      saveExpenses(updated);
-      return updated;
-    });
+    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
     deleteExpense(expenseId).catch(console.error);
     cloudDeleteExpense(expenseId).catch(console.error);
     deleteExpenseFromSupabase(expenseId).catch(console.error);
@@ -796,32 +662,7 @@ export default function App() {
       approvedByRole: approverRole,
       approvedAt: new Date().toISOString(),
     };
-    setExpenses((prev) => {
-      const arr = prev.map((e) => (e.id === expId ? updated : e));
-      saveExpenses(arr);
-      return arr;
-    });
-    saveExpense(updated).catch(console.error);
-    cloudSaveExpense(updated).catch(console.error);
-    saveExpenseToSupabase(updated).catch(console.error);
-  };
-
-  // Reject Expense
-  const handleRejectExpense = (expId: string, approverName: string, approverRole: any) => {
-    const expense = expenses.find((e) => e.id === expId);
-    if (!expense) return;
-    const updated = {
-      ...expense,
-      approvalStatus: 'नाकारले' as const,
-      approvedBy: `${approverName} (${approverRole})`,
-      approvedByRole: approverRole,
-      approvedAt: new Date().toISOString(),
-    };
-    setExpenses((prev) => {
-      const arr = prev.map((e) => (e.id === expId ? updated : e));
-      saveExpenses(arr);
-      return arr;
-    });
+    setExpenses((prev) => prev.map((e) => (e.id === expId ? updated : e)));
     saveExpense(updated).catch(console.error);
     cloudSaveExpense(updated).catch(console.error);
     saveExpenseToSupabase(updated).catch(console.error);
@@ -1016,11 +857,6 @@ export default function App() {
                 onSaveGallery={handleSaveGallery}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onApproveExpense={handleApproveExpense}
-                onRejectExpense={handleRejectExpense}
-                onApproveIncome={handleApproveIncome}
-                onRejectIncome={handleRejectIncome}
-                onUpdateIncome={handleUpdateIncome}
-                onUpdateExpense={handleUpdateExpense}
                 onLogout={handleLogout}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
                 onUpdateOccasion={handleUpdateOccasion}
@@ -1029,7 +865,6 @@ export default function App() {
 
             {activeTab === 'income-form' && (
               <IncomeForm
-                incomes={incomes}
                 members={members}
                 occasions={occasions}
                 customTypes={customIncomeTypes}
@@ -1045,7 +880,6 @@ export default function App() {
 
             {activeTab === 'expense-form' && (
               <ExpenseForm
-                expenses={expenses}
                 occasions={occasions}
                 members={members}
                 currentUser={currentUser}
