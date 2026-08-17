@@ -12,6 +12,7 @@ import {
   OccasionEvent,
   EventGalleryImage,
   MemberSuggestion,
+  ApprovalStatus,
 } from '../types';
 import {
   INITIAL_MEMBERS,
@@ -145,6 +146,9 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
       cleanReason = parts[0].trim();
       attachmentUrl = parts[1].trim();
     }
+    const isApproved = row.approval_status === 'मंजूर' || (Boolean(row.approved_by) && row.approval_status !== 'रद्द');
+    const approvalStatus: ApprovalStatus = isApproved ? 'मंजूर' : 'प्रलंबित';
+
     return {
       id: row.id,
       transactionNo: row.transaction_no,
@@ -161,7 +165,7 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
       reason: cleanReason,
       notes: row.notes,
       attachmentUrl,
-      approvalStatus: row.approval_status || 'मंजूर',
+      approvalStatus,
       approvedBy: row.approved_by,
       approvedByRole: row.approved_by_role,
       approvedAt: row.approved_at,
