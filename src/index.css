@@ -14,6 +14,118 @@ html.dark main {
   background-color: #090d16 !important;
 }
 
+/* Complete Dark Theme Overrides - Removes all white backgrounds & light cards in Dark Mode */
+html.dark .bg-white,
+html.dark .bg-slate-50,
+html.dark .bg-slate-100,
+html.dark .bg-amber-50,
+html.dark .bg-emerald-50,
+html.dark .bg-rose-50,
+html.dark .bg-blue-50,
+html.dark .bg-purple-50,
+html.dark .bg-amber-50\/80,
+html.dark .bg-emerald-50\/80,
+html.dark .bg-rose-50\/80,
+html.dark .bg-blue-50\/80,
+html.dark .bg-amber-100,
+html.dark .bg-slate-200 {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #1e293b !important;
+}
+
+/* Transform light gradient headers and light cards */
+html.dark .bg-gradient-to-br,
+html.dark .bg-gradient-to-r {
+  border-color: #1e293b !important;
+}
+
+/* Transform hovered light backgrounds */
+html.dark .hover\:bg-white:hover,
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-amber-50:hover,
+html.dark .hover\:bg-rose-50:hover,
+html.dark .hover\:bg-slate-200:hover {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+/* Form inputs, selects, textareas in dark mode */
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Text color overrides for dark mode */
+html.dark .text-slate-800,
+html.dark .text-slate-900,
+html.dark .text-slate-700,
+html.dark .text-slate-600,
+html.dark .text-black,
+html.dark .text-amber-900,
+html.dark .text-amber-950,
+html.dark .text-emerald-800,
+html.dark .text-emerald-900,
+html.dark .text-rose-800,
+html.dark .text-rose-900,
+html.dark .text-blue-900,
+html.dark .text-blue-800 {
+  color: #f1f5f9 !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Borders in dark mode */
+html.dark .border-slate-200,
+html.dark .border-slate-300,
+html.dark .border-slate-100,
+html.dark .border-amber-200,
+html.dark .border-emerald-100,
+html.dark .border-rose-100,
+html.dark .border-blue-100 {
+  border-color: #1e293b !important;
+}
+
+/* Tables in dark mode */
+html.dark table {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+html.dark th {
+  background-color: #1e293b !important;
+  color: #fbbf24 !important;
+  border-color: #334155 !important;
+}
+
+html.dark td {
+  border-color: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark tr:hover {
+  background-color: #1e293b !important;
+}
+
+/* Modals & Dialog overlays in dark mode */
+html.dark .bg-slate-950\/70,
+html.dark .bg-slate-900\/60,
+html.dark .bg-slate-900\/70 {
+  background-color: rgba(2, 6, 23, 0.85) !important;
+}
+
 /* Printable A4 PDF and Browser Print Styling */
 @media print {
   @page {
