@@ -331,7 +331,9 @@ export default function App() {
               const dbIds = new Set(inc.map((i) => i.id));
               const localOnly = prev.filter((i) => !dbIds.has(i.id));
               const merged = mergeIncomesPreservingAttachments(inc, prev);
-              return formatIncomeTransactionsNo([...localOnly, ...merged]);
+              const formatted = formatIncomeTransactionsNo([...localOnly, ...merged]);
+              saveIncomes(formatted);
+              return formatted;
             });
           }
           if (exp && exp.length > 0) {
@@ -339,7 +341,9 @@ export default function App() {
               const dbIds = new Set(exp.map((e) => e.id));
               const localOnly = prev.filter((e) => !dbIds.has(e.id));
               const merged = mergeExpensesPreservingAttachments(exp, prev);
-              return formatExpenseTransactionsNo([...localOnly, ...merged]);
+              const formatted = formatExpenseTransactionsNo([...localOnly, ...merged]);
+              saveExpenses(formatted);
+              return formatted;
             });
           }
           if (occ && occ.length > 0) {
@@ -381,7 +385,9 @@ export default function App() {
             const dbIds = new Set(inc.map((i) => i.id));
             const localOnly = prev.filter((i) => !dbIds.has(i.id));
             const merged = mergeIncomesPreservingAttachments(inc, prev);
-            return formatIncomeTransactionsNo([...localOnly, ...merged]);
+            const formatted = formatIncomeTransactionsNo([...localOnly, ...merged]);
+            saveIncomes(formatted);
+            return formatted;
           });
         }
         if (exp && exp.length > 0) {
@@ -389,7 +395,9 @@ export default function App() {
             const dbIds = new Set(exp.map((e) => e.id));
             const localOnly = prev.filter((e) => !dbIds.has(e.id));
             const merged = mergeExpensesPreservingAttachments(exp, prev);
-            return formatExpenseTransactionsNo([...localOnly, ...merged]);
+            const formatted = formatExpenseTransactionsNo([...localOnly, ...merged]);
+            saveExpenses(formatted);
+            return formatted;
           });
         }
         if (occ && occ.length > 0) {
