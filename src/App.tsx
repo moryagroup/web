@@ -162,6 +162,34 @@ import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransact
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { Menu, Sun, Moon } from 'lucide-react';
 
+function mergeIncomesPreservingAttachments(
+  incoming: IncomeTransaction[],
+  prev: IncomeTransaction[]
+): IncomeTransaction[] {
+  const prevMap = new Map(prev.map((i) => [i.id, i]));
+  return incoming.map((item) => {
+    const existing = prevMap.get(item.id);
+    if (existing && existing.attachmentUrl && !item.attachmentUrl) {
+      return { ...item, attachmentUrl: existing.attachmentUrl };
+    }
+    return item;
+  });
+}
+
+function mergeExpensesPreservingAttachments(
+  incoming: ExpenseTransaction[],
+  prev: ExpenseTransaction[]
+): ExpenseTransaction[] {
+  const prevMap = new Map(prev.map((e) => [e.id, e]));
+  return incoming.map((item) => {
+    const existing = prevMap.get(item.id);
+    if (existing && existing.attachmentUrl && !item.attachmentUrl) {
+      return { ...item, attachmentUrl: existing.attachmentUrl };
+    }
+    return item;
+  });
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [selectedYear, setSelectedYear] = useState<string>('२०२६');
