@@ -15,9 +15,8 @@ export const DESIGNATION_RANKS: Record<string, number> = {
   'सभासद': 90,
 };
 
-// Authorized roles for full financial & admin access
+// Authorized roles for full financial & admin access (Treasurer, Vice Treasurer, Admin)
 export const AUTHORIZED_FINANCIAL_ROLES = [
-  'अध्यक्ष',
   'खजिनदार',
   'उपखजिनदार',
   'ॲडमिन',
@@ -42,7 +41,7 @@ export const isTreasurerRole = (role?: string): boolean => {
 export const isCoreMemberRole = (role?: string): boolean => {
   if (!role) return false;
   const trimmed = role.trim();
-  return ['अध्यक्ष', 'खजिनदार', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(trimmed);
+  return ['खजिनदार', 'उपखजिनदार', 'ॲडमिन', 'Admin'].includes(trimmed);
 };
 
 export const hasAdminPermissions = (role?: string): boolean => {
