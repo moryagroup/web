@@ -20,6 +20,8 @@ import {
   Paperclip,
 } from 'lucide-react';
 import { NativeService } from '../services/nativeService';
+import { ProofLightboxModal } from './ProofLightboxModal';
+import { isGoogleDriveUrl } from '../services/googleDriveService';
 
 interface IncomeHistoryProps {
   incomes: IncomeTransaction[];
@@ -49,6 +51,16 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   const [selectedMemberId, setSelectedMemberId] = useState('ALL');
   const [selectedYear, setSelectedYear] = useState(financialYear);
   const [selectedIncomeDetail, setSelectedIncomeDetail] = useState<IncomeTransaction | null>(null);
+  const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
+
+  const handleProofClick = (url: string) => {
+    if (!url) return;
+    if (isGoogleDriveUrl(url)) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      setProofModalUrl(url);
+    }
+  };
 
   const isLoggedIn = currentUser?.isLoggedIn !== false;
   const isAdmin = isLoggedIn && (currentUser?.role === 'ॲडमिन' || currentUser?.role === 'Admin' || currentUser?.role === 'अध्यक्ष' || currentUser?.role === 'खजिनदार');
@@ -546,16 +558,15 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
                 <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
                   <Paperclip className="w-4 h-4 text-emerald-600" />
-                  <span>Google Drive पावती पुरावा (Attachment)</span>
+                  <span>पावती पुरावा (Attachment Proof)</span>
                 </span>
-                <a
-                  href={selectedIncomeDetail.attachmentUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1"
+                <button
+                  type="button"
+                  onClick={() => handleProofClick(selectedIncomeDetail.attachmentUrl!)}
+                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs transition-all cursor-pointer flex items-center gap-1"
                 >
-                  <span>📂 Drive वर पुरावा उघडा</span>
-                </a>
+                  <span>📂 पुरावा पाहा</span>
+                </button>
               </div>
             )}
 
@@ -727,6 +738,13 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
           </div>
         </div>
       )}
+
+      {/* Full Screen Receipt Proof Lightbox Modal */}
+      <ProofLightboxModal
+        isOpen={Boolean(proofModalUrl)}
+        onClose={() => setProofModalUrl(null)}
+        imageUrl={proofModalUrl || ''}
+      />
     </div>
   );
 };

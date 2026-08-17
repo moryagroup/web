@@ -4,6 +4,8 @@ import { hasFullFinancialAccess, isBadgedMember, isCoreMemberRole } from '../uti
 import { isDateInSelectedYear } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { exportToCSV, triggerPDFPrint } from '../utils/exportUtils';
+import { ProofLightboxModal } from './ProofLightboxModal';
+import { isGoogleDriveUrl } from '../services/googleDriveService';
 import {
   Search,
   ArrowUpRight,
@@ -54,6 +56,16 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
     null
   );
   const [editingExpense, setEditingExpense] = useState<ExpenseTransaction | null>(null);
+  const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
+
+  const handleProofClick = (url: string) => {
+    if (!url) return;
+    if (isGoogleDriveUrl(url)) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      setProofModalUrl(url);
+    }
+  };
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
   const isAdmin = isLoggedIn && (currentUser.role === 'ॲडमिन' || currentUser.role === 'Admin');
@@ -575,16 +587,15 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between">
                 <span className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
                   <Paperclip className="w-4 h-4 text-rose-600" />
-                  <span>Google Drive बिल पुरावा (Attachment)</span>
+                  <span>बिल पुरावा (Attachment Proof)</span>
                 </span>
-                <a
-                  href={selectedExpenseDetail.attachmentUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1"
+                <button
+                  type="button"
+                  onClick={() => handleProofClick(selectedExpenseDetail.attachmentUrl!)}
+                  className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-xs transition-all cursor-pointer flex items-center gap-1"
                 >
-                  <span>📂 Drive वर बिल पाहा</span>
-                </a>
+                  <span>📂 बिल पुरावा पाहा</span>
+                </button>
               </div>
             )}
 
@@ -749,6 +760,13 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
           </div>
         </div>
       )}
+
+      {/* Full Screen Expense Bill Proof Lightbox Modal */}
+      <ProofLightboxModal
+        isOpen={Boolean(proofModalUrl)}
+        onClose={() => setProofModalUrl(null)}
+        imageUrl={proofModalUrl || ''}
+      />
     </div>
   );
 };

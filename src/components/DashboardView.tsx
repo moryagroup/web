@@ -14,6 +14,8 @@ import {
 import { HeaderStats } from './HeaderStats';
 import { EventGallerySection } from './EventGallerySection';
 import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
+import { ProofLightboxModal } from './ProofLightboxModal';
+import { isGoogleDriveUrl } from '../services/googleDriveService';
 import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions } from '../utils/rbac';
 import {
   ArrowDownLeft,
@@ -73,6 +75,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 }) => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isMemberPhotoModalOpen, setIsMemberPhotoModalOpen] = useState(false);
+  const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
+
+  const handleProofClick = (url: string) => {
+    if (!url) return;
+    if (isGoogleDriveUrl(url)) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      setProofModalUrl(url);
+    }
+  };
   const isFullAccess = hasFullFinancialAccess(currentUser.role);
   const isBadged = isBadgedMember(currentUser.role);
 
@@ -437,16 +449,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       ({exp.expenseCategory} - {exp.reason})
                     </span>
                     {exp.attachmentUrl ? (
-                      <a
-                        href={exp.attachmentUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-2.5 py-1 bg-emerald-100 text-emerald-900 border border-emerald-400 rounded-lg text-[11px] font-bold flex items-center gap-1 hover:bg-emerald-200 shadow-2xs transition-colors"
+                      <button
+                        type="button"
+                        onClick={() => handleProofClick(exp.attachmentUrl!)}
+                        className="px-2.5 py-1 bg-emerald-100 text-emerald-900 border border-emerald-400 rounded-lg text-[11px] font-bold flex items-center gap-1 hover:bg-emerald-200 shadow-2xs transition-all active:scale-95 cursor-pointer"
                         title="पावती/बिल पुरावा पहा (Click to view attachment proof)"
                       >
                         <Paperclip className="w-3.5 h-3.5 text-emerald-700" />
-                        <span>📎 पावती/बिल पुरावा पाहा (Attachment Link)</span>
-                      </a>
+                        <span>📎 पावती/बिल पुरावा पाहा</span>
+                      </button>
                     ) : (
                       <span className="text-[10px] text-amber-800 italic bg-amber-100/70 px-2 py-0.5 rounded border border-amber-300">
                         (कोणताही पुरावा जोडलेला नाही)
@@ -718,6 +729,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         photoUrl={memberPhoto}
         memberName={currentUser.name}
         memberRole={currentUser.role}
+      />
+
+      {/* Full Screen Receipt/Bill Proof Lightbox Modal */}
+      <ProofLightboxModal
+        isOpen={Boolean(proofModalUrl)}
+        onClose={() => setProofModalUrl(null)}
+        imageUrl={proofModalUrl || ''}
       />
     </div>
   );
