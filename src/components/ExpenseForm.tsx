@@ -180,7 +180,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 bg-white rounded-2xl shadow-sm border border-slate-200 my-4">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 my-4">
       {onNavigate && (
         <button
           type="button"
@@ -228,9 +228,9 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Section 1: Amount & Dates */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-rose-50/40 rounded-xl border border-rose-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-rose-50/40 dark:bg-slate-900/90 rounded-xl border border-rose-100 dark:border-slate-700">
           <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+            <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
               खर्चाची रक्कम (₹) <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
@@ -242,7 +242,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-300 rounded-lg text-lg font-bold text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full pl-8 pr-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-lg font-bold text-rose-700 dark:text-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
               />
             </div>
           </div>
@@ -256,7 +256,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
               required
               value={expenseDate}
               onChange={(e) => setExpenseDate(e.target.value)}
-              className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
             <p className="text-[11px] text-slate-400 mt-1">
               (प्रत्यक्ष बिल किंवा रक्कम दिल्याचा दिवस निवडा)
@@ -266,19 +266,19 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
         {/* Section 2: Recipient Details */}
         <div className="space-y-4">
-          <h3 className="text-sm font-bold text-slate-700 border-b border-slate-100 pb-1">
+          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-1">
             १. रक्कम कोणाला दिली / प्राप्तकर्ता तपशील
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 प्राप्तकर्त्याचा प्रकार <span className="text-rose-500">*</span>
               </label>
               <select
                 value={recipientType}
                 onChange={(e) => handleRecipientTypeChange(e.target.value as RecipientType)}
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none"
               >
                 <option value="दुकान / Vendor">दुकान / Vendor</option>
                 <option value="सेवा पुरवठादार">सेवा पुरवठादार</option>
@@ -290,14 +290,14 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 रक्कम कोणाला दिली / प्राप्तकर्त्याचे नाव <span className="text-rose-500">*</span>
               </label>
               {recipientType === 'सभासद' ? (
                 <select
                   value={recipientName}
                   onChange={(e) => setRecipientName(e.target.value)}
-                  className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                  className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 focus:outline-none"
                 >
                   {sortMembersByDesignation(members).map((m) => (
                     <option key={m.id} value={m.fullName}>
@@ -312,7 +312,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
                   value={recipientName}
                   onChange={(e) => setRecipientName(e.target.value)}
                   placeholder="उदा. श्री गणेश डेकोरेटर्स / राज इलेक्ट्रिक्स / अमोल पाटील"
-                  className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                  className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 focus:outline-none"
                 />
               )}
             </div>
@@ -321,19 +321,19 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
         {/* Section 3: Expense Head & Purpose */}
         <div className="space-y-4">
-          <h3 className="text-sm font-bold text-slate-700 border-b border-slate-100 pb-1">
+          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-1">
             २. खर्चाचा प्रकार व उद्देश
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 खर्चाचा प्रकार (Category) <span className="text-rose-500">*</span>
               </label>
               <select
                 value={expenseCategory}
                 onChange={(e) => setExpenseCategory(e.target.value)}
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none"
               >
                 {defaultCategories.map((cat) => (
                   <option key={cat} value={cat}>
@@ -344,13 +344,13 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 कार्यक्रम / प्रसंग
               </label>
               <select
                 value={occasionId}
                 onChange={(e) => setOccasionId(e.target.value)}
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 focus:outline-none"
               >
                 <option value="">-- सामान्य मंडळाचे काम / दैनंदिन --</option>
                 {occasions.map((o) => (
@@ -363,7 +363,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+            <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
               खर्चाचे मुख्य कारण <span className="text-rose-500">*</span>
             </label>
             <input
@@ -372,12 +372,12 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="उदा. मुख्य स्टेज मखमली पडदे व लाइटिंग अ‍ॅडव्हान्स"
-              className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+            <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
               सविस्तर माहिती (विवरण)
             </label>
             <textarea
@@ -385,26 +385,26 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="खर्चाचा सविस्तर तपशील, घेतलेल्या वस्तू किंवा सेवेचे प्रमाण..."
-              className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 focus:outline-none"
             />
           </div>
         </div>
 
         {/* Section 4: Payment Method & Bills */}
         <div className="space-y-4">
-          <h3 className="text-sm font-bold text-slate-700 border-b border-slate-100 pb-1">
+          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-1">
             ३. बिल व मंजुरी तपशील
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 पेमेंट पद्धत <span className="text-rose-500">*</span>
               </label>
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 focus:outline-none"
               >
                 <option value="रोख">रोख (Cash)</option>
                 <option value="UPI">UPI / PhonePe / GPay</option>
@@ -415,7 +415,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 UPI / Ref / Check No.
               </label>
               <input
@@ -423,12 +423,12 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 value={paymentReference}
                 onChange={(e) => setPaymentReference(e.target.value)}
                 placeholder="उदा. UPI Reference ID"
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 बिल / व्हाउचर क्रमांक
               </label>
               <input
@@ -436,14 +436,14 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 value={billNumber}
                 onChange={(e) => setBillNumber(e.target.value)}
                 placeholder="उदा. BILL-1049"
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 focus:outline-none"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 Google Drive बिल / पावती पुरावा
               </label>
               <div className="space-y-2">
@@ -465,7 +465,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
                   value={attachmentUrl}
                   onChange={(e) => setAttachmentUrl(e.target.value)}
                   placeholder="किंवा Google Drive लिंक पेस्ट करा (https://drive.google.com/...)"
-                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                  className="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 focus:outline-none"
                 />
                 {attachmentUrl && (
                   <div className="flex items-center justify-between bg-emerald-50 border border-emerald-300 px-2.5 py-1.5 rounded-lg text-xs font-bold text-emerald-800">
@@ -485,7 +485,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 इतर टिप्पणी (Notes)
               </label>
               <input
@@ -493,26 +493,26 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="उदा. पावती नंतर मिळणार आहे"
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 focus:outline-none"
               />
             </div>
           </div>
 
           {/* Approval toggle option for authorized officer */}
           {['अध्यक्ष', 'खजिनदार', 'सचिव'].includes(currentUser.role) && (
-            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-700 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-amber-700 shrink-0" />
+                <ShieldCheck className="w-5 h-5 text-amber-700 dark:text-amber-400 shrink-0" />
                 <div>
-                  <p className="text-xs font-bold text-amber-900">
+                  <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
                     अधिकृत मंजुरी अधिकार ({currentUser.role} - {currentUser.name})
                   </p>
-                  <p className="text-[11px] text-amber-700">
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300">
                     तुम्ही {currentUser.role} आहात. हा खर्च तुम्ही आताच परस्पर मंजूर करू शकता.
                   </p>
                 </div>
               </div>
-              <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-amber-900">
+              <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-amber-900 dark:text-amber-200">
                 <input
                   type="checkbox"
                   checked={autoApprove}

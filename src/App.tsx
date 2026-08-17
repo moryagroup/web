@@ -157,7 +157,7 @@ import { SuggestionsView } from './components/SuggestionsView';
 import { LoginModal } from './components/LoginModal';
 import { OccasionModal } from './components/OccasionModal';
 import { SettingsModal } from './components/SettingsModal';
-import { isBadgedMember, hasAdminPermissions } from './utils/rbac';
+import { isBadgedMember, hasAdminPermissions, canApproveFinancialTransactions } from './utils/rbac';
 import { isDateInSelectedYear } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { Menu, Sun, Moon } from 'lucide-react';
@@ -480,10 +480,18 @@ export default function App() {
 
   // Add Income Transaction
   const handleAddIncome = (newIncome: IncomeTransaction) => {
-    setIncomes((prev) => [newIncome, ...prev.filter((i) => i.id !== newIncome.id)]);
-    saveIncome(newIncome).catch(console.error);
-    cloudSaveIncome(newIncome).catch(console.error);
-    saveIncomeToSupabase(newIncome).catch(console.error);
+    const isAutoApproved = canApproveFinancialTransactions(currentUser.role);
+    const finalIncome: IncomeTransaction = {
+      ...newIncome,
+      approvalStatus: newIncome.approvalStatus || (isAutoApproved ? 'मंजूर' : 'प्रलंबित'),
+      approvedBy: newIncome.approvalStatus === 'मंजूर' ? (newIncome.approvedBy || currentUser.name) : undefined,
+      approvedByRole: newIncome.approvalStatus === 'मंजूर' ? (newIncome.approvedByRole || currentUser.role) : undefined,
+      approvedAt: newIncome.approvalStatus === 'मंजूर' ? (newIncome.approvedAt || new Date().toISOString()) : undefined,
+    };
+    setIncomes((prev) => [finalIncome, ...prev.filter((i) => i.id !== finalIncome.id)]);
+    saveIncome(finalIncome).catch(console.error);
+    cloudSaveIncome(finalIncome).catch(console.error);
+    saveIncomeToSupabase(finalIncome).catch(console.error);
   };
 
   // Update Income Transaction (Admin Only)
@@ -629,10 +637,18 @@ export default function App() {
 
   // Add Expense Transaction
   const handleAddExpense = (newExpense: ExpenseTransaction) => {
-    setExpenses((prev) => [newExpense, ...prev.filter((e) => e.id !== newExpense.id)]);
-    saveExpense(newExpense).catch(console.error);
-    cloudSaveExpense(newExpense).catch(console.error);
-    saveExpenseToSupabase(newExpense).catch(console.error);
+    const isAutoApproved = canApproveFinancialTransactions(currentUser.role);
+    const finalExpense: ExpenseTransaction = {
+      ...newExpense,
+      approvalStatus: newExpense.approvalStatus || (isAutoApproved ? 'मंजूर' : 'प्रलंबित'),
+      approvedBy: newExpense.approvalStatus === 'मंजूर' ? (newExpense.approvedBy || currentUser.name) : undefined,
+      approvedByRole: newExpense.approvalStatus === 'मंजूर' ? (newExpense.approvedByRole || currentUser.role) : undefined,
+      approvedAt: newExpense.approvalStatus === 'मंजूर' ? (newExpense.approvedAt || new Date().toISOString()) : undefined,
+    };
+    setExpenses((prev) => [finalExpense, ...prev.filter((e) => e.id !== finalExpense.id)]);
+    saveExpense(finalExpense).catch(console.error);
+    cloudSaveExpense(finalExpense).catch(console.error);
+    saveExpenseToSupabase(finalExpense).catch(console.error);
   };
 
   // Update Expense Transaction (Admin Only)

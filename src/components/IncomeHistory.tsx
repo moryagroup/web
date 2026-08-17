@@ -162,7 +162,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   return (
     <div className="space-y-6 my-4">
       {/* Top Banner & Quick Metrics */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3">
           {onNavigate && (
             <button
@@ -175,12 +175,12 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               <span className="hidden sm:inline">← मुख्य पान</span>
             </button>
           )}
-          <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center font-bold">
+          <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 rounded-xl flex items-center justify-center font-bold">
             <ArrowDownLeft className="w-7 h-7" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-800">जमा इतिहास (Income Transactions History)</h2>
-            <p className="text-xs text-slate-500">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">जमा इतिहास (Income Transactions History)</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               मंडळाला विविध स्रोतांकडून मिळालेल्या सर्व जमा रक्कमेचा इतिहास व तपशील.
             </p>
           </div>
@@ -207,7 +207,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
       )}
 
       {/* Filter Toolbar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
         <div className="flex flex-col md:flex-row gap-3">
           {/* Search Bar */}
           <div className="flex-1 relative">
@@ -217,7 +217,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="नाव, व्यवहार क्र., पावती क्र. किंवा कारणाने शोधा..."
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             {searchTerm && (
               <button
@@ -234,7 +234,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               <option value="ALL">सर्व वर्षे (All Years)</option>
               <option value="२०२६">२०२६ (१ जाने - ३१ डिसे)</option>
@@ -251,7 +251,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               <option value="ALL">सर्व जमा प्रकार</option>
               {availableIncomeTypes.map((t) => (
@@ -323,12 +323,12 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
       </div>
 
       {/* Income Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-          <span className="font-bold text-sm text-slate-700">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+          <span className="font-bold text-sm text-slate-700 dark:text-slate-200">
             जमा व्यवहार यादी ({filteredIncomes.length})
           </span>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-slate-500 dark:text-slate-400">
             प्रत्यक्ष जमा तारखेनुसार क्रमवारी
           </span>
         </div>
@@ -336,7 +336,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-100/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+              <tr className="bg-slate-100/70 dark:bg-slate-700/60 text-[11px] font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
                 <th className="p-3.5">तारीख</th>
                 <th className="p-3.5">व्यवहार क्र.</th>
                 <th className="p-3.5">जमा करणाऱ्याचे नाव</th>
@@ -350,7 +350,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 <th className="p-3.5 text-center">क्रिया</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-xs text-slate-700 dark:text-slate-200">
               {filteredIncomes.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="p-8 text-center text-slate-400">
@@ -359,7 +359,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 </tr>
               ) : (
                 filteredIncomes.map((item) => (
-                  <tr key={item.id} className="hover:bg-emerald-50/30 transition-colors">
+                  <tr key={item.id} className="hover:bg-emerald-50/30 dark:hover:bg-slate-700/40 transition-colors">
                     <td className="p-3.5 font-medium whitespace-nowrap">
                       {new Date(item.transactionDate).toLocaleDateString('mr-IN', {
                         day: '2-digit',
@@ -367,19 +367,19 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                         year: 'numeric',
                       })}
                     </td>
-                    <td className="p-3.5 font-mono text-[11px] text-slate-500 font-semibold">
+                    <td className="p-3.5 font-mono text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
                       {item.transactionNo}
                     </td>
-                    <td className="p-3.5 font-bold text-slate-800">
+                    <td className="p-3.5 font-bold text-slate-800 dark:text-slate-100">
                       <div>{item.depositorName}</div>
                       {item.linkedMemberName && (
-                        <div className="text-[10px] text-emerald-700 font-normal">
+                        <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-normal">
                           {item.linkedMemberName}
                         </div>
                       )}
                     </td>
                     <td className="p-3.5">
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-semibold">
+                      <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded text-[10px] font-semibold">
                         {item.depositorType}
                       </span>
                     </td>
@@ -387,8 +387,8 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                           item.incomeType === 'सभासद वर्गणी'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700'
+                            : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700'
                         }`}
                       >
                         {item.incomeType}
@@ -482,7 +482,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
       {/* Transaction Detail Modal */}
       {selectedIncomeDetail && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4 border border-slate-200">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4 border border-slate-200 dark:border-slate-700">
             <button
               onClick={() => setSelectedIncomeDetail(null)}
               className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1"
@@ -490,24 +490,24 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+            <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-700 pb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold">
                 <Receipt className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-800 text-lg">जमा व्यवहार पावती तपशील</h3>
-                <p className="text-xs font-mono text-emerald-700 font-semibold">
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">जमा व्यवहार पावती तपशील</h3>
+                <p className="text-xs font-mono text-emerald-700 dark:text-emerald-400 font-semibold">
                   {selectedIncomeDetail.transactionNo}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-4 rounded-xl">
+            <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-900/80 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
               <div>
                 <span className="text-slate-400 uppercase text-[10px] font-bold block">
                   जमा रक्कम
                 </span>
-                <span className="text-xl font-black text-emerald-700">
+                <span className="text-xl font-black text-emerald-700 dark:text-emerald-400">
                   ₹{selectedIncomeDetail.amount.toLocaleString('en-IN')}
                 </span>
               </div>
@@ -515,7 +515,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 <span className="text-slate-400 uppercase text-[10px] font-bold block">
                   प्रत्यक्ष जमा तारीख
                 </span>
-                <span className="font-bold text-slate-800">
+                <span className="font-bold text-slate-800 dark:text-slate-200">
                   {selectedIncomeDetail.transactionDate}
                 </span>
               </div>
@@ -523,7 +523,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 <span className="text-slate-400 uppercase text-[10px] font-bold block">
                   जमा करणाऱ्याचे नाव
                 </span>
-                <span className="font-bold text-slate-800">
+                <span className="font-bold text-slate-800 dark:text-slate-200">
                   {selectedIncomeDetail.depositorName}
                 </span>
               </div>
@@ -531,7 +531,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 <span className="text-slate-400 uppercase text-[10px] font-bold block">
                   जमा करणारा प्रकार
                 </span>
-                <span className="font-medium text-slate-700">
+                <span className="font-medium text-slate-700 dark:text-slate-300">
                   {selectedIncomeDetail.depositorType}
                 </span>
               </div>
@@ -539,7 +539,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 <span className="text-slate-400 uppercase text-[10px] font-bold block">
                   जमा प्रकार (Income Type)
                 </span>
-                <span className="font-bold text-blue-700">
+                <span className="font-bold text-blue-700 dark:text-blue-400">
                   {selectedIncomeDetail.incomeType}
                 </span>
               </div>
@@ -547,7 +547,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 <span className="text-slate-400 uppercase text-[10px] font-bold block">
                   पेमेंट पद्धत
                 </span>
-                <span className="font-medium text-slate-800">
+                <span className="font-medium text-slate-800 dark:text-slate-200">
                   {selectedIncomeDetail.paymentMethod}
                   {selectedIncomeDetail.paymentReference ? ` (${selectedIncomeDetail.paymentReference})` : ''}
                 </span>
@@ -633,9 +633,9 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
       {/* Admin Edit Income Modal */}
       {editingIncome && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-700">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+              <h3 className="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-amber-600" />
                 जमा व्यवहार संपादित करा (ॲडमिन)
               </h3>
@@ -665,7 +665,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                     required
                     value={editingIncome.amount}
                     onChange={(e) => setEditingIncome({ ...editingIncome, amount: Number(e.target.value) })}
-                    className="w-full p-2.5 border border-slate-300 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 outline-none"
+                    className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 outline-none"
                   />
                 </div>
                 <div>
@@ -675,7 +675,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                     required
                     value={editingIncome.transactionDate}
                     onChange={(e) => setEditingIncome({ ...editingIncome, transactionDate: e.target.value })}
-                    className="w-full p-2.5 border border-slate-300 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 outline-none"
+                    className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 outline-none"
                   />
                 </div>
                 <div>
@@ -683,7 +683,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                   <select
                     value={editingIncome.financialYear || '२०२६'}
                     onChange={(e) => setEditingIncome({ ...editingIncome, financialYear: e.target.value })}
-                    className="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 outline-none"
+                    className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 outline-none"
                   >
                     <option value="२०२६">२०२६</option>
                     <option value="२०२५">२०२५</option>
@@ -702,7 +702,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                   required
                   value={editingIncome.depositorName}
                   onChange={(e) => setEditingIncome({ ...editingIncome, depositorName: e.target.value })}
-                  className="w-full p-2.5 border border-slate-300 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 outline-none"
+                  className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 outline-none"
                 />
               </div>
 
@@ -713,7 +713,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                   required
                   value={editingIncome.reason}
                   onChange={(e) => setEditingIncome({ ...editingIncome, reason: e.target.value })}
-                  className="w-full p-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-amber-500 outline-none"
+                  className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl font-medium bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 outline-none"
                 />
               </div>
 
@@ -723,7 +723,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                   <select
                     value={editingIncome.paymentMethod}
                     onChange={(e) => setEditingIncome({ ...editingIncome, paymentMethod: e.target.value as any })}
-                    className="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 outline-none"
+                    className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 outline-none"
                   >
                     <option value="रोख">रोख</option>
                     <option value="UPI">UPI</option>
@@ -738,7 +738,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                     type="text"
                     value={editingIncome.paymentReference || ''}
                     onChange={(e) => setEditingIncome({ ...editingIncome, paymentReference: e.target.value })}
-                    className="w-full p-2.5 border border-slate-300 rounded-xl font-medium focus:ring-2 focus:ring-amber-500 outline-none"
+                    className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl font-medium bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 outline-none"
                   />
                 </div>
               </div>

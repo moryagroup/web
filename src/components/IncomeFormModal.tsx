@@ -10,6 +10,7 @@ import {
   OccasionEvent,
   CurrentUser,
 } from '../types';
+import { canApproveFinancialTransactions } from '../utils/rbac';
 
 interface IncomeFormModalProps {
   isOpen: boolean;
@@ -114,6 +115,8 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       .toTimeString()
       .split(' ')[0]}`;
 
+    const isAutoApproved = canApproveFinancialTransactions(currentUser.role);
+
     onSubmit({
       transactionNo: autoTransNo,
       amount: Number(amount),
@@ -134,6 +137,10 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       receiptNumber: receiptNumber.trim() || undefined,
       notes: notes.trim() || undefined,
       financialYear: getFinancialYearFromDate(transactionDate),
+      approvalStatus: isAutoApproved ? 'मंजूर' : 'प्रलंबित',
+      approvedBy: isAutoApproved ? currentUser.name : undefined,
+      approvedByRole: isAutoApproved ? currentUser.role : undefined,
+      approvedAt: isAutoApproved ? new Date().toISOString() : undefined,
       createdBy: `${currentUser.name} (${currentUser.role})`,
       createdAt: formattedCreatedAt,
     });
@@ -143,7 +150,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl my-8 overflow-hidden transform transition-all">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-3xl my-8 overflow-hidden transform transition-all">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -221,7 +228,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
                 <select
                   value={depositorType}
                   onChange={(e) => handleDepositorTypeChange(e.target.value as DepositorType)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none"
                 >
                   <option value="सभासद">सभासद</option>
                   <option value="माजी सभासद">माजी सभासद</option>
@@ -242,7 +249,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
                   <select
                     value={linkedMemberId}
                     onChange={(e) => handleMemberChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none"
                   >
                     {members.map((m) => (
                       <option key={m.id} value={m.id}>
@@ -317,7 +324,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
                 <select
                   value={incomeType}
                   onChange={(e) => setIncomeType(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none"
                 >
                   {incomeTypes.map((type) => (
                     <option key={type} value={type}>
@@ -335,7 +342,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
               <select
                 value={occasionId}
                 onChange={(e) => setOccasionId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none"
               >
                 <option value="">-- सामान्य / कोणतीही निवड नाही --</option>
                 {occasions.map((o) => (
@@ -367,7 +374,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none"
               >
                 <option value="रोख">रोख (Cash)</option>
                 <option value="UPI">UPI</option>

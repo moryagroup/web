@@ -229,7 +229,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 bg-white rounded-2xl shadow-sm border border-slate-200 my-4">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 my-4">
       {onNavigate && (
         <button
           type="button"
@@ -277,9 +277,9 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Section 1: Basic Amount & Dates */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50/70 rounded-xl border border-slate-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50/70 dark:bg-slate-900/90 rounded-xl border border-slate-200 dark:border-slate-700">
           <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+            <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
               जमा रक्कम (₹) <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
@@ -291,7 +291,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full pl-8 pr-3 py-2.5 bg-yellow-50/40 border border-slate-300 rounded-lg text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+                className="w-full pl-8 pr-3 py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-lg font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
           </div>
@@ -305,7 +305,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
               required
               value={transactionDate}
               onChange={(e) => setTransactionDate(e.target.value)}
-              className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             <p className="text-[11px] text-slate-400 mt-1">
               (पैसे प्रत्यक्ष हाती किंवा खात्यात जमा झाले ती तारीख निवडा)
@@ -315,19 +315,19 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
 
         {/* Section 2: Depositor Details */}
         <div className="space-y-4">
-          <h3 className="text-sm font-bold text-slate-700 border-b border-slate-100 pb-1">
+          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-1">
             १. जमा करणाऱ्याचा तपशील
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 जमा करणारा कोण आहे? <span className="text-rose-500">*</span>
               </label>
               <select
                 value={depositorType}
                 onChange={(e) => handleDepositorTypeChange(e.target.value as DepositorType)}
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
                 <option value="व्यक्ती / देणगीदार">व्यक्ती / देणगीदार</option>
                 <option value="सभासद">सभासद</option>
@@ -342,7 +342,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
 
             {depositorType === 'सभासद' ? (
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                   सभासद निवडा <span className="text-rose-500">*</span>
                 </label>
                 <select
@@ -359,7 +359,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
               </div>
             ) : (
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                   जमा करणाऱ्याचे नाव {depositorType !== 'अज्ञात / नाव न सांगणारे' && <span className="text-rose-500">*</span>}
                 </label>
                 <input
@@ -372,17 +372,17 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
                       ? 'अज्ञात देणगीदार'
                       : 'उदा. राजेश पाटील / ABC Traders / गणेश भक्त'
                   }
-                  className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:bg-slate-100 text-slate-500"
+                  className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:bg-slate-100 dark:disabled:bg-slate-600 text-slate-500 dark:text-slate-300"
                 />
               </div>
             )}
           </div>
         </div>
 
-        {/* Section 3: Income Type & Occasion */}
+        {/* Section 3: Income Category & Purpose */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-1">
-            <h3 className="text-sm font-bold text-slate-700">२. जमा प्रकार व उद्देश</h3>
+          <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-1">
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">२. जमा प्रकार व उद्देश</h3>
             <button
               type="button"
               onClick={() => setShowAddTypeModal(true)}
@@ -395,13 +395,13 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 जमा प्रकार (Income Head) <span className="text-rose-500">*</span>
               </label>
               <select
                 value={incomeType}
                 onChange={(e) => setIncomeType(e.target.value)}
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
                 {allIncomeTypes.map((type) => (
                   <option key={type} value={type}>
@@ -410,20 +410,20 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
                 ))}
               </select>
               {depositorType === 'सभासद' && incomeType !== 'सभासद वर्गणी' && (
-                <p className="text-[11px] text-amber-700 mt-1 bg-amber-50 p-1.5 rounded border border-amber-200">
+                <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 bg-amber-50 dark:bg-amber-900/20 p-1.5 rounded border border-amber-200 dark:border-amber-800">
                   ⚠️ नोंद: हा जमा प्रकार &apos;सभासद वर्गणी&apos; व्यतिरिक्त आहे. ही रक्कम मंडळाच्या एकूण जमा मध्ये मोजली जाईल, परंतु सभासदाच्या ₹६,००० वार्षिक वर्गणी हिशोबात मोजली जाणार नाही.
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 कार्यक्रम / उत्सव (Occasion)
               </label>
               <select
                 value={occasionId}
                 onChange={(e) => setOccasionId(e.target.value)}
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
                 <option value="">-- सामान्य / कोणतीही निवड नाही --</option>
                 {occasions.map((o) => (
@@ -436,7 +436,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+            <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
               जमा करण्याचे कारण / तपशील
             </label>
             <input
@@ -444,26 +444,26 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="उदा. गणेशोत्सवासाठी मुख्य कमानीचे प्रायोजकत्व / महाप्रसाद देणगी"
-              className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
         </div>
 
-        {/* Section 4: Payment Method & Reference */}
+        {/* Section 4: Payment Details */}
         <div className="space-y-4">
-          <h3 className="text-sm font-bold text-slate-700 border-b border-slate-100 pb-1">
+          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-1">
             ३. पेमेंट व पावती तपशील
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 पेमेंट पद्धत <span className="text-rose-500">*</span>
               </label>
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
                 <option value="रोख">रोख (Cash)</option>
                 <option value="UPI">UPI / PhonePe / GPay</option>
@@ -474,7 +474,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 UPI / Bank / Cheque Ref. No
               </label>
               <input
@@ -482,12 +482,12 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
                 value={paymentReference}
                 onChange={(e) => setPaymentReference(e.target.value)}
                 placeholder="उदा. UPI Txn ID / Cheque No"
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 पावती क्रमांक (Receipt No)
               </label>
               <input
@@ -495,14 +495,14 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
                 value={receiptNumber}
                 onChange={(e) => setReceiptNumber(e.target.value)}
                 placeholder="उदा. RCP-2026-108"
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 Google Drive पावती / Payment Proof पुरावा
               </label>
               <div className="space-y-2">
@@ -524,7 +524,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
                   value={attachmentUrl}
                   onChange={(e) => setAttachmentUrl(e.target.value)}
                   placeholder="किंवा Google Drive लिंक पेस्ट करा (https://drive.google.com/...)"
-                  className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
                 {attachmentUrl && (
                   <div className="flex items-center justify-between bg-emerald-50 border border-emerald-300 px-2.5 py-1.5 rounded-lg text-xs font-bold text-emerald-800">
@@ -544,7 +544,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
                 अतिरिक्त टिप्पणी / टीप (Notes)
               </label>
               <input
@@ -552,19 +552,19 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="उदा. पावती हस्तलिखित दिली आहे"
-                className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
           </div>
         </div>
 
         {/* Form Metadata System Banner */}
-        <div className="p-3 bg-slate-100/70 rounded-xl text-xs text-slate-500 flex flex-wrap justify-between items-center gap-2 border border-slate-200">
+        <div className="p-3 bg-slate-100/70 dark:bg-slate-900/90 rounded-xl text-xs text-slate-500 dark:text-slate-400 flex flex-wrap justify-between items-center gap-2 border border-slate-200 dark:border-slate-700">
           <div>
-            नोंद करणारे खजिनदार/Admin: <span className="font-bold text-slate-700">{currentUser.name}</span> ({currentUser.role})
+            नोंद करणारे खजिनदार/Admin: <span className="font-bold text-slate-700 dark:text-amber-300">{currentUser.name}</span> ({currentUser.role})
           </div>
           <div>
-            नोंद तारीख व वेळ (Automatic): <span className="font-mono text-slate-700">{new Date().toLocaleString('mr-IN')}</span>
+            नोंद तारीख व वेळ (Automatic): <span className="font-mono text-slate-700 dark:text-slate-300">{new Date().toLocaleString('mr-IN')}</span>
           </div>
         </div>
 
@@ -583,7 +583,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       {/* Modal for adding custom income type */}
       {showAddTypeModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-200 dark:border-slate-700">
             <h3 className="text-lg font-bold text-slate-800">नवीन जमा प्रकार जोडा</h3>
             <p className="text-xs text-slate-500">
               उदा. जाहिरात, मंडप भाडे उत्पन्न, रद्दी विक्री, स्पर्धा प्रवेश फी इ.
