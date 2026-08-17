@@ -146,9 +146,6 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
       cleanReason = parts[0].trim();
       attachmentUrl = parts[1].trim();
     }
-    const isApproved = row.approval_status === 'मंजूर' || (Boolean(row.approved_by) && row.approval_status !== 'रद्द');
-    const approvalStatus: ApprovalStatus = isApproved ? 'मंजूर' : 'प्रलंबित';
-
     return {
       id: row.id,
       transactionNo: row.transaction_no,
@@ -165,7 +162,7 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
       reason: cleanReason,
       notes: row.notes,
       attachmentUrl,
-      approvalStatus,
+      approvalStatus: (row.approval_status as ApprovalStatus) || 'मंजूर',
       approvedBy: row.approved_by,
       approvedByRole: row.approved_by_role,
       approvedAt: row.approved_at,
