@@ -38,11 +38,6 @@ CREATE TABLE IF NOT EXISTS public.incomes (
     receipt_number TEXT,
     reason TEXT NOT NULL,
     notes TEXT,
-    attachment_url TEXT,
-    approval_status TEXT DEFAULT 'मंजूर',
-    approved_by TEXT,
-    approved_by_role TEXT,
-    approved_at TEXT,
     recorded_by TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -86,13 +81,6 @@ ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS occasion_id TEXT;
 ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS occasion_name TEXT;
 ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS notes TEXT;
-
--- Schema Migration Fixes for existing incomes table
-ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS attachment_url TEXT;
-ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS approval_status TEXT DEFAULT 'मंजूर';
-ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS approved_by TEXT;
-ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS approved_by_role TEXT;
-ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS approved_at TEXT;
 
 
 -- 4. Occasion Events Table

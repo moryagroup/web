@@ -445,12 +445,12 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                         </button>
                         {item.approvalStatus === 'प्रलंबित' && canApprove && (
                           <button
-                            onClick={() => setSelectedExpenseDetail(item)}
-                            className="px-2 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] rounded-lg transition-all flex items-center gap-1 shadow-xs cursor-pointer"
-                            title="पावती/जोडणी पाहून मंजूर करा"
+                            onClick={() => handleApproveClick(item.id)}
+                            className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                            title="मंजूर करा"
                           >
-                            <Eye className="w-3 h-3" />
-                            <span>तपासा</span>
+                            <Check className="w-3 h-3" />
+                            <span>मंजूर</span>
                           </button>
                         )}
                         {isAdmin && (
@@ -632,33 +632,21 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
             )}
 
             {selectedExpenseDetail.approvalStatus === 'प्रलंबित' && canApprove && (
-              <div className="p-4 bg-amber-50 rounded-xl border-2 border-amber-300 space-y-3">
-                <div className="flex items-start gap-2">
-                  <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-black text-amber-900">
-                      मंजुरी अधिकार — {currentUser.role}
-                    </p>
-                    <p className="text-[10px] text-amber-700 mt-0.5">
-                      वरील जोडलेली पावती / बिल / स्क्रीनशॉट तपासून मग मंजुरी द्या.
-                    </p>
-                  </div>
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-amber-900">
+                    खर्च मंजुरी अधिकार ({currentUser.role})
+                  </p>
+                  <p className="text-[10px] text-amber-700">
+                    या खर्चाची प्रत्यक्ष पाहणी करून त्वरित मंजुरी द्या.
+                  </p>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleApproveClick(selectedExpenseDetail.id)}
-                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <Check className="w-4 h-4" />
-                    मंजूर करा (Approve)
-                  </button>
-                  <button
-                    onClick={() => setSelectedExpenseDetail(null)}
-                    className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
-                  >
-                    रद्द
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleApproveClick(selectedExpenseDetail.id)}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer"
+                >
+                  मंजूर करा
+                </button>
               </div>
             )}
 
