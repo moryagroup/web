@@ -772,7 +772,7 @@ export default function App() {
     <div className={`flex h-screen font-sans overflow-hidden antialiased select-none transition-colors duration-300 ${
       theme === 'dark'
         ? 'bg-slate-950 text-slate-100 dark'
-        : 'bg-gradient-to-br from-amber-50/80 via-orange-50/40 to-amber-100/60 text-slate-800'
+        : 'bg-slate-50 text-slate-800'
     }`}>
       {/* Sidebar / Mobile Drawer Component */}
       <Sidebar
