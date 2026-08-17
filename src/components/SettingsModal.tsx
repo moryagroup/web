@@ -151,22 +151,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               येथे जोडलेले सानुकूल जमा प्रकार फायरस्टोअर सेटिंग्समध्ये साठवले जातात व सर्व डिव्हाइसेसवर थेट अपडेट होतात.
             </p>
 
-            <form onSubmit={handleAdd} className="flex gap-2">
-              <input
-                type="text"
-                value={newType}
-                onChange={(e) => setNewType(e.target.value)}
-                placeholder="उदा. जाहिरात प्रायोजकत्व, मंडप भाडे..."
-                className="flex-1 p-2 border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-amber-500 outline-none"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-xs cursor-pointer flex items-center gap-1 shrink-0"
-              >
-                <Plus className="w-4 h-4" />
-                <span>जोडा</span>
-              </button>
-            </form>
+            {isAdmin && (
+              <form onSubmit={handleAdd} className="flex gap-2">
+                <input
+                  type="text"
+                  value={newType}
+                  onChange={(e) => setNewType(e.target.value)}
+                  placeholder="उदा. जाहिरात प्रायोजकत्व, मंडप भाडे..."
+                  className="flex-1 p-2 border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-amber-500 outline-none"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-xs cursor-pointer flex items-center gap-1 shrink-0"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>जोडा</span>
+                </button>
+              </form>
+            )}
 
             <div className="space-y-1.5 pt-2">
               {customIncomeTypes.length === 0 ? (
@@ -180,7 +182,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between text-xs"
                   >
                     <span className="font-bold text-slate-700">{type}</span>
-                    {onDeleteCustomIncomeType && (
+                    {isAdmin && onDeleteCustomIncomeType && (
                       <button
                         onClick={() => handleDelete(type)}
                         className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
@@ -195,32 +197,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* Google Drive Configuration Section */}
-          <div className="pt-4 border-t border-slate-200 space-y-2">
-            <div className="flex items-center gap-2">
-              <Upload className="w-4 h-4 text-amber-600" />
-              <h4 className="font-bold text-slate-800">Google Drive स्टोरेज (moryagroupdata@gmail.com)</h4>
-            </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed">
-              मंडळाच्या सर्व जमा/खर्च पावती छायाचित्रे सुरक्षितपणे <span className="font-bold text-amber-800">moryagroupdata@gmail.com</span> Google Drive वर सेव्ह होतात.
-            </p>
-            <input
-              type="url"
-              value={driveScriptUrl}
-              onChange={(e) => {
-                setDriveScriptUrl(e.target.value);
-                setGoogleDriveScriptUrl(e.target.value);
-              }}
-              placeholder="Google Apps Script Web App URL (https://script.google.com/macros/s/...)"
-              className="w-full p-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-amber-500 outline-none font-mono text-slate-700"
-            />
-          </div>
-
-          {/* Data Backup Section */}
-          {onDownloadBackup && (
+          {/* Google Drive Configuration Section (Admin Only) */}
+          {isAdmin && (
             <div className="pt-4 border-t border-slate-200 space-y-2">
               <div className="flex items-center gap-2">
-                <Tag className="w-4 h-4 text-emerald-600" />
+                <Upload className="w-4 h-4 text-amber-600" />
+                <h4 className="font-bold text-slate-800">Google Drive स्टोरेज (moryagroupdata@gmail.com)</h4>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                मंडळाच्या सर्व जमा/खर्च पावती छायाचित्रे सुरक्षितपणे <span className="font-bold text-amber-800">moryagroupdata@gmail.com</span> Google Drive वर सेव्ह होतात.
+              </p>
+              <input
+                type="url"
+                value={driveScriptUrl}
+                onChange={(e) => {
+                  setDriveScriptUrl(e.target.value);
+                  setGoogleDriveScriptUrl(e.target.value);
+                }}
+                placeholder="Google Apps Script Web App URL (https://script.google.com/macros/s/...)"
+                className="w-full p-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-amber-500 outline-none font-mono text-slate-700"
+              />
+            </div>
+          )}
+
+          {/* Data Backup Section (Admin Only) */}
+          {onDownloadBackup && isAdmin && (
+            <div className="pt-4 border-t border-slate-200 space-y-2">
+              <div className="flex items-center gap-2">
+                <Download className="w-4 h-4 text-emerald-600" />
                 <h4 className="font-bold text-slate-800">डेटा सुरक्षितता व बॅकअप (Data Backup & Safety)</h4>
               </div>
               <p className="text-[11px] text-slate-500 leading-relaxed">
