@@ -31,6 +31,7 @@ import {
   User,
   Camera,
   ListChecks,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -155,6 +156,44 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
     return myTasks;
   }, [occasions, currentUser, currentMember]);
+
+  // All Reported Obstacles across all active occasions for Committee Members
+  const committeeObstacles = useMemo(() => {
+    const list: Array<{ occasion: OccasionEvent; task: EventTask }> = [];
+    (occasions || []).forEach((occ) => {
+      (occ.tasks || []).forEach((t) => {
+        if (t.status === 'अडचण' || (t.obstacleNote && t.obstacleNote.trim() !== '')) {
+          list.push({ occasion: occ, task: t });
+        }
+      });
+    });
+    return list;
+  }, [occasions]);
+
+  const handleUpdateTaskStatus = (
+    occasion: OccasionEvent,
+    task: EventTask,
+    newStatus: 'प्रलंबित' | 'प्रक्रियेत' | 'पूर्ण' | 'अडचण',
+    obstacleNote?: string
+  ) => {
+    if (!onUpdateOccasion) return;
+    let updatedTasks = [...(occasion.tasks || [])];
+    const taskIndex = updatedTasks.findIndex((t) => t.id === task.id);
+
+    const updatedTaskItem: EventTask = {
+      ...task,
+      status: newStatus,
+      obstacleNote: obstacleNote !== undefined ? obstacleNote : task.obstacleNote,
+    };
+
+    if (taskIndex >= 0) {
+      updatedTasks[taskIndex] = updatedTaskItem;
+    } else {
+      updatedTasks.push(updatedTaskItem);
+    }
+
+    onUpdateOccasion({ ...occasion, tasks: updatedTasks });
+  };
 
   const displayIncomes = Array.isArray(incomes) ? incomes : [];
   const displayExpenses = Array.isArray(expenses) ? expenses : [];
@@ -357,54 +396,166 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {assignedTasksForMe.map(({ occasion, task }) => (
               <div
                 key={task.id}
-                className="bg-slate-900/90 p-3.5 rounded-xl border border-purple-500/40 flex justify-between items-center gap-3 shadow-md"
+                className={`p-4 rounded-xl border flex flex-col justify-between gap-3 shadow-md transition-all ${
+                  task.status === 'अडचण' || task.obstacleNote
+                    ? 'bg-rose-950/90 border-rose-500/60'
+                    : 'bg-slate-900/90 border-purple-500/40'
+                }`}
               >
-                <div className="space-y-1">
-                  <span className="px-2 py-0.5 bg-purple-500/30 text-purple-300 font-bold text-[10px] rounded border border-purple-400/40">
-                    {occasion.name} ({occasion.year})
-                  </span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2 py-0.5 bg-purple-500/30 text-purple-300 font-bold text-[10px] rounded border border-purple-400/40">
+                      {occasion.name} ({occasion.year})
+                    </span>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        task.status === 'पूर्ण'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          : task.status === 'प्रक्रियेत'
+                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                          : task.status === 'अडचण'
+                          ? 'bg-rose-600 text-white border border-rose-400 animate-pulse'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      }`}
+                    >
+                      {task.status}
+                    </span>
+                  </div>
+
                   <p className="font-black text-amber-300 text-sm">{task.taskTitle}</p>
                   <p className="text-[10px] text-slate-400">
-                    प्रमुख व्यवस्थापक: <span className="text-white font-bold">{task.assignedMemberName}</span> ({task.assignedMemberRole || 'सभासद'})
+                    जबाबदार सदस्य: <span className="text-white font-bold">{task.assignedMemberName}</span> ({task.assignedMemberRole || 'सभासद'})
                   </p>
+
+                  {/* Display Obstacle Alert note if reported */}
+                  {(task.obstacleNote || task.status === 'अडचण') && (
+                    <div className="p-2 bg-rose-900/80 border border-rose-600/70 text-rose-200 rounded-lg text-[11px] font-bold space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="flex items-center gap-1 text-rose-300">
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                          <span>कामातील नोंदवलेली अडचण/समस्या:</span>
+                        </span>
+                        {onUpdateOccasion && (
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateTaskStatus(occasion, task, task.status === 'अडचण' ? 'प्रक्रियेत' : task.status, '')}
+                            className="text-[10px] bg-rose-800 hover:bg-rose-700 text-white px-2 py-0.5 rounded cursor-pointer"
+                          >
+                            ✕ अडचण हटवा
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-white font-medium">{task.obstacleNote || 'अडचण प्रलंबित आहे'}</p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="text-right shrink-0 space-y-2">
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-block ${
-                      task.status === 'पूर्ण'
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                        : task.status === 'प्रक्रियेत'
-                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                    }`}
-                  >
-                    {task.status}
-                  </span>
-                  {onUpdateOccasion && (
-                    <button
-                      onClick={() => {
-                        const newStatus = task.status === 'पूर्ण' ? 'प्रलंबित' : 'पूर्ण';
-                        let updatedTasks = [...(occasion.tasks || [])];
-                        if (task.id.startsWith('occ-main-')) {
-                          const existingIdx = updatedTasks.findIndex((t) => t.id === task.id);
-                          if (existingIdx >= 0) {
-                            updatedTasks[existingIdx] = { ...updatedTasks[existingIdx], status: newStatus as any };
-                          } else {
-                            updatedTasks.push({ ...task, status: newStatus as any });
+                {/* 3 Status Option Buttons & Obstacle Report Button */}
+                {onUpdateOccasion && (
+                  <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold">
+                      <span>स्थिती बदला (Change Status):</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const note = window.prompt('उत्सव कामातील अडचण/समस्या थोडक्यात प्रविष्ट करा (उदा. लाईट वायर अपुरी आहे, साहित्याची गरज आहे):');
+                          if (note && note.trim() !== '') {
+                            handleUpdateTaskStatus(occasion, task, 'अडचण', note.trim());
                           }
-                        } else {
-                          updatedTasks = updatedTasks.map((t) =>
-                            t.id === task.id ? { ...t, status: newStatus as any } : t
-                          );
-                        }
-                        onUpdateOccasion({ ...occasion, tasks: updatedTasks });
-                      }}
-                      className="block w-full px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10px] rounded-lg shadow cursor-pointer transition-all active:scale-95 text-center"
-                    >
-                      {task.status === 'पूर्ण' ? 'पुन्हा उघडा' : '✓ काम पूर्ण करा'}
-                    </button>
-                  )}
+                        }}
+                        className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30"
+                      >
+                        <AlertTriangle className="w-3 h-3 text-amber-400" />
+                        <span>⚠️ अडचण नोंदवा</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateTaskStatus(occasion, task, 'प्रलंबित')}
+                        className={`py-1.5 px-2 rounded-lg font-bold cursor-pointer transition-all active:scale-95 text-center ${
+                          task.status === 'प्रलंबित'
+                            ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                        }`}
+                      >
+                        ⏳ प्रलंबित
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateTaskStatus(occasion, task, 'प्रक्रियेत')}
+                        className={`py-1.5 px-2 rounded-lg font-bold cursor-pointer transition-all active:scale-95 text-center ${
+                          task.status === 'प्रक्रियेत'
+                            ? 'bg-blue-600 text-white shadow-sm font-black'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                        }`}
+                      >
+                        🔄 प्रक्रियेत
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateTaskStatus(occasion, task, 'पूर्ण')}
+                        className={`py-1.5 px-2 rounded-lg font-bold cursor-pointer transition-all active:scale-95 text-center ${
+                          task.status === 'पूर्ण'
+                            ? 'bg-emerald-600 text-white shadow-sm font-black'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                        }`}
+                      >
+                        ✅ पूर्ण
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Committee Obstacle Alerts Banner (Visible to All Logged-in Committee Members) */}
+      {currentUser.isLoggedIn !== false && committeeObstacles.length > 0 && (
+        <div className="bg-rose-950/90 border border-rose-500/80 text-white p-5 rounded-2xl shadow-xl space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-rose-500/40">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center font-bold shadow-xs animate-bounce">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-black text-sm text-rose-300 flex items-center gap-2">
+                  <span>उत्सव कामांमधील अडचणी व समस्या अलर्ट (Committee Obstacle Alerts)</span>
+                  <span className="px-2 py-0.5 bg-rose-600 text-white border border-rose-400 rounded-full text-[10px] font-black">
+                    {committeeObstacles.length} अडचणी नोंदवल्या आहेत
+                  </span>
+                </h3>
+                <p className="text-[11px] text-rose-200">
+                  सोपवलेल्या कामांमध्ये खालील सदस्यांनी ऑनलाईन अडचणी / समस्या नोंदवल्या आहेत:
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            {committeeObstacles.map(({ occasion, task }) => (
+              <div
+                key={`comm-obs-${task.id}`}
+                className="bg-slate-900/90 p-3.5 rounded-xl border border-rose-500/50 space-y-1.5 shadow-md"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-0.5 bg-purple-500/30 text-purple-300 font-bold text-[10px] rounded border border-purple-400/40">
+                    {occasion.name}
+                  </span>
+                  <span className="px-2 py-0.5 bg-rose-600 text-white font-black text-[10px] rounded-full border border-rose-400">
+                    ⚠️ {task.status}
+                  </span>
+                </div>
+                <p className="font-black text-amber-300 text-sm">{task.taskTitle}</p>
+                <p className="text-[10px] text-slate-300">
+                  जबाबदार सदस्य: <span className="text-white font-bold">{task.assignedMemberName}</span> ({task.assignedMemberRole || 'सभासद'})
+                </p>
+                <div className="p-2 bg-rose-900/90 border border-rose-700 text-rose-100 rounded-lg text-[11px] font-bold mt-1">
+                  <span>⚠️ नोंदवलेली अडचण: </span>
+                  <span className="text-white">{task.obstacleNote || task.notes || 'अडचण प्रलंबित आहे'}</span>
                 </div>
               </div>
             ))}

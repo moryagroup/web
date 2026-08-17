@@ -49,7 +49,7 @@ export type PaymentMethod =
   | 'चेक'
   | 'इतर';
 
-export type ApprovalStatus = 'प्रलंबित' | 'मंजूर' | 'रद्द';
+export type ApprovalStatus = 'प्रलंबित' | 'मंजूर' | 'नाकारले' | 'रद्द';
 
 export type UserDesignation =
   | 'अध्यक्ष'
@@ -92,8 +92,9 @@ export interface EventTask {
   assignedMemberName: string;
   assignedMemberRole?: string;
   assignedMemberPhone?: string;
-  status: 'प्रलंबित' | 'प्रक्रियेत' | 'पूर्ण';
+  status: 'प्रलंबित' | 'प्रक्रियेत' | 'पूर्ण' | 'अडचण';
   notes?: string;
+  obstacleNote?: string; // Obstacle / Issue reported by assigned member
 }
 
 export interface OccasionEvent {
