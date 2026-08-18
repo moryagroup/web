@@ -44,16 +44,18 @@ export const saveMembers = (_members: Member[]) => {};
 
 export const getStoredOccasions = (): OccasionEvent[] => {
   try {
-    localStorage.removeItem(STORAGE_KEYS.OCCASIONS);
-    localStorage.removeItem('morya_mandal_occasions_v2');
-    localStorage.removeItem('morya_mandal_occasions');
+    const data = localStorage.getItem(STORAGE_KEYS.OCCASIONS);
+    if (data) {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) return parsed;
+    }
   } catch {}
-  return INITIAL_OCCASIONS;
+  return [];
 };
 
-export const saveOccasions = (_occasions: OccasionEvent[]) => {
+export const saveOccasions = (occasions: OccasionEvent[]) => {
   try {
-    localStorage.removeItem(STORAGE_KEYS.OCCASIONS);
+    localStorage.setItem(STORAGE_KEYS.OCCASIONS, JSON.stringify(occasions));
   } catch {}
 };
 

@@ -16,32 +16,7 @@ export const DEFAULT_CURRENT_USER: CurrentUser = {
 
 export { INITIAL_MEMBERS };
 
-export const INITIAL_OCCASIONS: OccasionEvent[] = [
-  {
-    id: 'occ1',
-    name: 'गणेशोत्सव २०२६',
-    year: '2026',
-    startDate: '2026-08-15',
-    endDate: '2026-08-25',
-    description: 'वार्षिक श्री गणेशोत्सव सोहळा',
-  },
-  {
-    id: 'occ2',
-    name: 'शिवजयंती सोहळा २०२६',
-    year: '2026',
-    startDate: '2026-02-19',
-    endDate: '2026-02-19',
-    description: 'छत्रपती शिवाजी महाराज जयंती उत्सव',
-  },
-  {
-    id: 'occ3',
-    name: 'आरोग्य व रक्तदान शिबीर',
-    year: '2026',
-    startDate: '2026-05-01',
-    endDate: '2026-05-01',
-    description: 'मोफत आरोग्य व रक्तदान तपासणी',
-  },
-];
+export const INITIAL_OCCASIONS: OccasionEvent[] = [];
 
 export const INITIAL_INCOME_TYPES: string[] = [
   'सभासद वर्गणी',

@@ -389,32 +389,7 @@ export const INITIAL_MEMBERS: Member[] = [
   },
 ];
 
-export const INITIAL_OCCASIONS: OccasionEvent[] = [
-  {
-    id: 'occ-1',
-    name: 'गणेशोत्सव २०२६',
-    year: '२०२६-२७',
-    startDate: '2026-08-20',
-    endDate: '2026-08-31',
-    description: 'वार्षिक गणेशोत्सव सोहळा',
-  },
-  {
-    id: 'occ-2',
-    name: 'नवरात्रोत्सव २०२६',
-    year: '२०२६-२७',
-    startDate: '2026-10-10',
-    endDate: '2026-10-19',
-    description: 'नवरात्र सोहळा व सांस्कृतिक कार्यक्रम',
-  },
-  {
-    id: 'occ-3',
-    name: 'शिवजयंती सोहळा',
-    year: '२०२६-२७',
-    startDate: '2027-02-19',
-    endDate: '2027-02-19',
-    description: 'छत्रपती शिवाजी महाराज जयंती उत्सव',
-  },
-];
+export const INITIAL_OCCASIONS: OccasionEvent[] = [];
 
 export const DEFAULT_USER: CurrentUser = {
   name: 'पाहुणा (Guest)',
