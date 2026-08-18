@@ -170,6 +170,102 @@ export async function uploadAndEmailTransactionReceipt(
   };
 }
 
+export interface BatchReceiptItem {
+  blob: Blob;
+  fileName: string;
+  proofUrlOrBase64?: string;
+  proofFileName?: string;
+}
+
+export interface DispatchDailyBatchPayload {
+  receipts: BatchReceiptItem[];
+  subject: string;
+  htmlBody: string;
+  financialYear: string;
+  dateStr: string;
+}
+
+/**
+ * Uploads all daily approved receipt cards and proofs to Drive in a dated folder,
+ * and emails them in one consolidated 11:59 PM batch to moryagroupdata@gmail.com.
+ */
+export async function uploadAndEmailDailyReceiptsBatch(
+  payload: DispatchDailyBatchPayload
+): Promise<{ success: boolean; message: string; count: number; folderUrl?: string }> {
+  const scriptUrl = getGoogleDriveScriptUrl();
+
+  const preparedReceipts = await Promise.all(
+    payload.receipts.map(async (item) => {
+      const base64 = await fileToBase64(item.blob);
+      let proofBase64: string | undefined = undefined;
+
+      if (item.proofUrlOrBase64) {
+        if (item.proofUrlOrBase64.startsWith('data:')) {
+          proofBase64 = item.proofUrlOrBase64.split(',')[1];
+        } else if (item.proofUrlOrBase64.startsWith('http')) {
+          try {
+            const imgRes = await fetch(item.proofUrlOrBase64);
+            if (imgRes.ok) {
+              const imgBlob = await imgRes.blob();
+              proofBase64 = await fileToBase64(imgBlob);
+            }
+          } catch (e) {
+            console.warn('Failed to load proof image for batch:', e);
+          }
+        } else {
+          proofBase64 = item.proofUrlOrBase64;
+        }
+      }
+
+      return {
+        base64,
+        fileName: item.fileName,
+        contentType: item.blob.type || 'image/jpeg',
+        proofBase64,
+        proofFileName: item.proofFileName,
+        proofContentType: 'image/jpeg',
+      };
+    })
+  );
+
+  const bodyData = {
+    action: 'BATCH_RECEIPTS_DISPATCH',
+    receipts: preparedReceipts,
+    subject: payload.subject,
+    htmlBody: payload.htmlBody,
+    financialYear: payload.financialYear,
+    dateStr: payload.dateStr,
+  };
+
+  try {
+    const res = await fetch(scriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(bodyData),
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json.status === 'success') {
+        return {
+          success: true,
+          count: payload.receipts.length,
+          folderUrl: json.folderUrl,
+          message: `आजच्या एकूण ${payload.receipts.length} मंजूर पावत्या Drive वर जतन झाल्या व moryagroupdata@gmail.com वर पाठवल्या.`,
+        };
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Daily 11:59 PM Batch] Google Apps Script dispatch error:', err);
+  }
+
+  return {
+    success: false,
+    count: payload.receipts.length,
+    message: 'Google Apps Script थेट कनेक्ट होऊ शकले नाही. कृपया Settings मधील URL तपासा.',
+  };
+}
+
 /**
  * Standard upload function for general files
  */

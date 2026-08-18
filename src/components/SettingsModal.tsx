@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CurrentUser } from '../types';
-import { Settings, Plus, Trash2, X, Check, Camera, Tag, Download, Sun, Moon, Upload, PenTool, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { CurrentUser, IncomeTransaction, ExpenseTransaction } from '../types';
+import { Settings, Plus, Trash2, X, Check, Camera, Tag, Download, Sun, Moon, Upload, PenTool, CheckCircle2, AlertCircle, RefreshCw, Clock, Mail, FileText } from 'lucide-react';
 import { hasAdminPermissions } from '../utils/rbac';
 import { getGoogleDriveScriptUrl, setGoogleDriveScriptUrl, testGoogleDriveConnection } from '../services/googleDriveService';
+import {
+  dispatchDaily1159ApprovedReceipts,
+  isDaily1159ReportSentToday,
+  getLastDaily1159SentDate,
+} from '../services/dailyReceiptSchedulerService';
 import {
   getTreasurerSignature,
   setTreasurerSignature,
@@ -23,6 +28,8 @@ interface SettingsModalProps {
   onAddCustomIncomeType: (newType: string) => void;
   onDeleteCustomIncomeType?: (type: string) => void;
   currentUser: CurrentUser;
+  incomes?: IncomeTransaction[];
+  expenses?: ExpenseTransaction[];
   onOpenLogin?: () => void;
   onClearAllTransactions?: () => void;
   onDownloadBackup?: () => void;
@@ -39,6 +46,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onAddCustomIncomeType,
   onDeleteCustomIncomeType,
   currentUser,
+  incomes = [],
+  expenses = [],
   onOpenLogin,
   onClearAllTransactions,
   onDownloadBackup,
@@ -48,6 +57,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [newType, setNewType] = useState<string>('');
   const [driveScriptUrl, setDriveScriptUrl] = useState<string>(() => getGoogleDriveScriptUrl());
   const [testStatus, setTestStatus] = useState<{ loading: boolean; success?: boolean; message?: string } | null>(null);
+  const [batchStatus, setBatchStatus] = useState<{ loading: boolean; success?: boolean; message?: string; folderUrl?: string } | null>(null);
   const [isSavingSig, setIsSavingSig] = useState<boolean>(false);
 
   // Signatures State
@@ -137,6 +147,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       success: res.success,
       message: res.message,
     });
+  };
+
+  const handleDispatchDailyBatch = async () => {
+    setBatchStatus({ loading: true, message: 'आजच्या सर्व मंजूर पावत्या तयार करून ईमेल व ड्राइव्हवर पाठवत आहे...' });
+    try {
+      const res = await dispatchDaily1159ApprovedReceipts(incomes, expenses, {
+        force: true,
+        groupLogo,
+      });
+      setBatchStatus({
+        loading: false,
+        success: res.success,
+        message: res.message,
+        folderUrl: res.folderUrl,
+      });
+    } catch (err: any) {
+      setBatchStatus({
+        loading: false,
+        success: false,
+        message: err?.message || 'त्रुटी आली',
+      });
+    }
   };
 
   return (
@@ -423,6 +455,67 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       {testStatus.success ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                       {testStatus.message}
                     </span>
+                  )}
+                </div>
+
+                {/* 11:59 PM Daily Auto-Send Status & Manual Trigger */}
+                <div className="mt-3 p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-amber-900">
+                      <Clock className="w-4 h-4 text-amber-700" />
+                      <span>दैनिक ११:५९ PM सर्व मंजूर पावत्या ऑटो-सिंक</span>
+                    </div>
+                    <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>सक्रिय (Active)</span>
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-amber-800 leading-tight">
+                    दिवसभरात नोंदवलेल्या सर्व मंजूर पावत्यांचे फोटो व पेमेंट पुरावे आपोआप <strong>दररोज रात्री ११:५९ वाजता</strong> moryagroupdata@gmail.com वर ई-मेलने व Google Drive फोल्डरमध्ये सेव्ह होतात.
+                  </p>
+
+                  <div className="flex items-center justify-between pt-1 gap-2">
+                    <span className="text-[10px] text-slate-600 font-medium">
+                      आजचा दर्जा: {isDaily1159ReportSentToday() ? '✅ आजचा अहवाल पाठवला आहे' : '⏳ रात्री ११:५९ वाजता पाठवला जाईल'}
+                    </span>
+
+                    <button
+                      type="button"
+                      disabled={batchStatus?.loading}
+                      onClick={handleDispatchDailyBatch}
+                      className="py-1 px-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-[10px] flex items-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
+                    >
+                      {batchStatus?.loading ? (
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Mail className="w-3 h-3" />
+                      )}
+                      <span>{batchStatus?.loading ? 'पाठवत आहे...' : 'आजचा बॅच आताच पाठवा'}</span>
+                    </button>
+                  </div>
+
+                  {batchStatus && !batchStatus.loading && (
+                    <div
+                      className={`p-2 rounded-lg text-[11px] font-bold flex items-center justify-between gap-1.5 ${
+                        batchStatus.success ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        {batchStatus.success ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 shrink-0" />}
+                        <span>{batchStatus.message}</span>
+                      </div>
+                      {batchStatus.folderUrl && (
+                        <a
+                          href={batchStatus.folderUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline text-[10px] text-emerald-950 font-black ml-2 whitespace-nowrap"
+                        >
+                          Drive फोल्डर ↗
+                        </a>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

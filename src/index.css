@@ -95,4 +95,13 @@ html.dark .bg-slate-900\/70 {
   tfoot {
     display: table-footer-group;
   }
+
+  /* Two receipts per vertical A4 page */
+  .receipt-half-a4 {
+    height: 138mm !important;
+    max-height: 138mm !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 6mm !important;
+    overflow: hidden !important;
+  }
 }

@@ -139,6 +139,7 @@ import {
 import { isSupabaseConfigured } from './services/supabaseClient';
 import { sendDailyEmailReport, isReportAlreadySentToday } from './services/emailService';
 import { dispatchApprovedTransaction } from './services/transactionDispatchService';
+import { startDaily1159Scheduler } from './services/dailyReceiptSchedulerService';
 import { syncOfficerSignaturesFromOnline } from './services/signatureService';
 import { Agentation } from 'agentation';
 
@@ -404,6 +405,16 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [incomes, expenses, currentUser.isLoggedIn]);
+
+  // Automated Daily 11:59 PM Dispatch of all approved receipt copies
+  useEffect(() => {
+    const unsubScheduler = startDaily1159Scheduler(() => ({
+      incomes,
+      expenses,
+      groupLogo,
+    }));
+    return () => unsubScheduler();
+  }, [incomes, expenses, groupLogo]);
 
   // Keep currentUser in localStorage (it's device-specific session data)
   useEffect(() => {
@@ -1118,6 +1129,8 @@ export default function App() {
         onAddCustomIncomeType={handleAddCustomIncomeType}
         onDeleteCustomIncomeType={handleDeleteCustomIncomeType}
         currentUser={currentUser}
+        incomes={incomes}
+        expenses={expenses}
         onOpenLogin={handleOpenLogin}
         onClearAllTransactions={handleClearAllTransactions}
         onDownloadBackup={() =>

@@ -6,7 +6,7 @@
  */
 
 import { IncomeTransaction, ExpenseTransaction } from '../types';
-import { generateReceiptImageCanvas } from '../utils/receiptCanvasGenerator';
+import { generateReceiptImageCanvas, formatMarathiDate, toMarathiDigits } from '../utils/receiptCanvasGenerator';
 import { uploadAndEmailTransactionReceipt, TARGET_EMAIL } from './googleDriveService';
 
 export interface DispatchResult {
@@ -29,12 +29,14 @@ function buildTransactionEmailHtml(
   const exp = !isIncome ? (txn as ExpenseTransaction) : null;
 
   const dateStr = isIncome ? inc?.transactionDate : exp?.expenseDate;
-  const receiptNo = inc?.receiptNumber ? `#${inc.receiptNumber}` : txn.transactionNo;
+  const marathiDateStr = formatMarathiDate(dateStr);
+  const rawReceiptNo = inc?.receiptNumber ? `#${inc.receiptNumber}` : txn.transactionNo;
+  const receiptNo = toMarathiDigits(rawReceiptNo);
   const typeText = isIncome ? 'जमा पावती' : 'खर्च व्हाऊचर';
   const personName = isIncome ? inc?.depositorName : exp?.recipientName;
   const categoryText = isIncome ? inc?.incomeType : exp?.expenseCategory;
 
-  const subject = `[मोरया ग्रुप] अधिकृत ${typeText} (${receiptNo}) - ₹${Number(txn.amount || 0).toLocaleString('en-IN')}`;
+  const subject = `[मोरया ग्रुप] अधिकृत ${typeText} (${receiptNo}) - ₹${toMarathiDigits(Number(txn.amount || 0).toLocaleString('en-IN'))}`;
 
   const html = `
     <div style="font-family: 'Noto Sans Devanagari', Arial, 'Mukta', sans-serif; max-width: 620px; margin: 0 auto; border: 2px solid #ea580c; border-radius: 12px; overflow: hidden; background: #ffffff;">
@@ -57,7 +59,7 @@ function buildTransactionEmailHtml(
           </tr>
           <tr style="border-bottom: 1px solid #fed7aa;">
             <td style="padding: 10px; font-weight: bold; color: #7c2d12;">दिनांक:</td>
-            <td style="padding: 10px;">${dateStr || '---'} (आर्थिक वर्ष: ${txn.financialYear || '२०२६-२०२७'})</td>
+            <td style="padding: 10px;">${marathiDateStr} (आर्थिक वर्ष: ${toMarathiDigits(txn.financialYear || '2026-2027')})</td>
           </tr>
           <tr style="background: #fff7ed; border-bottom: 1px solid #fed7aa;">
             <td style="padding: 10px; font-weight: bold; color: #7c2d12;">${isIncome ? 'जमादार / देणगीदाराचे नाव:' : 'स्वीकारणाऱ्याचे नाव:'}</td>
