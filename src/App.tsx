@@ -83,6 +83,7 @@ import {
   subscribeToSuggestions,
   subscribeToGroupLogo,
   subscribeToCustomIncomeTypes,
+  subscribeToCashSettlements,
   saveIncome,
   deleteIncome,
   saveExpense,
@@ -97,6 +98,8 @@ import {
   deleteSuggestion,
   saveGroupLogo as saveGroupLogoFirestore,
   saveCustomIncomeTypes,
+  saveCashSettlement,
+  deleteCashSettlement,
   resetFirestoreToDemo,
   clearAllTransactionsFromFirestore,
 } from './services/firestoreService';
@@ -117,6 +120,8 @@ import {
   cloudSaveGroupLogo,
   cloudSaveCustomIncomeTypes,
   cloudClearAllTransactions,
+  cloudSaveCashSettlement,
+  cloudDeleteCashSettlement,
 } from './services/cloudDatabaseService';
 import {
   fetchMembersFromSupabase,
@@ -290,6 +295,14 @@ export default function App() {
           setCustomIncomeTypes(types);
         }
       }),
+      subscribeToCashSettlements((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCashSettlements(data);
+          try {
+            localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(data));
+          } catch {}
+        }
+      }),
     ];
 
     // Central Cloud & Supabase Real-Time Subscriptions (Laptop <-> Mobile Sync)
@@ -411,6 +424,12 @@ export default function App() {
       }
       if (Array.isArray(cloudDb.settings?.customIncomeTypes)) {
         setCustomIncomeTypes(cloudDb.settings.customIncomeTypes);
+      }
+      if (Array.isArray(cloudDb.cashSettlements)) {
+        setCashSettlements(cloudDb.cashSettlements);
+        try {
+          localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(cloudDb.cashSettlements));
+        } catch {}
       }
       setIsLoading(false);
     });
@@ -822,9 +841,11 @@ export default function App() {
       try {
         localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(updated));
       } catch {}
-      saveCashSettlementToSupabase(newSettlement).catch(console.error);
       return updated;
     });
+    saveCashSettlement(newSettlement).catch(console.error);
+    cloudSaveCashSettlement(newSettlement).catch(console.error);
+    saveCashSettlementToSupabase(newSettlement).catch(console.error);
   };
 
   const handleApproveCashSettlement = (
@@ -832,18 +853,18 @@ export default function App() {
     approverName: string,
     approverRole: UserDesignation
   ) => {
+    let approvedItem: CashSettlement | undefined;
     setCashSettlements((prev) => {
       const updated = prev.map((s) => {
         if (s.id === settlementId) {
-          const item: CashSettlement = {
+          approvedItem = {
             ...s,
             approvalStatus: 'मंजूर',
             approvedBy: approverName,
             approvedByRole: approverRole,
             approvedAt: new Date().toISOString(),
           };
-          saveCashSettlementToSupabase(item).catch(console.error);
-          return item;
+          return approvedItem;
         }
         return s;
       });
@@ -852,6 +873,11 @@ export default function App() {
       } catch {}
       return updated;
     });
+    if (approvedItem) {
+      saveCashSettlement(approvedItem).catch(console.error);
+      cloudSaveCashSettlement(approvedItem).catch(console.error);
+      saveCashSettlementToSupabase(approvedItem).catch(console.error);
+    }
   };
 
   const handleRejectCashSettlement = (
@@ -859,18 +885,18 @@ export default function App() {
     rejecterName: string,
     rejecterRole: UserDesignation
   ) => {
+    let rejectedItem: CashSettlement | undefined;
     setCashSettlements((prev) => {
       const updated = prev.map((s) => {
         if (s.id === settlementId) {
-          const item: CashSettlement = {
+          rejectedItem = {
             ...s,
             approvalStatus: 'रद्द',
             approvedBy: rejecterName,
             approvedByRole: rejecterRole,
             approvedAt: new Date().toISOString(),
           };
-          saveCashSettlementToSupabase(item).catch(console.error);
-          return item;
+          return rejectedItem;
         }
         return s;
       });
@@ -879,6 +905,11 @@ export default function App() {
       } catch {}
       return updated;
     });
+    if (rejectedItem) {
+      saveCashSettlement(rejectedItem).catch(console.error);
+      cloudSaveCashSettlement(rejectedItem).catch(console.error);
+      saveCashSettlementToSupabase(rejectedItem).catch(console.error);
+    }
   };
 
   const handleDeleteCashSettlement = (settlementId: string) => {
@@ -887,9 +918,11 @@ export default function App() {
       try {
         localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(updated));
       } catch {}
-      deleteCashSettlementFromSupabase(settlementId).catch(console.error);
       return updated;
     });
+    deleteCashSettlement(settlementId).catch(console.error);
+    cloudDeleteCashSettlement(settlementId).catch(console.error);
+    deleteCashSettlementFromSupabase(settlementId).catch(console.error);
   };
 
   // Reset to Demo Data

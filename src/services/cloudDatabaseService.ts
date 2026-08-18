@@ -13,6 +13,7 @@ import {
   EventGalleryImage,
   MemberSuggestion,
   StoredImageRecord,
+  CashSettlement,
 } from '../types';
 
 const GIST_ID = 'a0b48ee9a7270a04fb05557f1aa3922a';
@@ -33,6 +34,7 @@ export interface MoryaCloudDatabase {
     customIncomeTypes: string[];
   };
   images: StoredImageRecord[];
+  cashSettlements?: CashSettlement[];
 }
 
 let inMemoryCache: MoryaCloudDatabase | null = null;
@@ -396,3 +398,34 @@ export async function cloudClearAllTransactions(): Promise<void> {
     expenses: [],
   });
 }
+
+export async function cloudSaveCashSettlement(settlement: CashSettlement): Promise<void> {
+  try {
+    const currentDb = inMemoryCache || (await fetchCloudDatabase());
+    const existing = currentDb.cashSettlements || [];
+    const filtered = existing.filter((s) => s.id !== settlement.id);
+    const updated = [settlement, ...filtered];
+
+    await saveCloudDatabase({
+      ...currentDb,
+      cashSettlements: updated,
+    });
+  } catch (err) {
+    console.warn('[CloudDB] Save Cash Settlement error:', err);
+  }
+}
+
+export async function cloudDeleteCashSettlement(id: string): Promise<void> {
+  try {
+    const currentDb = inMemoryCache || (await fetchCloudDatabase());
+    const updated = (currentDb.cashSettlements || []).filter((s) => s.id !== id);
+
+    await saveCloudDatabase({
+      ...currentDb,
+      cashSettlements: updated,
+    });
+  } catch (err) {
+    console.warn('[CloudDB] Delete Cash Settlement error:', err);
+  }
+}
+

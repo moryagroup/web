@@ -22,6 +22,7 @@ import {
   OccasionEvent,
   EventGalleryImage,
   MemberSuggestion,
+  CashSettlement,
 } from '../types';
 import {
   INITIAL_MEMBERS,
@@ -39,6 +40,7 @@ const COLS = {
   gallery: 'gallery',
   suggestions: 'suggestions',
   settings: 'settings',
+  cash_settlements: 'cash_settlements',
 };
 
 // ─── Non-Destructive Seed Helper ─────────────────────────────────────────────
@@ -203,7 +205,35 @@ export function subscribeToCustomIncomeTypes(
   );
 }
 
+export function subscribeToCashSettlements(
+  callback: (data: CashSettlement[]) => void
+): () => void {
+  return onSnapshot(
+    collection(db, COLS.cash_settlements),
+    (snap) => {
+      const list: CashSettlement[] = [];
+      snap.forEach((d) => list.push(d.data() as CashSettlement));
+      callback(list);
+    },
+    (err) => console.warn('[Firestore] subscribeToCashSettlements error:', err)
+  );
+}
+
 // ─── Write helpers with Audit Timestamps ─────────────────────────────────────
+
+export async function saveCashSettlement(settlement: CashSettlement): Promise<void> {
+  const timestamp = new Date().toISOString();
+  const payload: CashSettlement = {
+    ...settlement,
+    createdAt: settlement.createdAt || timestamp,
+    updatedAt: timestamp,
+  };
+  await setDoc(doc(db, COLS.cash_settlements, settlement.id), payload);
+}
+
+export async function deleteCashSettlement(id: string): Promise<void> {
+  await deleteDoc(doc(db, COLS.cash_settlements, id));
+}
 
 export async function saveIncome(income: IncomeTransaction): Promise<void> {
   const timestamp = new Date().toISOString();

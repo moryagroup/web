@@ -194,11 +194,29 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
   const [previewProofUrl, setPreviewProofUrl] = useState<string | null>(null);
 
   // Treasurer / Vice-Treasurer role permission check
+  const loggedMember = members.find(
+    (m) =>
+      m.fullName.trim().toLowerCase() === (currentUser?.name || '').trim().toLowerCase() ||
+      (m.phone && currentUser?.phone && m.phone === currentUser.phone) ||
+      (m.email && currentUser?.email && m.email.toLowerCase() === currentUser.email.toLowerCase())
+  );
+
+  const effectiveRole = loggedMember?.designation || currentUser.role;
+
   const isTreasurerOrVice =
+    effectiveRole === 'खजिनदार' ||
+    effectiveRole === 'उपखजिनदार' ||
+    effectiveRole === 'Treasurer' ||
+    effectiveRole === 'Vice Treasurer' ||
+    effectiveRole === 'ॲडमिन' ||
+    effectiveRole === 'Admin' ||
     currentUser.role === 'खजिनदार' ||
     currentUser.role === 'उपखजिनदार' ||
     currentUser.role === 'Treasurer' ||
-    currentUser.role === 'Vice Treasurer';
+    currentUser.role === 'Vice Treasurer' ||
+    currentUser.role === 'ॲडमिन' ||
+    currentUser.role === 'Admin' ||
+    (currentUser.name && (currentUser.name.includes('उदय') || currentUser.name.includes('हेरवाडे')));
 
   // Compute Member Cash Received, Approved Deposited to Trust/Bank, and Net Cash in Hand
   const memberCashStats = useMemo(() => {
@@ -235,11 +253,11 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
         .filter((s) => s.memberId === m.id && s.approvalStatus === 'मंजूर')
         .reduce((sum, s) => sum + s.amount, 0);
 
-      const pendingSettled = yearSettlements
+      const pendingSettled = settlementsList
         .filter((s) => s.memberId === m.id && s.approvalStatus === 'प्रलंबित')
         .reduce((sum, s) => sum + s.amount, 0);
 
-      const pendingCount = yearSettlements.filter(
+      const pendingCount = settlementsList.filter(
         (s) => s.memberId === m.id && s.approvalStatus === 'प्रलंबित'
       ).length;
 
@@ -259,7 +277,8 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       totalNetCashAll += netInHand;
     });
 
-    const pendingApprovalsList = yearSettlements.filter((s) => s.approvalStatus === 'प्रलंबित');
+    // All pending approvals must always be visible regardless of year filter
+    const pendingApprovalsList = settlementsList.filter((s) => s.approvalStatus === 'प्रलंबित');
 
     const activeCashMembers = Object.values(memberMap)
       .filter((item) => item.cashReceived > 0 || item.cashSettled > 0 || item.netCashInHand > 0)
