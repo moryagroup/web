@@ -51,7 +51,7 @@ function buildTransactionEmailHtml(
       </div>
 
       <div style="background: #ea580c; color: #ffffff; padding: 10px 16px; text-align: center; font-weight: bold; font-size: 16px; letter-spacing: 0.5px;">
-        ★ अधिकृत ${typeText} ★
+        ✿ ${typeText} ✿
       </div>
 
       <div style="padding: 20px; color: #1e293b; font-size: 14px; line-height: 1.6;">
@@ -90,8 +90,8 @@ function buildTransactionEmailHtml(
           </tr>
           <tr style="border-bottom: 1px solid #fed7aa;">
             <td style="padding: 10px; font-weight: bold; color: #7c2d12;">मंजुरी दर्जा:</td>
-            <td style="padding: 10px; font-weight: bold; color: #ea580c;">
-              मंजूर (${txn.approvedBy || 'खजिनदार'}${txn.approvedByRole ? ` - ${txn.approvedByRole}` : ''})
+            <td style="padding: 10px; font-weight: bold; color: #059669;">
+              मंजूर ${txn.approvedBy ? `(${txn.approvedBy})` : ''}
             </td>
           </tr>
           <tr style="background: #fff7ed; border-bottom: 1px solid #fed7aa;">

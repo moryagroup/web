@@ -282,7 +282,7 @@ export async function generateReceiptImageCanvas(
 
   ctx.fillStyle = '#FFFFFF';
   ctx.font = 'bold 20px "Noto Sans Devanagari", "Mukta", sans-serif';
-  const badgeTitle = isIncome ? '★ अधिकृत जमा पावती ★' : '★ अधिकृत खर्च पावती / व्हाऊचर ★';
+  const badgeTitle = isIncome ? '✿ जमा पावती ✿' : '✿ खर्च पावती / व्हाऊचर ✿';
   ctx.fillText(badgeTitle, centerX, badgeY + 27);
 
   // 4. Metadata Strip (Receipt No, Date & Time, Financial Year)
@@ -505,9 +505,11 @@ export async function generateReceiptImageCanvas(
   ctx.fillStyle = '#0F172A';
   ctx.font = 'bold 15px "Noto Sans Devanagari", "Mukta", sans-serif';
   ctx.fillText('खजिनदार स्वाक्षरी', leftSigX, sigSectionY + 92);
-  ctx.fillStyle = '#7C2D12';
-  ctx.font = '600 13px "Noto Sans Devanagari", "Mukta", sans-serif';
-  ctx.fillText(`(${treasurerSigData?.officerName || 'अधिकृत खजिनदार'})`, leftSigX, sigSectionY + 110);
+  if (treasurerSigData?.officerName && treasurerSigData.officerName.trim() !== '') {
+    ctx.fillStyle = '#7C2D12';
+    ctx.font = '600 13px "Noto Sans Devanagari", "Mukta", sans-serif';
+    ctx.fillText(`(${treasurerSigData.officerName.trim()})`, leftSigX, sigSectionY + 110);
+  }
 
   // Right: Vice Treasurer Signature Block
   const rightSigX = width - 180;
@@ -530,9 +532,11 @@ export async function generateReceiptImageCanvas(
   ctx.fillStyle = '#0F172A';
   ctx.font = 'bold 15px "Noto Sans Devanagari", "Mukta", sans-serif';
   ctx.fillText('उपखजिनदार स्वाक्षरी', rightSigX, sigSectionY + 92);
-  ctx.fillStyle = '#7C2D12';
-  ctx.font = '600 13px "Noto Sans Devanagari", "Mukta", sans-serif';
-  ctx.fillText(`(${viceTreasurerSigData?.officerName || 'अधिकृत उपखजिनदार'})`, rightSigX, sigSectionY + 110);
+  if (viceTreasurerSigData?.officerName && viceTreasurerSigData.officerName.trim() !== '') {
+    ctx.fillStyle = '#7C2D12';
+    ctx.font = '600 13px "Noto Sans Devanagari", "Mukta", sans-serif';
+    ctx.fillText(`(${viceTreasurerSigData.officerName.trim()})`, rightSigX, sigSectionY + 110);
+  }
 
   // 7. Footer Note
   ctx.textAlign = 'center';
