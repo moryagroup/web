@@ -1,14 +1,16 @@
 /**
  * receiptCanvasGenerator.ts
- * Generates an official Marathi receipt voucher card sized specifically to print TWO receipts
- * on a single vertical A4 portrait page.
+ * Generates an official, crystal-clear Marathi receipt voucher card sized specifically to print TWO receipts
+ * on a single vertical A4 portrait page (Half-A4 Portrait ratio).
  * 
  * Features:
- * - Left: Mandal Group Logo (circular frame + gold border)
- * - Right: Chhatrapati Shivaji Maharaj Image (circular frame + gold border)
- * - Center: All headings and mandal details centered
- * - Pure Marathi date formatting (e.g. १८/०८/२०२६) and Devanagari numerals
- * - Official Saffron/Orange theme for income receipts
+ * - High-resolution crisp rendering (imageSmoothingQuality: 'high')
+ * - Left: High-Definition Mandal Group Logo (circular frame + gold border)
+ * - Right: High-Definition Mirrored Chhatrapati Shivaji Maharaj Image (circular frame + gold border)
+ * - Center: All headings and mandal details centered perfectly
+ * - Split two-column row architecture with strict width budgeting so names never overlap
+ * - Pure Marathi date formatting (e.g. १९/०७/२०२६ (दुपारी ०१:२५)) and Devanagari numerals
+ * - Official Saffron/Orange theme for income receipts, Red theme for expense vouchers
  * - Signatures of Treasurer and Vice Treasurer with official mandal seal
  */
 
@@ -37,7 +39,7 @@ export function toMarathiDigits(numOrStr: string | number): string {
 }
 
 /**
- * Formats date string into Marathi Devanagari date (उदा. १८/०८/२०२६)
+ * Formats date string into Marathi Devanagari date (उदा. १९/०७/२०२६)
  */
 export function formatMarathiDate(dateStr?: string): string {
   if (!dateStr) return '---';
@@ -66,7 +68,7 @@ export function formatMarathiTime(isoOrDateStr?: string): string {
   try {
     const d = new Date(isoOrDateStr);
     if (isNaN(d.getTime())) return '';
-    let hours = d.getHours();
+    const hours = d.getHours();
     const minutes = d.getMinutes();
     let period = 'सकाळी';
     if (hours >= 12 && hours < 16) {
@@ -85,7 +87,7 @@ export function formatMarathiTime(isoOrDateStr?: string): string {
 }
 
 /**
- * Formats full Marathi Date with Time (e.g. १८/०८/२०२६ (दुपारी ०१:२५))
+ * Formats full Marathi Date with Time (e.g. १९/०७/२०२६ (दुपारी ०१:२५))
  */
 export function formatMarathiDateTime(isoOrDateStr?: string): string {
   if (!isoOrDateStr) return '---';
@@ -120,8 +122,20 @@ function loadImageSafe(src?: string): Promise<HTMLImageElement | null> {
 }
 
 /**
+ * Truncates text if it exceeds maxWidth to prevent overlap
+ */
+function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  let truncated = text;
+  while (truncated.length > 3 && ctx.measureText(truncated + '…').width > maxWidth) {
+    truncated = truncated.slice(0, -1);
+  }
+  return truncated + '…';
+}
+
+/**
  * Generates official receipt sized to fit 2 receipts on a single vertical A4 portrait page.
- * Canvas Dimensions: 1200 x 820 (Standard half-A4 ratio: ~1.46:1)
+ * Canvas Dimensions: 1200 x 840 (Standard half-A4 ratio: ~1.43:1)
  */
 export async function generateReceiptImageCanvas(
   options: GenerateReceiptOptions
@@ -135,7 +149,7 @@ export async function generateReceiptImageCanvas(
   const treasurerSigData = getTreasurerSignature();
   const viceTreasurerSigData = getViceTreasurerSignature();
 
-  // Logo Sources
+  // Logo Sources (High-Resolution Assets)
   const logoSource = options.groupLogo || getStoredGroupLogo() || moryaLogoDefault;
   const shivajiSource = options.shivajiLogo || shivajiMaharajDefault;
 
@@ -149,7 +163,7 @@ export async function generateReceiptImageCanvas(
 
   // Sizing for Half A4 Portrait Page
   const width = 1200;
-  const height = 820;
+  const height = 840;
 
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -157,6 +171,10 @@ export async function generateReceiptImageCanvas(
 
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Failed to create 2D canvas context');
+
+  // Enable maximum rendering sharpness
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
 
   // 1. Background
   ctx.fillStyle = '#FFFFFF';
@@ -173,13 +191,13 @@ export async function generateReceiptImageCanvas(
 
   // 2. Header Banner
   const headerY = 26;
-  const headerHeight = 160;
+  const headerHeight = 158;
   ctx.fillStyle = '#7C2D12'; // Deep traditional maroon/amber
   ctx.fillRect(26, headerY, width - 52, headerHeight);
 
-  // Left Side: Mandal Group Logo with Circular Frame
-  const logoSize = 120;
-  const logoX = 45;
+  // Left Side: Mandal Group Logo with Circular Gold Frame
+  const logoSize = 126;
+  const logoX = 44;
   const logoY = headerY + (headerHeight - logoSize) / 2;
 
   if (logoImg) {
@@ -201,8 +219,8 @@ export async function generateReceiptImageCanvas(
     ctx.stroke();
   }
 
-  // Right Side: Chhatrapati Shivaji Maharaj Image with Circular Frame (Mirrored portrait)
-  const shivajiX = width - 45 - logoSize;
+  // Right Side: Chhatrapati Shivaji Maharaj Image with Circular Gold Frame (Mirrored portrait)
+  const shivajiX = width - 44 - logoSize;
   const shivajiY = headerY + (headerHeight - logoSize) / 2;
 
   if (shivajiImg) {
@@ -213,8 +231,7 @@ export async function generateReceiptImageCanvas(
     ctx.clip();
     const minDim = Math.min(shivajiImg.width, shivajiImg.height);
     const srcX = (shivajiImg.width - minDim) / 2;
-    // Focus on head/turban and face
-    const srcY = Math.max(0, (shivajiImg.height - minDim) * 0.15);
+    const srcY = Math.max(0, (shivajiImg.height - minDim) * 0.12);
     ctx.drawImage(shivajiImg, srcX, srcY, minDim, minDim, shivajiX, shivajiY, logoSize, logoSize);
     ctx.restore();
 
@@ -225,7 +242,7 @@ export async function generateReceiptImageCanvas(
     ctx.stroke();
   }
 
-  // Center Heading Block (Centered exactly in the middle of the canvas)
+  // Center Heading Block (Centered in the middle between the two emblems)
   const centerX = width / 2;
   ctx.textAlign = 'center';
 
@@ -242,164 +259,226 @@ export async function generateReceiptImageCanvas(
   ctx.fillText('हडपसर गोंधळनगर, पुणे - ४११०२८', centerX, headerY + 112);
 
   ctx.fillStyle = '#FDE68A';
-  ctx.font = 'bold 16px "Noto Sans Devanagari", "Mukta", sans-serif';
-  ctx.fillText('स्थापना - २०११ | (रजि. नं. रजि. पुणे / ०००११२२/२०२३)', centerX, headerY + 144);
+  ctx.font = 'bold 15px "Noto Sans Devanagari", "Mukta", sans-serif';
+  ctx.fillText('स्थापना - २०११ | (रजि. नं. रजि. पुणे / ०००११२२/२०२३)', centerX, headerY + 143);
 
   // 3. Subheader Title Badge (Orange for Income, Red for Expense)
   const badgeY = headerY + headerHeight + 14;
   const badgeColor = isIncome ? '#EA580C' : '#DC2626';
   ctx.fillStyle = badgeColor;
   ctx.beginPath();
-  ctx.roundRect(centerX - 240, badgeY, 480, 42, 21);
+  ctx.roundRect(centerX - 240, badgeY, 480, 40, 20);
   ctx.fill();
 
   ctx.fillStyle = '#FFFFFF';
   ctx.font = 'bold 20px "Noto Sans Devanagari", "Mukta", sans-serif';
   const badgeTitle = isIncome ? '★ अधिकृत जमा पावती ★' : '★ अधिकृत खर्च पावती / व्हाऊचर ★';
-  ctx.fillText(badgeTitle, centerX, badgeY + 28);
+  ctx.fillText(badgeTitle, centerX, badgeY + 27);
 
-  // 4. Metadata Strip (Receipt No, Approval Date & Time in Marathi, Financial Year)
-  const metaY = badgeY + 54;
-  const metaHeight = 48;
+  // 4. Metadata Strip (Receipt No, Date & Time, Financial Year)
+  const metaY = badgeY + 50;
+  const metaHeight = 46;
   ctx.fillStyle = '#FFF7ED';
   ctx.fillRect(36, metaY, width - 72, metaHeight);
   ctx.strokeStyle = '#FDBA74';
   ctx.lineWidth = 1.5;
   ctx.strokeRect(36, metaY, width - 72, metaHeight);
 
-  // Left: Receipt No
+  // Left: Receipt / Voucher No
   ctx.textAlign = 'left';
   ctx.font = 'bold 16px "Noto Sans Devanagari", "Mukta", sans-serif';
   ctx.fillStyle = '#7C2D12';
-  ctx.fillText(isIncome ? 'पावती क्र.:' : 'व्हाऊचर क्र.:', 52, metaY + 30);
+  ctx.fillText(isIncome ? 'पावती क्र.:' : 'व्हाऊचर क्र.:', 52, metaY + 29);
 
   ctx.fillStyle = '#0F172A';
   ctx.font = '900 18px "Noto Sans Devanagari", "Mukta", monospace';
   const rawReceiptNo = inc?.receiptNumber ? `#${inc.receiptNumber}` : transaction.transactionNo;
   const receiptNoStr = toMarathiDigits(rawReceiptNo);
-  ctx.fillText(receiptNoStr, 170, metaY + 30);
+  ctx.fillText(receiptNoStr, 165, metaY + 29);
 
-  // Center: Approval Date & Time (Top Priority)
-  const approvalDateSource = transaction.approvedAt || transaction.createdAt;
-  const approvalDateTimeStr = formatMarathiDateTime(approvalDateSource);
+  // Center: Date & Time in Marathi
+  const txnDateRaw = isIncome ? inc?.transactionDate : exp?.expenseDate;
+  const entryTimeStr = formatMarathiTime(transaction.createdAt);
+  const dateTimeStr = formatMarathiDate(txnDateRaw) + (entryTimeStr ? ` (${entryTimeStr})` : '');
   ctx.font = 'bold 16px "Noto Sans Devanagari", "Mukta", sans-serif';
   ctx.fillStyle = '#7C2D12';
-  ctx.fillText('मंजुरी दिनांक व वेळ:', 460, metaY + 30);
+  ctx.fillText('दिनांक:', 450, metaY + 29);
   ctx.fillStyle = '#0F172A';
-  ctx.font = 'bold 16px "Noto Sans Devanagari", "Mukta", sans-serif';
-  ctx.fillText(approvalDateTimeStr, 615, metaY + 30);
+  ctx.font = 'bold 17px "Noto Sans Devanagari", "Mukta", sans-serif';
+  ctx.fillText(dateTimeStr, 515, metaY + 29);
 
   // Right: Financial Year
   const finYearStr = toMarathiDigits(transaction.financialYear || '2026-2027');
   ctx.font = 'bold 16px "Noto Sans Devanagari", "Mukta", sans-serif';
   ctx.fillStyle = '#7C2D12';
-  ctx.fillText('आर्थिक वर्ष:', 920, metaY + 30);
+  ctx.fillText('आर्थिक वर्ष:', 920, metaY + 29);
   ctx.fillStyle = '#EA580C';
   ctx.font = 'bold 18px "Noto Sans Devanagari", "Mukta", sans-serif';
-  ctx.fillText(finYearStr, 1025, metaY + 30);
+  ctx.fillText(finYearStr, 1020, metaY + 29);
 
-  // 5. Details Section (Clean, Compact, High-Legibility Table)
-  let currentY = metaY + metaHeight + 12;
-  const rowHeight = 40;
+  // 5. Details Section (Clean, Independent Dual-Column Layout with zero overlap)
+  let currentY = metaY + metaHeight + 10;
+  const rowHeight = 38;
+  const tableWidth = width - 72; // 1128px
+  const colGap = 12;
+  const halfColWidth = (tableWidth - colGap) / 2; // 558px
 
-  const drawDetailRow = (
-    label: string,
-    value: string,
-    isHighlight: boolean = false,
-    secondaryLabel?: string,
-    secondaryValue?: string
-  ) => {
+  /**
+   * Draws a full-width single detail row
+   */
+  const drawFullRow = (label: string, value: string, isHighlight: boolean = false) => {
     ctx.fillStyle = isHighlight ? '#FFF7ED' : '#F8FAFC';
-    ctx.fillRect(36, currentY, width - 72, rowHeight);
+    ctx.fillRect(36, currentY, tableWidth, rowHeight);
     ctx.strokeStyle = isHighlight ? '#FB923C' : '#E2E8F0';
     ctx.lineWidth = isHighlight ? 2 : 1;
-    ctx.strokeRect(36, currentY, width - 72, rowHeight);
+    ctx.strokeRect(36, currentY, tableWidth, rowHeight);
 
     ctx.textAlign = 'left';
-    ctx.font = 'bold 16px "Noto Sans Devanagari", "Mukta", sans-serif';
+    ctx.font = 'bold 15px "Noto Sans Devanagari", "Mukta", sans-serif';
     ctx.fillStyle = isHighlight ? '#9A3412' : '#475569';
-    ctx.fillText(label, 52, currentY + 26);
+    ctx.fillText(label, 50, currentY + 25);
 
-    ctx.font = isHighlight ? '900 23px "Noto Sans Devanagari", "Mukta", sans-serif' : '700 17px "Noto Sans Devanagari", "Mukta", sans-serif';
+    ctx.font = isHighlight ? '900 23px "Noto Sans Devanagari", "Mukta", sans-serif' : '700 16px "Noto Sans Devanagari", "Mukta", sans-serif';
     ctx.fillStyle = isHighlight ? '#EA580C' : '#0F172A';
-    ctx.fillText(value, 285, currentY + 26);
+    const labelWidth = ctx.measureText(label).width;
+    const valueStartX = Math.max(260, 50 + labelWidth + 15);
+    const maxValWidth = tableWidth - (valueStartX - 36) - 15;
+    ctx.fillText(fitText(ctx, value, maxValWidth), valueStartX, currentY + 25);
 
-    if (secondaryLabel && secondaryValue) {
-      ctx.font = 'bold 16px "Noto Sans Devanagari", "Mukta", sans-serif';
-      ctx.fillStyle = '#475569';
-      ctx.fillText(secondaryLabel, 660, currentY + 26);
-
-      ctx.font = '700 17px "Noto Sans Devanagari", "Mukta", sans-serif';
-      ctx.fillStyle = '#0F172A';
-      ctx.fillText(secondaryValue, 805, currentY + 26);
-    }
-
-    currentY += rowHeight + 6;
+    currentY += rowHeight + 5;
   };
 
-  // Row 1: Depositor / Vendor Name
-  const personLabel = isIncome ? 'जमादार / देणगीदार नाव:' : 'स्वीकारणाऱ्याचे नाव:';
+  /**
+   * Draws a two-column row with dedicated independent boxes so texts NEVER collide
+   */
+  const drawTwoColumnRow = (
+    leftLabel: string,
+    leftValue: string,
+    rightLabel: string,
+    rightValue: string,
+    leftValueColor: string = '#0F172A',
+    rightValueColor: string = '#0F172A'
+  ) => {
+    // Left Box
+    const leftX = 36;
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillRect(leftX, currentY, halfColWidth, rowHeight);
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(leftX, currentY, halfColWidth, rowHeight);
+
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 15px "Noto Sans Devanagari", "Mukta", sans-serif';
+    ctx.fillStyle = '#475569';
+    ctx.fillText(leftLabel, leftX + 14, currentY + 25);
+
+    const leftLabelW = ctx.measureText(leftLabel).width;
+    const leftValX = leftX + 14 + leftLabelW + 10;
+    const maxLeftValW = halfColWidth - (leftValX - leftX) - 10;
+    ctx.font = '700 16px "Noto Sans Devanagari", "Mukta", sans-serif';
+    ctx.fillStyle = leftValueColor;
+    ctx.fillText(fitText(ctx, leftValue, maxLeftValW), leftValX, currentY + 25);
+
+    // Right Box
+    const rightX = 36 + halfColWidth + colGap;
+    ctx.fillStyle = '#F8FAFC';
+    ctx.fillRect(rightX, currentY, halfColWidth, rowHeight);
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(rightX, currentY, halfColWidth, rowHeight);
+
+    ctx.font = 'bold 15px "Noto Sans Devanagari", "Mukta", sans-serif';
+    ctx.fillStyle = '#475569';
+    ctx.fillText(rightLabel, rightX + 14, currentY + 25);
+
+    const rightLabelW = ctx.measureText(rightLabel).width;
+    const rightValX = rightX + 14 + rightLabelW + 10;
+    const maxRightValW = halfColWidth - (rightValX - rightX) - 10;
+    ctx.font = '700 16px "Noto Sans Devanagari", "Mukta", sans-serif';
+    ctx.fillStyle = rightValueColor;
+    ctx.fillText(fitText(ctx, rightValue, maxRightValW), rightValX, currentY + 25);
+
+    currentY += rowHeight + 5;
+  };
+
+  // Row 1: Depositor / Vendor Name (Full Row)
+  const personLabel = isIncome ? 'जमादार / देणगीदाराचे नाव:' : 'स्वीकारणाऱ्याचे नाव:';
   const personValue = isIncome
     ? `${inc?.depositorName || 'अज्ञात'} (${inc?.depositorType || 'व्यक्ती'})`
     : `${exp?.recipientName || '---'} (${exp?.recipientType || 'व्यक्ती'})`;
-  drawDetailRow(personLabel, personValue);
+  drawFullRow(personLabel, personValue);
 
-  // Row 2: Category & Purpose
+  // Row 2: Category (Left) & Reason/Detail (Right)
   const categoryLabel = isIncome ? 'जमा प्रकार / वर्गणी:' : 'खर्च वर्गवारी:';
   const categoryValue = isIncome ? (inc?.incomeType || 'सभासद वर्गणी') : (exp?.expenseCategory || 'इतर');
-  drawDetailRow(categoryLabel, categoryValue, false, 'तपशील / कारण:', transaction.reason || 'मंडळ कामकाज');
+  drawTwoColumnRow(
+    categoryLabel,
+    categoryValue,
+    'तपशील / कारण:',
+    transaction.reason || 'मंडळ कामकाज'
+  );
 
-  // Row 3: Transaction Occurrence Date & Entry Time, and Payment Method
-  const txnDateRaw = isIncome ? inc?.transactionDate : exp?.expenseDate;
-  const entryTimeStr = formatMarathiTime(transaction.createdAt);
-  const txnDateDisplay = formatMarathiDate(txnDateRaw) + (entryTimeStr ? ` (नोंद: ${entryTimeStr})` : '');
-  const paymentRefStr = transaction.paymentReference ? `(संदर्भ: ${toMarathiDigits(transaction.paymentReference)})` : '';
-  const paymentDetailStr = `${transaction.paymentMethod || 'रोख'} ${paymentRefStr}`.trim();
-  drawDetailRow('व्यवहार / प्रत्यक्ष तारीख:', txnDateDisplay, false, 'पेमेंट पद्धत:', paymentDetailStr);
+  // Row 3: Payment Method (Left) & Reference (Right)
+  const paymentMethodStr = transaction.paymentMethod || 'रोख';
+  const paymentRefStr = transaction.paymentReference ? toMarathiDigits(transaction.paymentReference) : '---';
+  drawTwoColumnRow(
+    'पेमेंट पद्धत:',
+    paymentMethodStr,
+    'पेमेंट संदर्भ क्र.:',
+    paymentRefStr
+  );
 
-  // Row 4: Total Amount (Vibrant Highlight)
-  drawDetailRow('एकूण रक्कम:', formatCurrencyMarathi(transaction.amount), true);
+  // Row 4: Total Amount (Full Width Orange Highlight Row)
+  drawFullRow('एकूण रक्कम:', formatCurrencyMarathi(transaction.amount), true);
 
-  // Row 5: Approval Status & Entry Maker Name
+  // Row 5: Approval Status (Left Box) & Entry Maker (Right Box) - Completely Separated!
   const approverStr = transaction.approvedBy
     ? `मंजूर (${transaction.approvedBy})`
     : 'मंजूर';
   const entryMakerStr = transaction.createdBy || 'कार्यकर्ता';
-  drawDetailRow('मंजुरी दर्जा:', approverStr, false, 'नोंदणीकर्ता:', entryMakerStr);
+
+  drawTwoColumnRow(
+    'मंजुरी दर्जा:',
+    approverStr,
+    'नोंदणीकर्ता:',
+    entryMakerStr,
+    '#059669', // Emerald green for approved
+    '#0F172A'  // Slate for entry maker
+  );
 
   // Row 6 (Optional): Physical Receipt Book or Payment Proof Reference
   if (isIncome && (inc?.isPhysicalReceipt || inc?.receiptBookNo)) {
     const bookRef = `पुस्तक क्र. ${toMarathiDigits(inc.receiptBookNo || '1')} (पावती अनुक्रमांक: #${toMarathiDigits(inc.receiptSerialNo || '1')})`;
-    drawDetailRow('पावती पुस्तक संदर्भ:', bookRef);
+    drawFullRow('पावती पुस्तक संदर्भ:', bookRef);
   } else if (transaction.attachmentUrl) {
-    drawDetailRow('संलग्न पेमेंट पुरावा:', '📁 Google Drive वर मूळ पावती/पुरावा जतन');
+    drawFullRow('संलग्न पेमेंट पुरावा:', '📁 Google Drive वर मूळ पावती/पुरावा सुरक्षित जतन');
   }
 
   // 6. Signatures Section (Treasurer, Vice-Treasurer & Mandal Seal)
-  const sigSectionY = currentY + 8;
-  const sigHeight = 125;
+  const sigSectionY = currentY + 6;
+  const sigHeight = 120;
   ctx.fillStyle = '#FFF7ED';
-  ctx.fillRect(36, sigSectionY, width - 72, sigHeight);
+  ctx.fillRect(36, sigSectionY, tableWidth, sigHeight);
   ctx.strokeStyle = '#FDBA74';
   ctx.lineWidth = 1.5;
-  ctx.strokeRect(36, sigSectionY, width - 72, sigHeight);
+  ctx.strokeRect(36, sigSectionY, tableWidth, sigHeight);
 
   // Center Mandal Stamp / Seal
   ctx.textAlign = 'center';
   ctx.fillStyle = '#EA580C';
   ctx.font = 'bold 14px "Noto Sans Devanagari", "Mukta", sans-serif';
-  ctx.fillText('॥ मोरया ग्रुप अधिकृत मोहोर ॥', centerX, sigSectionY + 62);
+  ctx.fillText('॥ मोरया ग्रुप अधिकृत मोहोर ॥', centerX, sigSectionY + 60);
   ctx.strokeStyle = '#FB923C';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(centerX, sigSectionY + 58, 38, 0, Math.PI * 2);
+  ctx.arc(centerX, sigSectionY + 56, 36, 0, Math.PI * 2);
   ctx.stroke();
 
   // Left: Treasurer Signature Block
   const leftSigX = 180;
   if (treasurerSigImg) {
-    const sigW = 140;
-    const sigH = 50;
+    const sigW = 135;
+    const sigH = 48;
     ctx.drawImage(treasurerSigImg, leftSigX - sigW / 2, sigSectionY + 12, sigW, sigH);
   } else {
     ctx.fillStyle = '#94A3B8';
@@ -409,22 +488,22 @@ export async function generateReceiptImageCanvas(
   ctx.strokeStyle = '#7C2D12';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(leftSigX - 85, sigSectionY + 74);
-  ctx.lineTo(leftSigX + 85, sigSectionY + 74);
+  ctx.moveTo(leftSigX - 85, sigSectionY + 72);
+  ctx.lineTo(leftSigX + 85, sigSectionY + 72);
   ctx.stroke();
 
   ctx.fillStyle = '#0F172A';
   ctx.font = 'bold 15px "Noto Sans Devanagari", "Mukta", sans-serif';
-  ctx.fillText('खजिनदार स्वाक्षरी', leftSigX, sigSectionY + 95);
+  ctx.fillText('खजिनदार स्वाक्षरी', leftSigX, sigSectionY + 92);
   ctx.fillStyle = '#7C2D12';
   ctx.font = '600 13px "Noto Sans Devanagari", "Mukta", sans-serif';
-  ctx.fillText(`(${treasurerSigData?.officerName || 'अधिकृत खजिनदार'})`, leftSigX, sigSectionY + 114);
+  ctx.fillText(`(${treasurerSigData?.officerName || 'अधिकृत खजिनदार'})`, leftSigX, sigSectionY + 110);
 
   // Right: Vice Treasurer Signature Block
   const rightSigX = width - 180;
   if (viceTreasurerSigImg) {
-    const sigW = 140;
-    const sigH = 50;
+    const sigW = 135;
+    const sigH = 48;
     ctx.drawImage(viceTreasurerSigImg, rightSigX - sigW / 2, sigSectionY + 12, sigW, sigH);
   } else {
     ctx.fillStyle = '#94A3B8';
@@ -434,16 +513,16 @@ export async function generateReceiptImageCanvas(
   ctx.strokeStyle = '#7C2D12';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(rightSigX - 85, sigSectionY + 74);
-  ctx.lineTo(rightSigX + 85, sigSectionY + 74);
+  ctx.moveTo(rightSigX - 85, sigSectionY + 72);
+  ctx.lineTo(rightSigX + 85, sigSectionY + 72);
   ctx.stroke();
 
   ctx.fillStyle = '#0F172A';
   ctx.font = 'bold 15px "Noto Sans Devanagari", "Mukta", sans-serif';
-  ctx.fillText('उपखजिनदार स्वाक्षरी', rightSigX, sigSectionY + 95);
+  ctx.fillText('उपखजिनदार स्वाक्षरी', rightSigX, sigSectionY + 92);
   ctx.fillStyle = '#7C2D12';
   ctx.font = '600 13px "Noto Sans Devanagari", "Mukta", sans-serif';
-  ctx.fillText(`(${viceTreasurerSigData?.officerName || 'अधिकृत उपखजिनदार'})`, rightSigX, sigSectionY + 114);
+  ctx.fillText(`(${viceTreasurerSigData?.officerName || 'अधिकृत उपखजिनदार'})`, rightSigX, sigSectionY + 110);
 
   // 7. Footer Note
   ctx.textAlign = 'center';
@@ -452,9 +531,9 @@ export async function generateReceiptImageCanvas(
   ctx.fillText('हा ई-पावती दस्तऐवज मोरया ग्रुप वेब प्रणालीद्वारे तयार करण्यात आला आहे. (moryagroupdata@gmail.com)', centerX, height - 16);
 
   // Convert to DataURL and Blob
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
   const blob: Blob = await new Promise((resolve) => {
-    canvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.92);
+    canvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.95);
   });
 
   return { canvas, dataUrl, blob };
