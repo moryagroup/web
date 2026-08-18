@@ -324,22 +324,22 @@ export async function generateReceiptImageCanvas(
   const halfColWidth = (tableWidth - colGap) / 2; // 558px
 
   /**
-   * Draws a full-width single detail row
+   * Draws a full-width single detail row (Clean, standard unhighlighted background)
    */
-  const drawFullRow = (label: string, value: string, isHighlight: boolean = false) => {
-    ctx.fillStyle = isHighlight ? '#FFF7ED' : '#F8FAFC';
+  const drawFullRow = (label: string, value: string) => {
+    ctx.fillStyle = '#F8FAFC';
     ctx.fillRect(36, currentY, tableWidth, rowHeight);
-    ctx.strokeStyle = isHighlight ? '#FB923C' : '#E2E8F0';
-    ctx.lineWidth = isHighlight ? 2 : 1;
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 1;
     ctx.strokeRect(36, currentY, tableWidth, rowHeight);
 
     ctx.textAlign = 'left';
     ctx.font = 'bold 15px "Noto Sans Devanagari", "Mukta", sans-serif';
-    ctx.fillStyle = isHighlight ? '#9A3412' : '#475569';
+    ctx.fillStyle = '#475569';
     ctx.fillText(label, 50, currentY + 25);
 
-    ctx.font = isHighlight ? '900 23px "Noto Sans Devanagari", "Mukta", sans-serif' : '700 16px "Noto Sans Devanagari", "Mukta", sans-serif';
-    ctx.fillStyle = isHighlight ? '#EA580C' : '#0F172A';
+    ctx.font = '700 18px "Noto Sans Devanagari", "Mukta", sans-serif';
+    ctx.fillStyle = '#0F172A';
     const labelWidth = ctx.measureText(label).width;
     const valueStartX = Math.max(260, 50 + labelWidth + 15);
     const maxValWidth = tableWidth - (valueStartX - 36) - 15;
@@ -428,8 +428,8 @@ export async function generateReceiptImageCanvas(
     paymentRefStr
   );
 
-  // Row 4: Total Amount (Full Width Orange Highlight Row)
-  drawFullRow('एकूण रक्कम:', formatCurrencyMarathi(transaction.amount), true);
+  // Row 4: Total Amount (Clean Full Width Row)
+  drawFullRow('एकूण रक्कम:', formatCurrencyMarathi(transaction.amount));
 
   // Row 5: Approval Status (Left Box) & Entry Maker (Right Box) - Completely Separated!
   const approverStr = transaction.approvedBy

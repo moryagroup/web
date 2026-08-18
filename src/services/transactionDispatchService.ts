@@ -84,9 +84,9 @@ function buildTransactionEmailHtml(
             <td style="padding: 10px; font-weight: bold; color: #7c2d12;">पेमेंट पद्धत:</td>
             <td style="padding: 10px;">${txn.paymentMethod || 'रोख'} ${txn.paymentReference ? `(संदर्भ: ${txn.paymentReference})` : ''}</td>
           </tr>
-          <tr style="background: #ffedd5; border-bottom: 2px solid #ea580c;">
-            <td style="padding: 12px; font-weight: bold; color: #9a3412; font-size: 16px;">एकूण रक्कम:</td>
-            <td style="padding: 12px; font-weight: 900; color: #c2410c; font-size: 22px;">₹ ${Number(txn.amount || 0).toLocaleString('en-IN')}/-</td>
+          <tr style="border-bottom: 1px solid #fed7aa;">
+            <td style="padding: 10px; font-weight: bold; color: #7c2d12;">एकूण रक्कम:</td>
+            <td style="padding: 10px; font-weight: 900; color: #0f172a; font-size: 18px;">₹ ${toMarathiDigits(Number(txn.amount || 0).toLocaleString('en-IN'))}/-</td>
           </tr>
           <tr style="border-bottom: 1px solid #fed7aa;">
             <td style="padding: 10px; font-weight: bold; color: #7c2d12;">मंजुरी दर्जा:</td>
