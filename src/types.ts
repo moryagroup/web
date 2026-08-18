@@ -151,6 +151,9 @@ export interface IncomeTransaction {
   paymentMethod: PaymentMethod;
   paymentReference?: string; // UPI ID, Bank Ref, Cheque No
   receiptNumber?: string;
+  receiptBookNo?: string; // e.g. "1", "2", "3" (पावती पुस्तक क्र.)
+  receiptSerialNo?: string; // e.g. "1", "2", "3", "4" (पावती अनुक्रमांक)
+  isPhysicalReceipt?: boolean; // true if entered from physical receipt book
   attachmentUrl?: string; // Proof image or doc
   notes?: string;
   financialYear: string; // e.g., '2026-2027'

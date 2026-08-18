@@ -11,8 +11,9 @@ import {
 import { hasFullFinancialAccess, sortMembersByDesignation, canApproveFinancialTransactions } from '../utils/rbac';
 import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextIncomeTransactionNo } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
-import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft, ShieldCheck, BookOpen, BookMarked } from 'lucide-react';
 import { uploadFileToGoogleDrive, isGoogleDriveUrl } from '../services/googleDriveService';
+import { getNextSerialForReceiptBook, formatPhysicalReceiptNumber } from '../utils/physicalReceiptUtils';
 
 interface IncomeFormProps {
   members: Member[];
@@ -60,6 +61,12 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
   const allIncomeTypes = Array.from(new Set([...defaultIncomeTypes, ...customTypes]));
 
   // Form states
+  const [isPhysicalReceipt, setIsPhysicalReceipt] = useState<boolean>(false);
+  const [receiptBookNo, setReceiptBookNo] = useState<string>('1');
+  const [receiptSerialNo, setReceiptSerialNo] = useState<string>(() =>
+    String(getNextSerialForReceiptBook('1', incomes))
+  );
+
   const [amount, setAmount] = useState<string>('');
   const [transactionDate, setTransactionDate] = useState<string>(todayStr);
   const [depositorType, setDepositorType] = useState<DepositorType>('व्यक्ती / देणगीदार');
@@ -78,6 +85,13 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
   const [autoApprove, setAutoApprove] = useState<boolean>(false);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+
+  // Handle Receipt Book No change
+  const handleBookNoChange = (newBookNo: string) => {
+    setReceiptBookNo(newBookNo);
+    const nextSerial = getNextSerialForReceiptBook(newBookNo, incomes);
+    setReceiptSerialNo(String(nextSerial));
+  };
 
   // Handle Depositor Type change
   const handleDepositorTypeChange = (type: DepositorType) => {
@@ -171,6 +185,10 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
 
     const isApproved = canApproveFinancialTransactions(currentUser.role) && autoApprove;
 
+    const finalReceiptNumber = isPhysicalReceipt
+      ? formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo)
+      : receiptNumber.trim() || undefined;
+
     const newIncome: IncomeTransaction = {
       id: `inc-${Date.now()}`,
       transactionNo,
@@ -186,7 +204,10 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       reason: reason.trim() || `${incomeType} - जमा`,
       paymentMethod,
       paymentReference: paymentReference.trim() || undefined,
-      receiptNumber: receiptNumber.trim() || undefined,
+      receiptNumber: finalReceiptNumber,
+      receiptBookNo: isPhysicalReceipt ? receiptBookNo : undefined,
+      receiptSerialNo: isPhysicalReceipt ? receiptSerialNo : undefined,
+      isPhysicalReceipt,
       attachmentUrl: attachmentUrl || undefined,
       notes: notes.trim() || undefined,
       financialYear: getFinancialYearFromDate(transactionDate),
@@ -450,11 +471,121 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
           </div>
         </div>
 
-        {/* Section 4: Payment Details */}
+        {/* Section 4: Payment Details & Physical Receipt Book */}
         <div className="space-y-4">
-          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-1">
-            ३. पेमेंट व पावती तपशील
-          </h3>
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">
+              ३. पेमेंट व पावती नोंदणी पद्धत
+            </h3>
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPhysicalReceipt(false);
+                  setPaymentMethod('UPI');
+                }}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                  !isPhysicalReceipt
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                }`}
+              >
+                <span>⚡ डिजिटल नोंद</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPhysicalReceipt(true);
+                  setPaymentMethod('रोख');
+                  const nextSerial = getNextSerialForReceiptBook(receiptBookNo, incomes);
+                  setReceiptSerialNo(String(nextSerial));
+                }}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                  isPhysicalReceipt
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>📖 प्रत्यक्ष पावती पुस्तक</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Dedicated Physical Pavti Pustak Entry Card */}
+          {isPhysicalReceipt && (
+            <div className="p-4 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border-2 border-amber-300 dark:border-amber-700 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-black text-sm">
+                  <BookMarked className="w-5 h-5 text-amber-700 dark:text-amber-400" />
+                  <span>प्रत्यक्ष पावती पुस्तक नोंद (Physical Receipt Book Record)</span>
+                </div>
+                <span className="text-[11px] bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 font-bold px-2 py-0.5 rounded-full">
+                  स्वयंचलित व्यवहार क्र: {generateNextIncomeTransactionNo(transactionDate, incomes)}
+                </span>
+              </div>
+
+              <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                हस्तलिखित पावती पुस्तकातील नोंदी साठवण्यासाठी खालील पुस्तक क्रमांक व पावती अनुक्रमांक निवडा. ही नोंद पडताळणीसाठी प्रलंबित राहील.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* Book No */}
+                <div>
+                  <label className="block text-xs font-bold text-amber-900 dark:text-amber-200 uppercase mb-1">
+                    पावती पुस्तक क्र. (Book No.) <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="flex gap-1.5 mb-2">
+                    {['1', '2', '3', '4', '5'].map((bNo) => (
+                      <button
+                        key={bNo}
+                        type="button"
+                        onClick={() => handleBookNoChange(bNo)}
+                        className={`flex-1 py-1 text-xs font-black rounded-lg border transition-all cursor-pointer ${
+                          receiptBookNo === bNo
+                            ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-amber-200 hover:bg-amber-100'
+                        }`}
+                      >
+                        {bNo}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="text"
+                    value={receiptBookNo}
+                    onChange={(e) => handleBookNoChange(e.target.value)}
+                    placeholder="किंवा इतर पुस्तक क्र. उदा. 6"
+                    className="w-full p-2 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-600 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                {/* Serial / Leaf No */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-amber-900 dark:text-amber-200 uppercase">
+                      पावती अनुक्रमांक (Serial No.) <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">
+                      सुचवलेला पुढील क्र: #{getNextSerialForReceiptBook(receiptBookNo, incomes)}
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    required={isPhysicalReceipt}
+                    value={receiptSerialNo}
+                    onChange={(e) => setReceiptSerialNo(e.target.value)}
+                    placeholder="उदा. 1, 2, 3, 4..."
+                    className="w-full p-2.5 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-600 rounded-lg text-sm font-black text-amber-900 dark:text-amber-200 outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                  <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 font-semibold">
+                    तयार होणारा पावती संदर्भ: <strong className="text-amber-900 dark:text-amber-200">{formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo)}</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -489,14 +620,19 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">
-                पावती क्रमांक (Receipt No)
+                {isPhysicalReceipt ? 'स्वयंचलित पावती संदर्भ' : 'पावती क्रमांक (Receipt No)'}
               </label>
               <input
                 type="text"
-                value={receiptNumber}
+                disabled={isPhysicalReceipt}
+                value={isPhysicalReceipt ? formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo) : receiptNumber}
                 onChange={(e) => setReceiptNumber(e.target.value)}
                 placeholder="उदा. RCP-2026-108"
-                className="w-full p-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className={`w-full p-2.5 border rounded-lg text-sm focus:outline-none ${
+                  isPhysicalReceipt
+                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 font-bold text-amber-900 dark:text-amber-200 cursor-not-allowed'
+                    : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500'
+                }`}
               />
             </div>
           </div>

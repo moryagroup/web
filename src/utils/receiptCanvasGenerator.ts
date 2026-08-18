@@ -190,6 +190,13 @@ export async function generateReceiptImageCanvas(
 
   drawDetailRow('एकूण रक्कम (Amount):', formatCurrency(transaction.amount), true);
 
+  if (isIncome && (inc?.isPhysicalReceipt || inc?.receiptBookNo)) {
+    drawDetailRow(
+      '📖 पावती पुस्तक संदर्भ:',
+      `पुस्तक क्र. ${inc.receiptBookNo || '1'} (पावती अनुक्रमांक: #${inc.receiptSerialNo || '1'})`
+    );
+  }
+
   const approverStr = transaction.approvedBy
     ? `मंजूर (${transaction.approvedBy}${transaction.approvedByRole ? ` - ${transaction.approvedByRole}` : ''})`
     : 'मंजूर (Approved)';

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Plus, User, Info, CheckCircle } from 'lucide-react';
+import { X, Plus, User, Info, CheckCircle, BookOpen, BookMarked } from 'lucide-react';
 import { getFinancialYearFromDate, generateNextIncomeTransactionNo } from '../utils/dateUtils';
+import { getNextSerialForReceiptBook, formatPhysicalReceiptNumber } from '../utils/physicalReceiptUtils';
 import {
   IncomeTransaction,
   DepositorType,
@@ -40,6 +41,12 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
   const todayStr = new Date().toISOString().split('T')[0];
   const autoTransNo = generateNextIncomeTransactionNo(todayStr, incomes);
 
+  const [isPhysicalReceipt, setIsPhysicalReceipt] = useState<boolean>(false);
+  const [receiptBookNo, setReceiptBookNo] = useState<string>('1');
+  const [receiptSerialNo, setReceiptSerialNo] = useState<string>(() =>
+    String(getNextSerialForReceiptBook('1', incomes))
+  );
+
   const [amount, setAmount] = useState<number | ''>('');
   const [transactionDate, setTransactionDate] = useState<string>(todayStr);
   const [depositorType, setDepositorType] = useState<DepositorType>('सभासद');
@@ -58,6 +65,12 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [financialYear, setFinancialYear] = useState<string>('2026-2027');
   const [autoApprove, setAutoApprove] = useState<boolean>(false);
+
+  const handleBookNoChange = (newBookNo: string) => {
+    setReceiptBookNo(newBookNo);
+    const nextSerial = getNextSerialForReceiptBook(newBookNo, incomes);
+    setReceiptSerialNo(String(nextSerial));
+  };
 
   const handleMemberChange = (memberId: string) => {
     setLinkedMemberId(memberId);
@@ -118,6 +131,10 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       .toTimeString()
       .split(' ')[0]}`;
 
+    const finalReceiptNumber = isPhysicalReceipt
+      ? formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo)
+      : receiptNumber.trim() || undefined;
+
     const finalTransNo = generateNextIncomeTransactionNo(transactionDate, incomes);
     const isApproved = autoApprove;
 
@@ -138,7 +155,10 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       reason: reason.trim() || `${incomeType} - जमा`,
       paymentMethod,
       paymentReference: paymentReference.trim() || undefined,
-      receiptNumber: receiptNumber.trim() || undefined,
+      receiptNumber: finalReceiptNumber,
+      receiptBookNo: isPhysicalReceipt ? receiptBookNo : undefined,
+      receiptSerialNo: isPhysicalReceipt ? receiptSerialNo : undefined,
+      isPhysicalReceipt,
       notes: notes.trim() || undefined,
       financialYear: getFinancialYearFromDate(transactionDate),
       approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
@@ -372,6 +392,114 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
             />
           </div>
 
+          {/* Physical Receipt Book Toggle */}
+          <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              नोंद प्रकार:
+            </span>
+            <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-lg border border-slate-200">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPhysicalReceipt(false);
+                  setPaymentMethod('UPI');
+                }}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                  !isPhysicalReceipt
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>⚡ डिजिटल नोंद</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPhysicalReceipt(true);
+                  setPaymentMethod('रोख');
+                  const nextSerial = getNextSerialForReceiptBook(receiptBookNo, incomes);
+                  setReceiptSerialNo(String(nextSerial));
+                }}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                  isPhysicalReceipt
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <BookOpen className="w-3 h-3" />
+                <span>📖 पावती पुस्तक</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Physical Receipt Book Fields */}
+          {isPhysicalReceipt && (
+            <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 rounded-xl border-2 border-amber-300 dark:border-amber-700 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                  <BookMarked className="w-4 h-4 text-amber-700" />
+                  <span>प्रत्यक्ष पावती पुस्तक तपशील</span>
+                </span>
+                <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-full">
+                  स्वयंचलित व्यवहार क्र: {autoTransNo}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-amber-900 mb-1">
+                    पावती पुस्तक क्र. (Book No.) *
+                  </label>
+                  <div className="flex gap-1 mb-1.5">
+                    {['1', '2', '3', '4', '5'].map((b) => (
+                      <button
+                        key={b}
+                        type="button"
+                        onClick={() => handleBookNoChange(b)}
+                        className={`flex-1 py-0.5 text-xs font-black rounded border transition-all cursor-pointer ${
+                          receiptBookNo === b
+                            ? 'bg-amber-600 text-white border-amber-700'
+                            : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-100'
+                        }`}
+                      >
+                        {b}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="text"
+                    value={receiptBookNo}
+                    onChange={(e) => handleBookNoChange(e.target.value)}
+                    placeholder="इतर पुस्तक क्र."
+                    className="w-full p-1.5 bg-white border border-amber-300 rounded text-xs font-bold text-slate-800 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-bold text-amber-900">
+                      पावती अनुक्रमांक *
+                    </label>
+                    <span className="text-[9px] text-amber-700 font-bold">
+                      पुढील: #{getNextSerialForReceiptBook(receiptBookNo, incomes)}
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    required={isPhysicalReceipt}
+                    value={receiptSerialNo}
+                    onChange={(e) => setReceiptSerialNo(e.target.value)}
+                    className="w-full p-2 bg-white border border-amber-300 rounded text-sm font-black text-amber-900 outline-none"
+                  />
+                  <p className="text-[10px] text-amber-800 mt-1 font-semibold">
+                    पावती: <strong>{formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo)}</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">पेमेंट पद्धत</label>
@@ -402,12 +530,19 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">पावती क्रमांक</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                {isPhysicalReceipt ? 'स्वयंचलित पावती संदर्भ' : 'पावती क्रमांक'}
+              </label>
               <input
                 type="text"
-                value={receiptNumber}
+                disabled={isPhysicalReceipt}
+                value={isPhysicalReceipt ? formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo) : receiptNumber}
                 onChange={(e) => setReceiptNumber(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none"
+                className={`w-full px-3 py-2 border rounded-xl text-sm font-medium focus:outline-none ${
+                  isPhysicalReceipt
+                    ? 'bg-amber-50 border-amber-300 font-bold text-amber-900 cursor-not-allowed'
+                    : 'border-slate-300 text-slate-800 focus:ring-2 focus:ring-emerald-500'
+                }`}
               />
             </div>
           </div>

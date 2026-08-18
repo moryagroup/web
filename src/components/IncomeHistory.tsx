@@ -24,6 +24,8 @@ import {
   Download,
   CheckCircle2,
   RefreshCw,
+  BookOpen,
+  BookMarked,
 } from 'lucide-react';
 import { NativeService } from '../services/nativeService';
 import { ProofLightboxModal } from './ProofLightboxModal';
@@ -58,6 +60,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   const [selectedDepositorType, setSelectedDepositorType] = useState('ALL');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('ALL');
   const [selectedMemberId, setSelectedMemberId] = useState('ALL');
+  const [selectedSource, setSelectedSource] = useState<'ALL' | 'PHYSICAL' | 'DIGITAL'>('ALL');
   const [selectedYear, setSelectedYear] = useState(financialYear);
   const [selectedIncomeDetail, setSelectedIncomeDetail] = useState<IncomeTransaction | null>(null);
   const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
@@ -72,8 +75,9 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     if (selectedDepositorType !== 'ALL') count++;
     if (selectedPaymentMethod !== 'ALL') count++;
     if (selectedMemberId !== 'ALL') count++;
+    if (selectedSource !== 'ALL') count++;
     return count;
-  }, [selectedYear, selectedType, selectedDepositorType, selectedPaymentMethod, selectedMemberId]);
+  }, [selectedYear, selectedType, selectedDepositorType, selectedPaymentMethod, selectedMemberId, selectedSource]);
 
   const handleResetFilters = () => {
     setSelectedYear('ALL');
@@ -81,6 +85,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     setSelectedDepositorType('ALL');
     setSelectedPaymentMethod('ALL');
     setSelectedMemberId('ALL');
+    setSelectedSource('ALL');
   };
 
   const handleProofClick = (url: string) => {
@@ -152,7 +157,9 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
         item.transactionNo.toLowerCase().includes(query) ||
         item.reason.toLowerCase().includes(query) ||
         (item.paymentReference && item.paymentReference.toLowerCase().includes(query)) ||
-        (item.receiptNumber && item.receiptNumber.toLowerCase().includes(query));
+        (item.receiptNumber && item.receiptNumber.toLowerCase().includes(query)) ||
+        (item.receiptBookNo && `पुस्तक ${item.receiptBookNo}`.toLowerCase().includes(query)) ||
+        (item.receiptSerialNo && `पावती ${item.receiptSerialNo}`.toLowerCase().includes(query));
 
       if (!matchSearch) return false;
       if (selectedType !== 'ALL' && item.incomeType !== selectedType) return false;
@@ -161,6 +168,8 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
       if (selectedPaymentMethod !== 'ALL' && item.paymentMethod !== selectedPaymentMethod)
         return false;
       if (selectedMemberId !== 'ALL' && item.linkedMemberId !== selectedMemberId) return false;
+      if (selectedSource === 'PHYSICAL' && !item.isPhysicalReceipt && !item.receiptBookNo) return false;
+      if (selectedSource === 'DIGITAL' && (item.isPhysicalReceipt || item.receiptBookNo)) return false;
 
       return true;
     });
@@ -171,6 +180,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     selectedDepositorType,
     selectedPaymentMethod,
     selectedMemberId,
+    selectedSource,
     selectedYear,
   ]);
 
@@ -391,6 +401,22 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                   <option value="चेक">चेक</option>
                 </select>
               </div>
+
+              {/* Source Filter */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">
+                  नोंद पद्धत (Source):
+                </label>
+                <select
+                  value={selectedSource}
+                  onChange={(e) => setSelectedSource(e.target.value as any)}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="ALL">सर्व नोंदी (All)</option>
+                  <option value="PHYSICAL">📖 पावती पुस्तक नोंदी</option>
+                  <option value="DIGITAL">⚡ थेट डिजिटल नोंदी</option>
+                </select>
+              </div>
             </div>
           </div>
         )}
@@ -442,7 +468,13 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                       })}
                     </td>
                     <td className="p-3.5 font-mono text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
-                      {item.transactionNo}
+                      <div>{item.transactionNo}</div>
+                      {(item.isPhysicalReceipt || item.receiptBookNo) && (
+                        <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded text-[9px] font-black mt-0.5 whitespace-nowrap">
+                          <BookOpen className="w-2.5 h-2.5" />
+                          <span>पु. #{item.receiptBookNo || '1'} / पा. #{item.receiptSerialNo || '1'}</span>
+                        </div>
+                      )}
                     </td>
                     <td className="p-3.5 font-bold text-slate-800 dark:text-slate-100">
                       <div>{item.depositorName}</div>
@@ -651,6 +683,54 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 </p>
               )}
             </div>
+
+            {/* Physical Receipt Book Info Box */}
+            {(selectedIncomeDetail.isPhysicalReceipt || selectedIncomeDetail.receiptBookNo) && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700 rounded-xl space-y-1">
+                <div className="flex items-center justify-between text-xs font-black text-amber-900 dark:text-amber-200">
+                  <span className="flex items-center gap-1.5">
+                    <BookMarked className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                    <span>प्रत्यक्ष पावती पुस्तक नोंद (Physical Receipt Book)</span>
+                  </span>
+                  <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-full">
+                    पुस्तक क्र: {selectedIncomeDetail.receiptBookNo || '1'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                  पावती अनुक्रमांक: <strong>#{selectedIncomeDetail.receiptSerialNo || '---'}</strong> | संदर्भ: <strong>{selectedIncomeDetail.receiptNumber}</strong>
+                </p>
+              </div>
+            )}
+
+            {/* Approval Action Bar for Pending Income (Treasurer / Admin) */}
+            {selectedIncomeDetail.approvalStatus === 'प्रलंबित' && canApprove && onApproveIncome && currentUser && (
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-300 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-amber-900">
+                    पावती नोंद मंजुरी अधिकार ({currentUser.role})
+                  </p>
+                  <p className="text-[10px] text-amber-700">
+                    पावती पुस्तकातील रकमेची खात्री करून मंजुरी द्या.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onApproveIncome(selectedIncomeDetail.id, currentUser.name, currentUser.role);
+                    setSelectedIncomeDetail({
+                      ...selectedIncomeDetail,
+                      approvalStatus: 'मंजूर',
+                      approvedBy: currentUser.name,
+                      approvedByRole: currentUser.role,
+                      approvedAt: new Date().toISOString(),
+                    });
+                  }}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95"
+                >
+                  ✓ मंजूर करा
+                </button>
+              </div>
+            )}
 
             {selectedIncomeDetail.attachmentUrl && (
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
