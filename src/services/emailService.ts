@@ -121,10 +121,10 @@ export function formatEmailReportContent(
 
   const subject = `[मोरया ग्रुप] दैनिक जमा-खर्च अहवाल (${metrics.todayStr}) - ${dateFormatted}`;
 
-  let body = `नमस्कार,\n\nमोरया ग्रुप मित्र मंडळ (ट्रस्ट) - दैनिक जमा व खर्च अहवाल\nदिनांक: ${dateFormatted} (${metrics.todayStr})\n\n`;
+  let body = `नमस्कार,\n\nमोरया ग्रुप मित्र मंडळ (ट्रस्ट) - दैनिक जमा व खर्च अहवाल\nदिनांक: ${dateFormatted} (${metrics.todayStr})\nस्थापना - २०११ | (रजि. नं. रजि. पुणे / ०००११२२/२०२३)\n\n`;
 
   body += `=========================================\n`;
-  body += `१. आजचा दैनिक जमा-खर्च (Daily Summary)\n`;
+  body += `१. आजचा दैनिक जमा-खर्च (दैनिक सारांश)\n`;
   body += `=========================================\n`;
   body += `• आजचा जमा: ₹${metrics.todayIncomeTotal.toLocaleString('en-IN')}\n`;
   body += `• आजचा खर्च: ₹${metrics.todayExpenseTotal.toLocaleString('en-IN')}\n`;

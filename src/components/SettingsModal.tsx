@@ -10,6 +10,7 @@ import {
   getViceTreasurerSignature,
   setViceTreasurerSignature,
   clearViceTreasurerSignature,
+  syncOfficerSignaturesFromOnline,
   OfficerSignature,
 } from '../services/signatureService';
 
@@ -47,6 +48,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [newType, setNewType] = useState<string>('');
   const [driveScriptUrl, setDriveScriptUrl] = useState<string>(() => getGoogleDriveScriptUrl());
   const [testStatus, setTestStatus] = useState<{ loading: boolean; success?: boolean; message?: string } | null>(null);
+  const [isSavingSig, setIsSavingSig] = useState<boolean>(false);
 
   // Signatures State
   const [treasurerSig, setTreasurerSigState] = useState<OfficerSignature | null>(() => getTreasurerSignature());
@@ -59,12 +61,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
   const isAdmin = isLoggedIn && hasAdminPermissions(currentUser.role);
-  const isOfficer = isAdmin || currentUser.role === 'खजिनदार' || currentUser.role === 'उपखजिनदार' || currentUser.role === 'अध्यक्ष' || currentUser.role === 'सचिव';
+  const isTreasurerOrVice = isLoggedIn && (
+    currentUser.role === 'खजिनदार' ||
+    currentUser.role === 'उपखजिनदार' ||
+    currentUser.role === 'admin' ||
+    currentUser.role === 'Admin'
+  );
 
   useEffect(() => {
     if (isOpen) {
-      setTreasurerSigState(getTreasurerSignature());
-      setViceTreasurerSigState(getViceTreasurerSignature());
+      syncOfficerSignaturesFromOnline().then((sigs) => {
+        setTreasurerSigState(sigs.treasurer);
+        setViceTreasurerSigState(sigs.viceTreasurer);
+        if (sigs.treasurer?.officerName) setTreasurerName(sigs.treasurer.officerName);
+        if (sigs.viceTreasurer?.officerName) setViceTreasurerName(sigs.viceTreasurer.officerName);
+      });
     }
   }, [isOpen]);
 
@@ -94,23 +105,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  const handleSignatureUpload = (
+  const handleSignatureUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     role: 'TREASURER' | 'VICE_TREASURER'
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setIsSavingSig(true);
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const dataUrl = reader.result as string;
       if (role === 'TREASURER') {
-        setTreasurerSignature(dataUrl, treasurerName);
+        await setTreasurerSignature(dataUrl, treasurerName);
         setTreasurerSigState(getTreasurerSignature());
       } else {
-        setViceTreasurerSignature(dataUrl, viceTreasurerName);
+        await setViceTreasurerSignature(dataUrl, viceTreasurerName);
         setViceTreasurerSigState(getViceTreasurerSignature());
       }
+      setIsSavingSig(false);
     };
     reader.readAsDataURL(file);
     e.target.value = '';
@@ -191,166 +204,175 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* Officer Signatures Section (Treasurer & Vice Treasurer) */}
-          <div className="space-y-3 pb-4 border-b border-slate-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <PenTool className="w-4 h-4 text-amber-600" />
-                <h4 className="font-bold text-slate-800">अधिकृत स्वाक्षरी व्यवस्थापन (Official Signatures)</h4>
+          {/* Officer Signatures Section (Treasurer & Vice Treasurer Only) */}
+          {isTreasurerOrVice && (
+            <div className="space-y-3 pb-4 border-b border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <PenTool className="w-4 h-4 text-amber-600" />
+                  <h4 className="font-bold text-slate-800">अधिकृत स्वाक्षरी व्यवस्थापन (Online Signatures)</h4>
+                </div>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  <span>सुरक्षित ऑनलाइन डेटाबेस</span>
+                </span>
               </div>
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                पावतीवर आपोआप दिसेल
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed">
-              खजिनदार व उपखजिनदार यांच्या स्वाक्षरीचे फोटो येथे अपलोड करा. प्रत्येक मंजूर पावती व व्हाऊचरवर ही स्वाक्षरी अधिकृतपणे दिसेल.
-            </p>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                खजिनदार व उपखजिनदार यांच्या स्वाक्षरीचे फोटो थेट क्लाऊड डेटाबेसमध्ये सुरक्षित सेव्ह होतात व सर्व मंजूर व्हाऊचर्सवर अधिकृतपणे दिसतात.
+              </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              {/* Treasurer Signature Card */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-black text-slate-800 text-xs">१. खजिनदार स्वाक्षरी</span>
-                  {treasurerSig ? (
-                    <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded">
-                      अपलोड झाली ✓
-                    </span>
-                  ) : (
-                    <span className="text-[9px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded">
-                      प्रलंबित
-                    </span>
-                  )}
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Treasurer Signature Card */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-slate-800 text-xs">१. खजिनदार स्वाक्षरी</span>
+                    {treasurerSig ? (
+                      <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded">
+                        ऑनलाइन जतन झाले ✓
+                      </span>
+                    ) : (
+                      <span className="text-[9px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded">
+                        प्रलंबित
+                      </span>
+                    )}
+                  </div>
 
-                <input
-                  type="text"
-                  value={treasurerName}
-                  onChange={(e) => {
-                    setTreasurerName(e.target.value);
-                    if (treasurerSig) setTreasurerSignature(treasurerSig.signatureDataUrl, e.target.value);
-                  }}
-                  placeholder="खजिनदाराचे पूर्ण नाव"
-                  className="w-full p-1.5 border border-slate-300 rounded text-[11px] font-semibold bg-white outline-none focus:ring-1 focus:ring-amber-500"
-                />
-
-                <div className="h-20 bg-white rounded border border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative">
-                  {treasurerSig?.signatureDataUrl ? (
-                    <img
-                      src={treasurerSig.signatureDataUrl}
-                      alt="Treasurer Signature"
-                      className="max-h-full object-contain p-1"
-                    />
-                  ) : (
-                    <span className="text-slate-400 text-[10px] italic">स्वाक्षरी फोटो उपलब्ध नाही</span>
-                  )}
-                </div>
-
-                <div className="flex gap-2">
                   <input
-                    type="file"
-                    ref={treasurerFileInputRef}
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleSignatureUpload(e, 'TREASURER')}
+                    type="text"
+                    value={treasurerName}
+                    onChange={async (e) => {
+                      setTreasurerName(e.target.value);
+                      if (treasurerSig) {
+                        await setTreasurerSignature(treasurerSig.signatureDataUrl, e.target.value);
+                      }
+                    }}
+                    placeholder="खजिनदाराचे पूर्ण नाव"
+                    className="w-full p-1.5 border border-slate-300 rounded text-[11px] font-semibold bg-white outline-none focus:ring-1 focus:ring-amber-500"
                   />
-                  <button
-                    type="button"
-                    onClick={() => treasurerFileInputRef.current?.click()}
-                    className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded text-[11px] flex items-center justify-center gap-1 cursor-pointer transition-colors"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>अपलोड करा</span>
-                  </button>
-                  {treasurerSig && (
+
+                  <div className="h-20 bg-white rounded border border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative">
+                    {treasurerSig?.signatureDataUrl ? (
+                      <img
+                        src={treasurerSig.signatureDataUrl}
+                        alt="Treasurer Signature"
+                        className="max-h-full object-contain p-1"
+                      />
+                    ) : (
+                      <span className="text-slate-400 text-[10px] italic">स्वाक्षरी फोटो उपलब्ध नाही</span>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      ref={treasurerFileInputRef}
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleSignatureUpload(e, 'TREASURER')}
+                    />
                     <button
                       type="button"
-                      onClick={() => {
-                        clearTreasurerSignature();
-                        setTreasurerSigState(null);
-                      }}
-                      className="p-1.5 text-rose-600 hover:bg-rose-50 rounded border border-rose-200 cursor-pointer"
-                      title="हटवा"
+                      disabled={isSavingSig}
+                      onClick={() => treasurerFileInputRef.current?.click()}
+                      className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded text-[11px] flex items-center justify-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{isSavingSig ? 'सेव्ह करत आहे...' : 'अपलोड करा'}</span>
                     </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Vice Treasurer Signature Card */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-black text-slate-800 text-xs">२. उपखजिनदार स्वाक्षरी</span>
-                  {viceTreasurerSig ? (
-                    <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded">
-                      अपलोड झाली ✓
-                    </span>
-                  ) : (
-                    <span className="text-[9px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded">
-                      प्रलंबित
-                    </span>
-                  )}
+                    {treasurerSig && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await clearTreasurerSignature();
+                          setTreasurerSigState(null);
+                        }}
+                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded border border-rose-200 cursor-pointer"
+                        title="हटवा"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <input
-                  type="text"
-                  value={viceTreasurerName}
-                  onChange={(e) => {
-                    setViceTreasurerName(e.target.value);
-                    if (viceTreasurerSig) setViceTreasurerSignature(viceTreasurerSig.signatureDataUrl, e.target.value);
-                  }}
-                  placeholder="उपखजिनदाराचे पूर्ण नाव"
-                  className="w-full p-1.5 border border-slate-300 rounded text-[11px] font-semibold bg-white outline-none focus:ring-1 focus:ring-amber-500"
-                />
+                {/* Vice Treasurer Signature Card */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-slate-800 text-xs">२. उपखजिनदार स्वाक्षरी</span>
+                    {viceTreasurerSig ? (
+                      <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded">
+                        ऑनलाइन जतन झाले ✓
+                      </span>
+                    ) : (
+                      <span className="text-[9px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded">
+                        प्रलंबित
+                      </span>
+                    )}
+                  </div>
 
-                <div className="h-20 bg-white rounded border border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative">
-                  {viceTreasurerSig?.signatureDataUrl ? (
-                    <img
-                      src={viceTreasurerSig.signatureDataUrl}
-                      alt="Vice Treasurer Signature"
-                      className="max-h-full object-contain p-1"
-                    />
-                  ) : (
-                    <span className="text-slate-400 text-[10px] italic">स्वाक्षरी फोटो उपलब्ध नाही</span>
-                  )}
-                </div>
-
-                <div className="flex gap-2">
                   <input
-                    type="file"
-                    ref={viceTreasurerFileInputRef}
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleSignatureUpload(e, 'VICE_TREASURER')}
+                    type="text"
+                    value={viceTreasurerName}
+                    onChange={async (e) => {
+                      setViceTreasurerName(e.target.value);
+                      if (viceTreasurerSig) {
+                        await setViceTreasurerSignature(viceTreasurerSig.signatureDataUrl, e.target.value);
+                      }
+                    }}
+                    placeholder="उपखजिनदाराचे पूर्ण नाव"
+                    className="w-full p-1.5 border border-slate-300 rounded text-[11px] font-semibold bg-white outline-none focus:ring-1 focus:ring-amber-500"
                   />
-                  <button
-                    type="button"
-                    onClick={() => viceTreasurerFileInputRef.current?.click()}
-                    className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded text-[11px] flex items-center justify-center gap-1 cursor-pointer transition-colors"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>अपलोड करा</span>
-                  </button>
-                  {viceTreasurerSig && (
+
+                  <div className="h-20 bg-white rounded border border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative">
+                    {viceTreasurerSig?.signatureDataUrl ? (
+                      <img
+                        src={viceTreasurerSig.signatureDataUrl}
+                        alt="Vice Treasurer Signature"
+                        className="max-h-full object-contain p-1"
+                      />
+                    ) : (
+                      <span className="text-slate-400 text-[10px] italic">स्वाक्षरी फोटो उपलब्ध नाही</span>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      ref={viceTreasurerFileInputRef}
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleSignatureUpload(e, 'VICE_TREASURER')}
+                    />
                     <button
                       type="button"
-                      onClick={() => {
-                        clearViceTreasurerSignature();
-                        setViceTreasurerSigState(null);
-                      }}
-                      className="p-1.5 text-rose-600 hover:bg-rose-50 rounded border border-rose-200 cursor-pointer"
-                      title="हटवा"
+                      disabled={isSavingSig}
+                      onClick={() => viceTreasurerFileInputRef.current?.click()}
+                      className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded text-[11px] flex items-center justify-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{isSavingSig ? 'सेव्ह करत आहे...' : 'अपलोड करा'}</span>
                     </button>
-                  )}
+                    {viceTreasurerSig && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await clearViceTreasurerSignature();
+                          setViceTreasurerSigState(null);
+                        }}
+                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded border border-rose-200 cursor-pointer"
+                        title="हटवा"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Google Drive & Email Configuration Section (Admin / Officers) */}
-          {isOfficer && (
+          {/* Google Drive & Email Configuration Section (Treasurer & Vice Treasurer Only) */}
+          {isTreasurerOrVice && (
             <div className="space-y-3 pb-4 border-b border-slate-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

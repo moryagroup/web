@@ -7,6 +7,7 @@
 import {
   collection,
   doc,
+  getDoc,
   setDoc,
   deleteDoc,
   onSnapshot,
@@ -283,6 +284,38 @@ export async function saveGroupLogo(url: string): Promise<void> {
 
 export async function saveCustomIncomeTypes(types: string[]): Promise<void> {
   await setDoc(doc(db, COLS.settings, 'customIncomeTypes'), { types, updatedAt: new Date().toISOString() });
+}
+
+export async function saveOfficerSignatureToFirestore(signature: {
+  role: 'खजिनदार' | 'उपखजिनदार' | 'अध्यक्ष' | 'सचिव';
+  officerName: string;
+  signatureDataUrl: string;
+  updatedAt: string;
+}): Promise<void> {
+  const docId = signature.role === 'खजिनदार' ? 'signature_treasurer' : 'signature_vice_treasurer';
+  await setDoc(doc(db, COLS.settings, docId), signature);
+}
+
+export async function deleteOfficerSignatureFromFirestore(role: 'खजिनदार' | 'उपखजिनदार'): Promise<void> {
+  const docId = role === 'खजिनदार' ? 'signature_treasurer' : 'signature_vice_treasurer';
+  await deleteDoc(doc(db, COLS.settings, docId));
+}
+
+export async function fetchOfficerSignaturesFromFirestore(): Promise<{
+  treasurer: any | null;
+  viceTreasurer: any | null;
+}> {
+  try {
+    const treasurerSnap = await getDoc(doc(db, COLS.settings, 'signature_treasurer'));
+    const viceTreasurerSnap = await getDoc(doc(db, COLS.settings, 'signature_vice_treasurer'));
+    return {
+      treasurer: treasurerSnap.exists() ? treasurerSnap.data() : null,
+      viceTreasurer: viceTreasurerSnap.exists() ? viceTreasurerSnap.data() : null,
+    };
+  } catch (err) {
+    console.warn('[Firestore] fetchOfficerSignatures error:', err);
+    return { treasurer: null, viceTreasurer: null };
+  }
 }
 
 export async function resetFirestoreToDemo(): Promise<void> {

@@ -532,6 +532,71 @@ export async function saveGroupLogoToSupabase(url: string): Promise<void> {
   }
 }
 
+// ─── Online Authorized Officer Signatures ──────────────────────────────────
+
+export async function fetchOfficerSignaturesFromSupabase(): Promise<{
+  treasurer: any | null;
+  viceTreasurer: any | null;
+}> {
+  if (!isSupabaseConfigured) return { treasurer: null, viceTreasurer: null };
+  try {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('key, value')
+      .in('key', ['signatures_treasurer', 'signatures_vice_treasurer']);
+
+    if (error || !data) return { treasurer: null, viceTreasurer: null };
+
+    let treasurer = null;
+    let viceTreasurer = null;
+
+    data.forEach((row) => {
+      if (row.key === 'signatures_treasurer' && row.value) {
+        treasurer = row.value;
+      } else if (row.key === 'signatures_vice_treasurer' && row.value) {
+        viceTreasurer = row.value;
+      }
+    });
+
+    return { treasurer, viceTreasurer };
+  } catch (err) {
+    console.warn('[Supabase] fetchOfficerSignatures error:', err);
+    return { treasurer: null, viceTreasurer: null };
+  }
+}
+
+export async function saveOfficerSignatureToSupabase(signature: {
+  role: 'खजिनदार' | 'उपखजिनदार' | 'अध्यक्ष' | 'सचिव';
+  officerName: string;
+  signatureDataUrl: string;
+  updatedAt: string;
+}): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    const key = signature.role === 'खजिनदार' ? 'signatures_treasurer' : 'signatures_vice_treasurer';
+    const row = {
+      key,
+      value: signature,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('settings').upsert(row);
+    if (error) console.error('[Supabase] saveOfficerSignature error:', error);
+  } catch (err) {
+    console.warn('[Supabase] saveOfficerSignatureToSupabase error:', err);
+  }
+}
+
+export async function deleteOfficerSignatureFromSupabase(role: 'खजिनदार' | 'उपखजिनदार'): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    const key = role === 'खजिनदार' ? 'signatures_treasurer' : 'signatures_vice_treasurer';
+    const { error } = await supabase.from('settings').delete().eq('key', key);
+    if (error) console.error('[Supabase] deleteOfficerSignature error:', error);
+  } catch (err) {
+    console.warn('[Supabase] deleteOfficerSignatureFromSupabase error:', err);
+  }
+}
+
 // ─── Event Gallery Table CRUD ──────────────────────────────────────────────
 
 export async function fetchGalleryFromSupabase(): Promise<EventGalleryImage[]> {

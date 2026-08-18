@@ -139,6 +139,7 @@ import {
 import { isSupabaseConfigured } from './services/supabaseClient';
 import { sendDailyEmailReport, isReportAlreadySentToday } from './services/emailService';
 import { dispatchApprovedTransaction } from './services/transactionDispatchService';
+import { syncOfficerSignaturesFromOnline } from './services/signatureService';
 import { Agentation } from 'agentation';
 
 import { Sidebar } from './components/Sidebar';
@@ -277,7 +278,10 @@ export default function App() {
     const loadSupabaseData = async () => {
       if (isSupabaseConfigured) {
         try {
-          await seedSupabaseIfEmpty();
+          await Promise.allSettled([
+            seedSupabaseIfEmpty(),
+            syncOfficerSignaturesFromOnline(),
+          ]);
           const [m, inc, exp, occ, logo, gal] = await Promise.all([
             fetchMembersFromSupabase(),
             fetchIncomesFromSupabase(),
