@@ -183,25 +183,26 @@ export function getTwoDigitYearFromDate(dateStr?: string): string {
 }
 
 /**
- * Generates next sequential Credit transaction number: CR-{YY}-{N} (e.g. CR-26-1)
- * Strictly follows entry sequence (newest entry gets maxSeq + 1) regardless of back-dating.
+ * Generates next sequential Credit transaction number: CR-2026-1, CR-2026-2, CR-2026-3 ...
+ * Permanent prefix: CR-2026-
+ * Strictly follows entry sequence regardless of back-dating.
  */
 export function generateNextIncomeTransactionNo(
   _dateStr?: string,
   existingIncomes?: { transactionDate?: string; transactionNo?: string; createdAt?: string }[]
 ): string {
-  // Always use current running year prefix (e.g. 26) as agreed
-  const currentYy = String(new Date().getFullYear()).slice(-2);
+  const PREFIX = 'CR-2026';
   if (!existingIncomes || existingIncomes.length === 0) {
-    return `CR-${currentYy}-1`;
+    return `${PREFIX}-1`;
   }
   let maxSeq = 0;
   existingIncomes.forEach((i) => {
     if (i.transactionNo) {
-      const match = i.transactionNo.match(/^(?:CR|MG)-?\d+-(\d+)$/i);
+      const match = i.transactionNo.match(/^(?:CR|MG)-?(?:2026|26)?-?(\d+)$/i);
       if (match) {
         const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num > maxSeq) {
+        // Only count valid sequential numbers under 1000 to filter out legacy random IDs
+        if (!isNaN(num) && num < 1000 && num > maxSeq) {
           maxSeq = num;
         }
       }
@@ -210,29 +211,30 @@ export function generateNextIncomeTransactionNo(
   if (maxSeq === 0) {
     maxSeq = existingIncomes.length;
   }
-  return `CR-${currentYy}-${maxSeq + 1}`;
+  return `${PREFIX}-${maxSeq + 1}`;
 }
 
 /**
- * Generates next sequential Debit transaction number: EXP-{YY}-{N} (e.g. EXP-26-1)
- * Strictly follows entry sequence (newest entry gets maxSeq + 1) regardless of back-dating.
+ * Generates next sequential Debit transaction number: EXP-2026-1, EXP-2026-2, EXP-2026-3 ...
+ * Permanent prefix: EXP-2026-
+ * Strictly follows entry sequence regardless of back-dating.
  */
 export function generateNextExpenseTransactionNo(
   _dateStr?: string,
   existingExpenses?: { expenseDate?: string; transactionNo?: string; createdAt?: string }[]
 ): string {
-  // Always use current running year prefix (e.g. 26) as agreed
-  const currentYy = String(new Date().getFullYear()).slice(-2);
+  const PREFIX = 'EXP-2026';
   if (!existingExpenses || existingExpenses.length === 0) {
-    return `EXP-${currentYy}-1`;
+    return `${PREFIX}-1`;
   }
   let maxSeq = 0;
   existingExpenses.forEach((e) => {
     if (e.transactionNo) {
-      const match = e.transactionNo.match(/^(?:EXP|DR)-?\d+-(\d+)$/i);
+      const match = e.transactionNo.match(/^(?:EXP|DR)-?(?:2026|26)?-?(\d+)$/i);
       if (match) {
         const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num > maxSeq) {
+        // Only count valid sequential numbers under 1000 to filter out legacy random IDs
+        if (!isNaN(num) && num < 1000 && num > maxSeq) {
           maxSeq = num;
         }
       }
@@ -241,46 +243,89 @@ export function generateNextExpenseTransactionNo(
   if (maxSeq === 0) {
     maxSeq = existingExpenses.length;
   }
-  return `EXP-${currentYy}-${maxSeq + 1}`;
+  return `${PREFIX}-${maxSeq + 1}`;
 }
 
 /**
- * Preserves existing sequential transaction numbers and assigns next sequential numbers for any missing ones based on creation order.
+ * Standardizes Income transaction numbers permanently as CR-2026-1, CR-2026-2, CR-2026-3 ...
+ * Normalizes legacy formats (CR-26-X, random IDs) into clean permanent CR-2026-N.
  */
 export function formatIncomeTransactionsNo<
   T extends { id: string; transactionNo?: string; transactionDate?: string; createdAt?: string }
 >(incomes: T[]): T[] {
   if (!Array.isArray(incomes) || incomes.length === 0) return incomes;
-  const currentYy = String(new Date().getFullYear()).slice(-2);
+  const PREFIX = 'CR-2026';
 
-  return incomes.map((item, index) => {
-    if (item.transactionNo && item.transactionNo.trim() !== '') {
-      return item;
-    }
-    return {
-      ...item,
-      transactionNo: `CR-${currentYy}-${index + 1}`,
-    };
+  // Sort chronological by creation / entry to maintain true sequential mapping
+  const chronological = [...incomes].sort((a, b) => {
+    const timeA = a.createdAt || a.transactionDate || '';
+    const timeB = b.createdAt || b.transactionDate || '';
+    if (timeA !== timeB) return timeA.localeCompare(timeB);
+    return a.id.localeCompare(b.id);
   });
+
+  const assignedMap = new Map<string, string>();
+  chronological.forEach((item, index) => {
+    if (item.transactionNo) {
+      const match = item.transactionNo.match(/^(?:CR|MG)-?(?:2026|26)?-?(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        // If it's already a clean small sequential number, preserve its number with standard prefix
+        if (!isNaN(num) && num < 1000) {
+          assignedMap.set(item.id, `${PREFIX}-${num}`);
+          return;
+        }
+      }
+    }
+    // Otherwise assign sequential 1, 2, 3 based on creation order
+    assignedMap.set(item.id, `${PREFIX}-${index + 1}`);
+  });
+
+  return incomes.map((item) => ({
+    ...item,
+    transactionNo: assignedMap.get(item.id) || item.transactionNo || `${PREFIX}-1`,
+  }));
 }
 
 /**
- * Preserves existing sequential transaction numbers and assigns next sequential numbers for any missing ones based on creation order.
+ * Standardizes Expense transaction numbers permanently as EXP-2026-1, EXP-2026-2, EXP-2026-3 ...
+ * Normalizes legacy formats (EXP-26-X, random 4-digit IDs) into clean permanent EXP-2026-N.
  */
 export function formatExpenseTransactionsNo<
   T extends { id: string; transactionNo?: string; expenseDate?: string; createdAt?: string }
 >(expenses: T[]): T[] {
   if (!Array.isArray(expenses) || expenses.length === 0) return expenses;
-  const currentYy = String(new Date().getFullYear()).slice(-2);
+  const PREFIX = 'EXP-2026';
 
-  return expenses.map((item, index) => {
-    if (item.transactionNo && item.transactionNo.trim() !== '') {
-      return item;
-    }
-    return {
-      ...item,
-      transactionNo: `EXP-${currentYy}-${index + 1}`,
-    };
+  // Sort chronological by creation / entry to maintain true sequential mapping
+  const chronological = [...expenses].sort((a, b) => {
+    const timeA = a.createdAt || a.expenseDate || '';
+    const timeB = b.createdAt || b.expenseDate || '';
+    if (timeA !== timeB) return timeA.localeCompare(timeB);
+    return a.id.localeCompare(b.id);
   });
+
+  const assignedMap = new Map<string, string>();
+  chronological.forEach((item, index) => {
+    if (item.transactionNo) {
+      const match = item.transactionNo.match(/^(?:EXP|DR)-?(?:2026|26)?-?(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        // If it's already a clean small sequential number, preserve its number with standard prefix
+        if (!isNaN(num) && num < 1000) {
+          assignedMap.set(item.id, `${PREFIX}-${num}`);
+          return;
+        }
+      }
+    }
+    // Otherwise assign sequential 1, 2, 3 based on creation order
+    assignedMap.set(item.id, `${PREFIX}-${index + 1}`);
+  });
+
+  return expenses.map((item) => ({
+    ...item,
+    transactionNo: assignedMap.get(item.id) || item.transactionNo || `${PREFIX}-1`,
+  }));
 }
+
 

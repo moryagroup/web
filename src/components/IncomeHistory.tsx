@@ -175,9 +175,9 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     });
 
     return [...result].sort((a, b) => {
-      // Sort by transaction sequence number descending (e.g. CR-26-15, CR-26-14, ...)
-      const matchA = (a.transactionNo || '').match(/^(?:CR|MG)-?\d+-(\d+)$/i);
-      const matchB = (b.transactionNo || '').match(/^(?:CR|MG)-?\d+-(\d+)$/i);
+      // Sort by transaction sequence number descending (e.g. CR-2026-15, CR-2026-14, ...)
+      const matchA = (a.transactionNo || '').match(/^(?:CR|MG)-?(?:2026|26)?-?(\d+)$/i);
+      const matchB = (b.transactionNo || '').match(/^(?:CR|MG)-?(?:2026|26)?-?(\d+)$/i);
       if (matchA && matchB) {
         const numA = parseInt(matchA[1], 10);
         const numB = parseInt(matchB[1], 10);

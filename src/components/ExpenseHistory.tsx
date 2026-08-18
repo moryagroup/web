@@ -167,9 +167,9 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
     });
 
     return [...result].sort((a, b) => {
-      // Sort by transaction sequence number descending (e.g. EXP-26-15, EXP-26-14, ...)
-      const matchA = (a.transactionNo || '').match(/^(?:EXP|DR)-?\d+-(\d+)$/i);
-      const matchB = (b.transactionNo || '').match(/^(?:EXP|DR)-?\d+-(\d+)$/i);
+      // Sort by transaction sequence number descending (e.g. EXP-2026-15, EXP-2026-14, ...)
+      const matchA = (a.transactionNo || '').match(/^(?:EXP|DR)-?(?:2026|26)?-?(\d+)$/i);
+      const matchB = (b.transactionNo || '').match(/^(?:EXP|DR)-?(?:2026|26)?-?(\d+)$/i);
       if (matchA && matchB) {
         const numA = parseInt(matchA[1], 10);
         const numB = parseInt(matchB[1], 10);
