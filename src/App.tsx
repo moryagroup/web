@@ -91,6 +91,7 @@ import {
   saveGalleryImage,
   deleteGalleryImage,
   saveSuggestion,
+  deleteSuggestion,
   saveGroupLogo as saveGroupLogoFirestore,
   saveCustomIncomeTypes,
   resetFirestoreToDemo,
@@ -109,6 +110,7 @@ import {
   cloudSaveGalleryImage,
   cloudDeleteGalleryImage,
   cloudSaveSuggestion,
+  cloudDeleteSuggestion,
   cloudSaveGroupLogo,
   cloudSaveCustomIncomeTypes,
   cloudClearAllTransactions,
@@ -257,9 +259,10 @@ export default function App() {
         }
       }),
       subscribeToSuggestions((data) => {
-        if (data && data.length > 0) {
-          setSuggestions(data);
-          saveSuggestions(data);
+        if (Array.isArray(data)) {
+          const clean = data.filter((s) => s && s.id !== 'sug-101' && s.id !== 'sug-102');
+          setSuggestions(clean);
+          saveSuggestions(clean);
         }
       }),
       subscribeToGroupLogo((logo) => {
@@ -370,7 +373,9 @@ export default function App() {
         saveEventGallery(cloudDb.gallery);
       }
       if (Array.isArray(cloudDb.suggestions)) {
-        setSuggestions(cloudDb.suggestions);
+        const clean = cloudDb.suggestions.filter((s) => s && s.id !== 'sug-101' && s.id !== 'sug-102');
+        setSuggestions(clean);
+        saveSuggestions(clean);
       }
       if (cloudDb.settings?.groupLogo && cloudDb.settings.groupLogo.trim() !== '') {
         setGroupLogo(cloudDb.settings.groupLogo);
@@ -450,6 +455,8 @@ export default function App() {
       saveSuggestions(updated);
       return updated;
     });
+    deleteSuggestion(id).catch(console.error);
+    cloudDeleteSuggestion(id).catch(console.error);
   };
 
   const handleUpdateGroupLogo = async (logoUrl: string) => {

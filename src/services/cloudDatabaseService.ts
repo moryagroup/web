@@ -64,6 +64,9 @@ export async function fetchCloudDatabase(): Promise<MoryaCloudDatabase> {
     }
 
     const parsed: MoryaCloudDatabase = JSON.parse(rawContent);
+    if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
+      parsed.suggestions = parsed.suggestions.filter((s) => s && s.id !== 'sug-101' && s.id !== 'sug-102');
+    }
 
     // Update local cache
     inMemoryCache = parsed;
@@ -317,8 +320,18 @@ export async function cloudSaveSuggestion(sug: MemberSuggestion): Promise<void> 
     createdAt: sug.createdAt || timestamp,
     updatedAt: timestamp,
   };
-  const filtered = (currentDb.suggestions || []).filter((s) => s.id !== sug.id);
+  const filtered = (currentDb.suggestions || []).filter((s) => s.id !== sug.id && s.id !== 'sug-101' && s.id !== 'sug-102');
   const updatedSuggestions = [updatedSuggestion, ...filtered];
+
+  await saveCloudDatabase({
+    ...currentDb,
+    suggestions: updatedSuggestions,
+  });
+}
+
+export async function cloudDeleteSuggestion(id: string): Promise<void> {
+  const currentDb = inMemoryCache || (await fetchCloudDatabase());
+  const updatedSuggestions = (currentDb.suggestions || []).filter((s) => s.id !== id && s.id !== 'sug-101' && s.id !== 'sug-102');
 
   await saveCloudDatabase({
     ...currentDb,

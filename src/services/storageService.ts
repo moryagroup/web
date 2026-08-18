@@ -29,6 +29,7 @@ export const STORAGE_KEYS = {
   INCOMES: 'morya_mandal_incomes_v2',
   EXPENSES: 'morya_mandal_expenses_v2',
   MEMBERS: 'morya_mandal_members_v2',
+  SUGGESTIONS: 'morya_mandal_suggestions_v2',
   CUSTOM_INCOME_TYPES: 'morya_mandal_custom_income_types_v2',
 };
 
@@ -120,8 +121,29 @@ export const saveGroupLogo = (logoUrl: string) => {
   }
 };
 
-export const getStoredSuggestions = (): MemberSuggestion[] => INITIAL_SUGGESTIONS;
-export const saveSuggestions = (_suggestions: MemberSuggestion[]) => {};
+export const getStoredSuggestions = (): MemberSuggestion[] => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.SUGGESTIONS);
+    if (data) {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((s: MemberSuggestion) => s.id !== 'sug-101' && s.id !== 'sug-102');
+      }
+    }
+    return [];
+  } catch {
+    return [];
+  }
+};
+
+export const saveSuggestions = (suggestions: MemberSuggestion[]) => {
+  try {
+    const clean = (suggestions || []).filter((s) => s.id !== 'sug-101' && s.id !== 'sug-102');
+    localStorage.setItem(STORAGE_KEYS.SUGGESTIONS, JSON.stringify(clean));
+  } catch (err) {
+    console.warn('Failed to save suggestions to localStorage:', err);
+  }
+};
 
 export const resetToDemoData = () => {
   localStorage.removeItem(STORAGE_KEYS.USER);

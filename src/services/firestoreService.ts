@@ -74,7 +74,6 @@ export async function seedAllCollections(): Promise<void> {
       seedIfEmpty(COLS.members, INITIAL_MEMBERS),
       seedIfEmpty(COLS.occasions, INITIAL_OCCASIONS),
       seedIfEmpty(COLS.gallery, INITIAL_EVENT_GALLERY),
-      seedIfEmpty(COLS.suggestions, INITIAL_SUGGESTIONS),
     ]);
   } catch (err) {
     console.warn('[Firestore] seedAllCollections error:', err);
@@ -158,7 +157,15 @@ export function subscribeToSuggestions(
   return onSnapshot(
     collection(db, COLS.suggestions),
     (snap) => {
-      const data = snap.docs.map((d) => d.data() as MemberSuggestion);
+      // Clean up legacy mock suggestions from Firestore if present
+      snap.docs.forEach((d) => {
+        if (d.id === 'sug-101' || d.id === 'sug-102') {
+          deleteDoc(d.ref).catch(() => {});
+        }
+      });
+      const data = snap.docs
+        .map((d) => d.data() as MemberSuggestion)
+        .filter((s) => s && s.id !== 'sug-101' && s.id !== 'sug-102');
       data.sort((a, b) => ((b.updatedAt || b.createdAt) > (a.updatedAt || a.createdAt) ? 1 : -1));
       callback(data);
     },
@@ -276,6 +283,10 @@ export async function saveSuggestion(sug: MemberSuggestion): Promise<void> {
     updatedAt: timestamp,
   };
   await setDoc(doc(db, COLS.suggestions, sug.id), payload);
+}
+
+export async function deleteSuggestion(id: string): Promise<void> {
+  await deleteDoc(doc(db, COLS.suggestions, id));
 }
 
 export async function saveGroupLogo(url: string): Promise<void> {
