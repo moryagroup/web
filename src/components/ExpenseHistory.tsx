@@ -143,7 +143,7 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
   }, [baseExpenses]);
 
   const filteredExpenses = useMemo(() => {
-    return baseExpenses.filter((item) => {
+    const result = baseExpenses.filter((item) => {
       if (selectedYear !== 'ALL' && !isDateInSelectedYear(item.expenseDate, selectedYear, item.financialYear)) return false;
 
       const query = searchTerm.toLowerCase();
@@ -164,6 +164,23 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
         return false;
 
       return true;
+    });
+
+    return [...result].sort((a, b) => {
+      // Sort by transaction sequence number descending (e.g. EXP-26-15, EXP-26-14, ...)
+      const matchA = (a.transactionNo || '').match(/^(?:EXP|DR)-?\d+-(\d+)$/i);
+      const matchB = (b.transactionNo || '').match(/^(?:EXP|DR)-?\d+-(\d+)$/i);
+      if (matchA && matchB) {
+        const numA = parseInt(matchA[1], 10);
+        const numB = parseInt(matchB[1], 10);
+        if (!isNaN(numA) && !isNaN(numB) && numA !== numB) {
+          return numB - numA;
+        }
+      }
+      const timeA = a.createdAt || '';
+      const timeB = b.createdAt || '';
+      if (timeA !== timeB) return timeB.localeCompare(timeA);
+      return b.id.localeCompare(a.id);
     });
   }, [
     baseExpenses,

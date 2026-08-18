@@ -147,7 +147,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   }, [baseIncomes]);
 
   const filteredIncomes = useMemo(() => {
-    return baseIncomes.filter((item) => {
+    const result = baseIncomes.filter((item) => {
       if (selectedYear !== 'ALL' && !isDateInSelectedYear(item.transactionDate, selectedYear, item.financialYear)) return false;
 
       const query = searchTerm.toLowerCase();
@@ -172,6 +172,23 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
       if (selectedSource === 'DIGITAL' && (item.isPhysicalReceipt || item.receiptBookNo)) return false;
 
       return true;
+    });
+
+    return [...result].sort((a, b) => {
+      // Sort by transaction sequence number descending (e.g. CR-26-15, CR-26-14, ...)
+      const matchA = (a.transactionNo || '').match(/^(?:CR|MG)-?\d+-(\d+)$/i);
+      const matchB = (b.transactionNo || '').match(/^(?:CR|MG)-?\d+-(\d+)$/i);
+      if (matchA && matchB) {
+        const numA = parseInt(matchA[1], 10);
+        const numB = parseInt(matchB[1], 10);
+        if (!isNaN(numA) && !isNaN(numB) && numA !== numB) {
+          return numB - numA;
+        }
+      }
+      const timeA = a.createdAt || '';
+      const timeB = b.createdAt || '';
+      if (timeA !== timeB) return timeB.localeCompare(timeA);
+      return b.id.localeCompare(a.id);
     });
   }, [
     baseIncomes,

@@ -184,159 +184,103 @@ export function getTwoDigitYearFromDate(dateStr?: string): string {
 
 /**
  * Generates next sequential Credit transaction number: CR-{YY}-{N} (e.g. CR-26-1)
+ * Strictly follows entry sequence (newest entry gets maxSeq + 1) regardless of back-dating.
  */
 export function generateNextIncomeTransactionNo(
-  dateStr?: string,
+  _dateStr?: string,
   existingIncomes?: { transactionDate?: string; transactionNo?: string; createdAt?: string }[]
 ): string {
-  const yy = getTwoDigitYearFromDate(dateStr);
+  // Always use current running year prefix (e.g. 26) as agreed
+  const currentYy = String(new Date().getFullYear()).slice(-2);
   if (!existingIncomes || existingIncomes.length === 0) {
-    return `CR-${yy}-1`;
+    return `CR-${currentYy}-1`;
   }
   let maxSeq = 0;
   existingIncomes.forEach((i) => {
-    const iYy = getTwoDigitYearFromDate(i.transactionDate || i.createdAt);
-    if (iYy === yy) {
-      if (i.transactionNo) {
-        const match = i.transactionNo.match(/^(?:CR|MG)-?\d+-(\d+)$/i);
-        if (match) {
-          const num = parseInt(match[1], 10);
-          if (!isNaN(num) && num < 1000 && num > maxSeq) {
-            maxSeq = num;
-          }
+    if (i.transactionNo) {
+      const match = i.transactionNo.match(/^(?:CR|MG)-?\d+-(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxSeq) {
+          maxSeq = num;
         }
       }
     }
   });
   if (maxSeq === 0) {
-    const yearCount = existingIncomes.filter(
-      (i) => getTwoDigitYearFromDate(i.transactionDate || i.createdAt) === yy
-    ).length;
-    maxSeq = yearCount;
+    maxSeq = existingIncomes.length;
   }
-  return `CR-${yy}-${maxSeq + 1}`;
+  return `CR-${currentYy}-${maxSeq + 1}`;
 }
 
 /**
  * Generates next sequential Debit transaction number: EXP-{YY}-{N} (e.g. EXP-26-1)
+ * Strictly follows entry sequence (newest entry gets maxSeq + 1) regardless of back-dating.
  */
 export function generateNextExpenseTransactionNo(
-  dateStr?: string,
+  _dateStr?: string,
   existingExpenses?: { expenseDate?: string; transactionNo?: string; createdAt?: string }[]
 ): string {
-  const yy = getTwoDigitYearFromDate(dateStr);
+  // Always use current running year prefix (e.g. 26) as agreed
+  const currentYy = String(new Date().getFullYear()).slice(-2);
   if (!existingExpenses || existingExpenses.length === 0) {
-    return `EXP-${yy}-1`;
+    return `EXP-${currentYy}-1`;
   }
   let maxSeq = 0;
   existingExpenses.forEach((e) => {
-    const eYy = getTwoDigitYearFromDate(e.expenseDate || e.createdAt);
-    if (eYy === yy) {
-      if (e.transactionNo) {
-        const match = e.transactionNo.match(/^(?:EXP|DR)-?\d+-(\d+)$/i);
-        if (match) {
-          const num = parseInt(match[1], 10);
-          if (!isNaN(num) && num < 1000 && num > maxSeq) {
-            maxSeq = num;
-          }
+    if (e.transactionNo) {
+      const match = e.transactionNo.match(/^(?:EXP|DR)-?\d+-(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxSeq) {
+          maxSeq = num;
         }
       }
     }
   });
   if (maxSeq === 0) {
-    const yearCount = existingExpenses.filter(
-      (e) => getTwoDigitYearFromDate(e.expenseDate || e.createdAt) === yy
-    ).length;
-    maxSeq = yearCount;
+    maxSeq = existingExpenses.length;
   }
-  return `EXP-${yy}-${maxSeq + 1}`;
+  return `EXP-${currentYy}-${maxSeq + 1}`;
 }
 
 /**
- * Formats a list of Income transactions so every transaction has a clean sequential CR-{YY}-{N} number.
+ * Preserves existing sequential transaction numbers and assigns next sequential numbers for any missing ones based on creation order.
  */
 export function formatIncomeTransactionsNo<
   T extends { id: string; transactionNo?: string; transactionDate?: string; createdAt?: string }
 >(incomes: T[]): T[] {
   if (!Array.isArray(incomes) || incomes.length === 0) return incomes;
+  const currentYy = String(new Date().getFullYear()).slice(-2);
 
-  const yearMap = new Map<string, T[]>();
-  incomes.forEach((item) => {
-    const yy = getTwoDigitYearFromDate(item.transactionDate || item.createdAt);
-    if (!yearMap.has(yy)) {
-      yearMap.set(yy, []);
+  return incomes.map((item, index) => {
+    if (item.transactionNo && item.transactionNo.trim() !== '') {
+      return item;
     }
-    yearMap.get(yy)!.push(item);
+    return {
+      ...item,
+      transactionNo: `CR-${currentYy}-${index + 1}`,
+    };
   });
-
-  const formattedMap = new Map<string, string>();
-
-  yearMap.forEach((group, yy) => {
-    const sortedGroup = [...group].sort((a, b) => {
-      const dateA = a.transactionDate || '';
-      const dateB = b.transactionDate || '';
-      if (dateA !== dateB) return dateA.localeCompare(dateB);
-      const timeA = a.createdAt || '';
-      const timeB = b.createdAt || '';
-      if (timeA !== timeB) return timeA.localeCompare(timeB);
-      return a.id.localeCompare(b.id);
-    });
-
-    sortedGroup.forEach((item, index) => {
-      formattedMap.set(item.id, `CR-${yy}-${index + 1}`);
-    });
-  });
-
-  return incomes.map((item) => ({
-    ...item,
-    transactionNo:
-      formattedMap.get(item.id) ||
-      item.transactionNo ||
-      `CR-${getTwoDigitYearFromDate(item.transactionDate)}-1`,
-  }));
 }
 
 /**
- * Formats a list of Expense transactions so every transaction has a clean sequential EXP-{YY}-{N} number.
+ * Preserves existing sequential transaction numbers and assigns next sequential numbers for any missing ones based on creation order.
  */
 export function formatExpenseTransactionsNo<
   T extends { id: string; transactionNo?: string; expenseDate?: string; createdAt?: string }
 >(expenses: T[]): T[] {
   if (!Array.isArray(expenses) || expenses.length === 0) return expenses;
+  const currentYy = String(new Date().getFullYear()).slice(-2);
 
-  const yearMap = new Map<string, T[]>();
-  expenses.forEach((item) => {
-    const yy = getTwoDigitYearFromDate(item.expenseDate || item.createdAt);
-    if (!yearMap.has(yy)) {
-      yearMap.set(yy, []);
+  return expenses.map((item, index) => {
+    if (item.transactionNo && item.transactionNo.trim() !== '') {
+      return item;
     }
-    yearMap.get(yy)!.push(item);
+    return {
+      ...item,
+      transactionNo: `EXP-${currentYy}-${index + 1}`,
+    };
   });
-
-  const formattedMap = new Map<string, string>();
-
-  yearMap.forEach((group, yy) => {
-    const sortedGroup = [...group].sort((a, b) => {
-      const dateA = a.expenseDate || '';
-      const dateB = b.expenseDate || '';
-      if (dateA !== dateB) return dateA.localeCompare(dateB);
-      const timeA = a.createdAt || '';
-      const timeB = b.createdAt || '';
-      if (timeA !== timeB) return timeA.localeCompare(timeB);
-      return a.id.localeCompare(b.id);
-    });
-
-    sortedGroup.forEach((item, index) => {
-      formattedMap.set(item.id, `EXP-${yy}-${index + 1}`);
-    });
-  });
-
-  return expenses.map((item) => ({
-    ...item,
-    transactionNo:
-      formattedMap.get(item.id) ||
-      item.transactionNo ||
-      `EXP-${getTwoDigitYearFromDate(item.expenseDate)}-1`,
-  }));
 }
 

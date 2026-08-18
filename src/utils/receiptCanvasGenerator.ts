@@ -58,6 +58,43 @@ export function formatMarathiDate(dateStr?: string): string {
 }
 
 /**
+ * Formats time from ISO or date string into Marathi 12-hour format
+ * e.g. "दुपारी ०१:२५" or "सकाळी १०:३०"
+ */
+export function formatMarathiTime(isoOrDateStr?: string): string {
+  if (!isoOrDateStr) return '';
+  try {
+    const d = new Date(isoOrDateStr);
+    if (isNaN(d.getTime())) return '';
+    let hours = d.getHours();
+    const minutes = d.getMinutes();
+    let period = 'सकाळी';
+    if (hours >= 12 && hours < 16) {
+      period = 'दुपारी';
+    } else if (hours >= 16 && hours < 20) {
+      period = 'संध्याकाळी';
+    } else if (hours >= 20 || hours < 6) {
+      period = 'रात्री';
+    }
+    const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+    const minStr = String(minutes).padStart(2, '0');
+    return `${period} ${toMarathiDigits(displayHour)}:${toMarathiDigits(minStr)}`;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Formats full Marathi Date with Time (e.g. १८/०८/२०२६ (दुपारी ०१:२५))
+ */
+export function formatMarathiDateTime(isoOrDateStr?: string): string {
+  if (!isoOrDateStr) return '---';
+  const dateFormatted = formatMarathiDate(isoOrDateStr);
+  const timeFormatted = formatMarathiTime(isoOrDateStr);
+  return timeFormatted ? `${dateFormatted} (${timeFormatted})` : dateFormatted;
+}
+
+/**
  * Formats a currency number in Marathi Devanagari INR style
  */
 function formatCurrencyMarathi(amount: number): string {
@@ -221,7 +258,7 @@ export async function generateReceiptImageCanvas(
   const badgeTitle = isIncome ? '★ अधिकृत जमा पावती ★' : '★ अधिकृत खर्च पावती / व्हाऊचर ★';
   ctx.fillText(badgeTitle, centerX, badgeY + 28);
 
-  // 4. Metadata Strip (Receipt No, Date in Marathi, Financial Year)
+  // 4. Metadata Strip (Receipt No, Approval Date & Time in Marathi, Financial Year)
   const metaY = badgeY + 54;
   const metaHeight = 48;
   ctx.fillStyle = '#FFF7ED';
@@ -242,15 +279,15 @@ export async function generateReceiptImageCanvas(
   const receiptNoStr = toMarathiDigits(rawReceiptNo);
   ctx.fillText(receiptNoStr, 170, metaY + 30);
 
-  // Center: Date in Marathi
-  const txnDateRaw = isIncome ? inc?.transactionDate : exp?.expenseDate;
-  const marathiDateStr = formatMarathiDate(txnDateRaw);
+  // Center: Approval Date & Time (Top Priority)
+  const approvalDateSource = transaction.approvedAt || transaction.createdAt;
+  const approvalDateTimeStr = formatMarathiDateTime(approvalDateSource);
   ctx.font = 'bold 16px "Noto Sans Devanagari", "Mukta", sans-serif';
   ctx.fillStyle = '#7C2D12';
-  ctx.fillText('दिनांक:', 550, metaY + 30);
+  ctx.fillText('मंजुरी दिनांक व वेळ:', 460, metaY + 30);
   ctx.fillStyle = '#0F172A';
-  ctx.font = 'bold 18px "Noto Sans Devanagari", "Mukta", sans-serif';
-  ctx.fillText(marathiDateStr, 615, metaY + 30);
+  ctx.font = 'bold 16px "Noto Sans Devanagari", "Mukta", sans-serif';
+  ctx.fillText(approvalDateTimeStr, 615, metaY + 30);
 
   // Right: Financial Year
   const finYearStr = toMarathiDigits(transaction.financialYear || '2026-2027');
@@ -285,16 +322,16 @@ export async function generateReceiptImageCanvas(
 
     ctx.font = isHighlight ? '900 23px "Noto Sans Devanagari", "Mukta", sans-serif' : '700 17px "Noto Sans Devanagari", "Mukta", sans-serif';
     ctx.fillStyle = isHighlight ? '#EA580C' : '#0F172A';
-    ctx.fillText(value, 300, currentY + 26);
+    ctx.fillText(value, 285, currentY + 26);
 
     if (secondaryLabel && secondaryValue) {
       ctx.font = 'bold 16px "Noto Sans Devanagari", "Mukta", sans-serif';
       ctx.fillStyle = '#475569';
-      ctx.fillText(secondaryLabel, 680, currentY + 26);
+      ctx.fillText(secondaryLabel, 660, currentY + 26);
 
       ctx.font = '700 17px "Noto Sans Devanagari", "Mukta", sans-serif';
       ctx.fillStyle = '#0F172A';
-      ctx.fillText(secondaryValue, 820, currentY + 26);
+      ctx.fillText(secondaryValue, 805, currentY + 26);
     }
 
     currentY += rowHeight + 6;
@@ -312,10 +349,13 @@ export async function generateReceiptImageCanvas(
   const categoryValue = isIncome ? (inc?.incomeType || 'सभासद वर्गणी') : (exp?.expenseCategory || 'इतर');
   drawDetailRow(categoryLabel, categoryValue, false, 'तपशील / कारण:', transaction.reason || 'मंडळ कामकाज');
 
-  // Row 3: Payment Method
+  // Row 3: Transaction Occurrence Date & Entry Time, and Payment Method
+  const txnDateRaw = isIncome ? inc?.transactionDate : exp?.expenseDate;
+  const entryTimeStr = formatMarathiTime(transaction.createdAt);
+  const txnDateDisplay = formatMarathiDate(txnDateRaw) + (entryTimeStr ? ` (नोंद: ${entryTimeStr})` : '');
   const paymentRefStr = transaction.paymentReference ? `(संदर्भ: ${toMarathiDigits(transaction.paymentReference)})` : '';
   const paymentDetailStr = `${transaction.paymentMethod || 'रोख'} ${paymentRefStr}`.trim();
-  drawDetailRow('पेमेंट पद्धत / संदर्भ:', paymentDetailStr);
+  drawDetailRow('व्यवहार / प्रत्यक्ष तारीख:', txnDateDisplay, false, 'पेमेंट पद्धत:', paymentDetailStr);
 
   // Row 4: Total Amount (Vibrant Highlight)
   drawDetailRow('एकूण रक्कम:', formatCurrencyMarathi(transaction.amount), true);
@@ -324,9 +364,8 @@ export async function generateReceiptImageCanvas(
   const approverStr = transaction.approvedBy
     ? `मंजूर (${transaction.approvedBy})`
     : 'मंजूर';
-  const entryMakerStr = transaction.createdBy || 'कार्यकर्ता / ॲडमिन';
-
-  drawDetailRow('मंजुरी दर्जा:', approverStr, false, 'नोंदणीकर्ता (Entry By):', entryMakerStr);
+  const entryMakerStr = transaction.createdBy || 'कार्यकर्ता';
+  drawDetailRow('मंजुरी दर्जा:', approverStr, false, 'नोंदणीकर्ता:', entryMakerStr);
 
   // Row 6 (Optional): Physical Receipt Book or Payment Proof Reference
   if (isIncome && (inc?.isPhysicalReceipt || inc?.receiptBookNo)) {

@@ -6,7 +6,7 @@
  */
 
 import { IncomeTransaction, ExpenseTransaction } from '../types';
-import { generateReceiptImageCanvas, formatMarathiDate, toMarathiDigits } from '../utils/receiptCanvasGenerator';
+import { generateReceiptImageCanvas, formatMarathiDate, formatMarathiDateTime, formatMarathiTime, toMarathiDigits } from '../utils/receiptCanvasGenerator';
 import { uploadAndEmailTransactionReceipt, TARGET_EMAIL } from './googleDriveService';
 
 export interface DispatchResult {
@@ -29,7 +29,10 @@ function buildTransactionEmailHtml(
   const exp = !isIncome ? (txn as ExpenseTransaction) : null;
 
   const dateStr = isIncome ? inc?.transactionDate : exp?.expenseDate;
-  const marathiDateStr = formatMarathiDate(dateStr);
+  const entryTimeStr = formatMarathiTime(txn.createdAt);
+  const txnDateDisplay = formatMarathiDate(dateStr) + (entryTimeStr ? ` (नोंद वेळ: ${entryTimeStr})` : '');
+  const approvalDateTimeStr = formatMarathiDateTime(txn.approvedAt || txn.createdAt);
+
   const rawReceiptNo = inc?.receiptNumber ? `#${inc.receiptNumber}` : txn.transactionNo;
   const receiptNo = toMarathiDigits(rawReceiptNo);
   const typeText = isIncome ? 'जमा पावती' : 'खर्च व्हाऊचर';
@@ -58,8 +61,12 @@ function buildTransactionEmailHtml(
             <td style="padding: 10px; font-weight: 900; color: #0f172a;">${receiptNo}</td>
           </tr>
           <tr style="border-bottom: 1px solid #fed7aa;">
-            <td style="padding: 10px; font-weight: bold; color: #7c2d12;">दिनांक:</td>
-            <td style="padding: 10px;">${marathiDateStr} (आर्थिक वर्ष: ${toMarathiDigits(txn.financialYear || '2026-2027')})</td>
+            <td style="padding: 10px; font-weight: bold; color: #7c2d12;">मंजुरी दिनांक व वेळ:</td>
+            <td style="padding: 10px; font-weight: bold; color: #0f172a;">${approvalDateTimeStr} (आर्थिक वर्ष: ${toMarathiDigits(txn.financialYear || '2026-2027')})</td>
+          </tr>
+          <tr style="background: #fff7ed; border-bottom: 1px solid #fed7aa;">
+            <td style="padding: 10px; font-weight: bold; color: #7c2d12;">व्यवहार / प्रत्यक्ष तारीख:</td>
+            <td style="padding: 10px;">${txnDateDisplay}</td>
           </tr>
           <tr style="background: #fff7ed; border-bottom: 1px solid #fed7aa;">
             <td style="padding: 10px; font-weight: bold; color: #7c2d12;">${isIncome ? 'जमादार / देणगीदाराचे नाव:' : 'स्वीकारणाऱ्याचे नाव:'}</td>
