@@ -97,6 +97,10 @@ export const StatementExportView: React.FC<StatementExportViewProps> = ({
 
     if (transactionType === 'ALL' || transactionType === 'INCOME') {
       inc.forEach((i) => {
+        const paymentDisplay = i.paymentMethod === 'रोख' && i.cashReceiverName
+          ? `रोख (स्वीकारक: ${i.cashReceiverName})`
+          : i.paymentMethod;
+
         unifiedList.push({
           id: i.id,
           dateStr: i.transactionDate,
@@ -105,7 +109,7 @@ export const StatementExportView: React.FC<StatementExportViewProps> = ({
           reason: i.reason || i.incomeType,
           amount: i.amount,
           personName: i.depositorName,
-          paymentMethod: i.paymentMethod,
+          paymentMethod: paymentDisplay,
           receiptNumber: i.receiptNumber,
         });
       });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, Plus, User, Info, CheckCircle, BookOpen, BookMarked } from 'lucide-react';
 import { getFinancialYearFromDate, generateNextIncomeTransactionNo } from '../utils/dateUtils';
 import { getNextSerialForReceiptBook, formatPhysicalReceiptNumber } from '../utils/physicalReceiptUtils';
@@ -41,6 +41,13 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
   const todayStr = new Date().toISOString().split('T')[0];
   const autoTransNo = generateNextIncomeTransactionNo(todayStr, incomes);
 
+  const currentLoggedInMember = useMemo(() => {
+    if (!currentUser?.name) return null;
+    return members.find(
+      (m) => m.fullName.trim().toLowerCase() === currentUser.name.trim().toLowerCase()
+    );
+  }, [members, currentUser]);
+
   const [isPhysicalReceipt, setIsPhysicalReceipt] = useState<boolean>(false);
   const [receiptBookNo, setReceiptBookNo] = useState<string>('1');
   const [receiptSerialNo, setReceiptSerialNo] = useState<string>(() =>
@@ -58,6 +65,8 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
   const [occasionId, setOccasionId] = useState<string>(occasions[0]?.id || '');
   const [reason, setReason] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
+  const [cashReceiverMemberId, setCashReceiverMemberId] = useState<string>('');
+  const [cashReceiverName, setCashReceiverName] = useState<string>('');
   const [paymentReference, setPaymentReference] = useState<string>('');
   const [receiptNumber, setReceiptNumber] = useState<string>(
     `RCP-${Math.floor(1000 + Math.random() * 9000)}`
@@ -65,6 +74,19 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [financialYear, setFinancialYear] = useState<string>('2026-2027');
   const [autoApprove, setAutoApprove] = useState<boolean>(false);
+
+  // Default cash receiver
+  useEffect(() => {
+    if (!cashReceiverMemberId && members.length > 0) {
+      if (currentLoggedInMember) {
+        setCashReceiverMemberId(currentLoggedInMember.id);
+        setCashReceiverName(currentLoggedInMember.fullName);
+      } else {
+        setCashReceiverMemberId(members[0].id);
+        setCashReceiverName(members[0].fullName);
+      }
+    }
+  }, [members, currentLoggedInMember, cashReceiverMemberId]);
 
   const handleBookNoChange = (newBookNo: string) => {
     setReceiptBookNo(newBookNo);
@@ -118,6 +140,11 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       return;
     }
 
+    if (paymentMethod === 'रोख' && !cashReceiverMemberId) {
+      alert('कृपया रोख रक्कम स्वीकारणारा सभासद निवडा.');
+      return;
+    }
+
     const finalName =
       depositorType === 'अज्ञात / नाव न सांगणारे'
         ? 'अज्ञात देणगीदार'
@@ -125,6 +152,8 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
 
     const selectedMemberObj = members.find((m) => m.id === linkedMemberId);
     const selectedOccasionObj = occasions.find((o) => o.id === occasionId);
+    const selectedCashReceiverObj = members.find((m) => m.id === cashReceiverMemberId);
+    const finalCashReceiverName = selectedCashReceiverObj ? selectedCashReceiverObj.fullName : (cashReceiverName || undefined);
 
     const now = new Date();
     const formattedCreatedAt = `${now.toISOString().split('T')[0]} ${now
@@ -154,6 +183,8 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       occasionName: selectedOccasionObj ? selectedOccasionObj.name : undefined,
       reason: reason.trim() || `${incomeType} - जमा`,
       paymentMethod,
+      cashReceiverMemberId: paymentMethod === 'रोख' ? cashReceiverMemberId : undefined,
+      cashReceiverName: paymentMethod === 'रोख' ? finalCashReceiverName : undefined,
       paymentReference: paymentReference.trim() || undefined,
       receiptNumber: finalReceiptNumber,
       receiptBookNo: isPhysicalReceipt ? receiptBookNo : undefined,
@@ -546,6 +577,38 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
               />
             </div>
           </div>
+
+          {/* Conditional Cash Receiver Selection for Cash Deposits */}
+          {paymentMethod === 'रोख' && (
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-300 dark:border-emerald-700 rounded-xl space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase">
+                  💵 रोख रक्कम स्वीकारणारा सभासद <span className="text-rose-500">*</span>
+                </label>
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
+                  नोंदणीकृत सभासद
+                </span>
+              </div>
+              <select
+                required={paymentMethod === 'रोख'}
+                value={cashReceiverMemberId}
+                onChange={(e) => {
+                  const mId = e.target.value;
+                  setCashReceiverMemberId(mId);
+                  const mem = members.find((m) => m.id === mId);
+                  if (mem) setCashReceiverName(mem.fullName);
+                }}
+                className="w-full p-2 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-600 rounded-lg text-sm font-black text-emerald-950 dark:text-emerald-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer"
+              >
+                <option value="" disabled>-- रोख स्वीकारणारा सभासद निवडा --</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.memberCode} - {m.fullName} {m.designation ? `(${m.designation})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
             <button

@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS public.incomes (
     amount NUMERIC NOT NULL,
     transaction_date TEXT NOT NULL,
     payment_method TEXT NOT NULL,
+    cash_receiver_id TEXT,
+    cash_receiver_name TEXT,
     payment_reference TEXT,
     receipt_number TEXT,
     reason TEXT NOT NULL,
@@ -42,6 +44,10 @@ CREATE TABLE IF NOT EXISTS public.incomes (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Migration helpers if table already exists
+ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS cash_receiver_id TEXT;
+ALTER TABLE public.incomes ADD COLUMN IF NOT EXISTS cash_receiver_name TEXT;
 
 -- 3. Expense Transactions Table
 CREATE TABLE IF NOT EXISTS public.expenses (

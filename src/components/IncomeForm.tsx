@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   IncomeTransaction,
   DepositorType,
@@ -60,6 +60,13 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
 
   const allIncomeTypes = Array.from(new Set([...defaultIncomeTypes, ...customTypes]));
 
+  const currentLoggedInMember = useMemo(() => {
+    if (!currentUser?.name) return null;
+    return members.find(
+      (m) => m.fullName.trim().toLowerCase() === currentUser.name.trim().toLowerCase()
+    );
+  }, [members, currentUser]);
+
   // Form states
   const [isPhysicalReceipt, setIsPhysicalReceipt] = useState<boolean>(false);
   const [receiptBookNo, setReceiptBookNo] = useState<string>('1');
@@ -78,6 +85,8 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
   const [occasionId, setOccasionId] = useState<string>(occasions[0]?.id || '');
   const [reason, setReason] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
+  const [cashReceiverMemberId, setCashReceiverMemberId] = useState<string>('');
+  const [cashReceiverName, setCashReceiverName] = useState<string>('');
   const [paymentReference, setPaymentReference] = useState<string>('');
   const [receiptNumber, setReceiptNumber] = useState<string>('');
   const [attachmentUrl, setAttachmentUrl] = useState<string>('');
@@ -85,6 +94,19 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
   const [autoApprove, setAutoApprove] = useState<boolean>(false);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+
+  // Default cash receiver to logged-in user or first member
+  useEffect(() => {
+    if (!cashReceiverMemberId && members.length > 0) {
+      if (currentLoggedInMember) {
+        setCashReceiverMemberId(currentLoggedInMember.id);
+        setCashReceiverName(currentLoggedInMember.fullName);
+      } else {
+        setCashReceiverMemberId(members[0].id);
+        setCashReceiverName(members[0].fullName);
+      }
+    }
+  }, [members, currentLoggedInMember, cashReceiverMemberId]);
 
   // Handle Receipt Book No change
   const handleBookNoChange = (newBookNo: string) => {
@@ -180,6 +202,14 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       }
     }
 
+    if (paymentMethod === 'रोख' && !cashReceiverMemberId) {
+      setErrorMessage('कृपया रोख रक्कम स्वीकारणारा सभासद निवडा.');
+      return;
+    }
+
+    const selectedCashReceiverObj = members.find((m) => m.id === cashReceiverMemberId);
+    const finalCashReceiverName = selectedCashReceiverObj ? selectedCashReceiverObj.fullName : (cashReceiverName || undefined);
+
     const selectedOccasion = occasions.find((o) => o.id === occasionId);
     const transactionNo = generateNextIncomeTransactionNo(transactionDate, incomes);
 
@@ -203,6 +233,8 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       occasionName: selectedOccasion?.name,
       reason: reason.trim() || `${incomeType} - जमा`,
       paymentMethod,
+      cashReceiverMemberId: paymentMethod === 'रोख' ? cashReceiverMemberId : undefined,
+      cashReceiverName: paymentMethod === 'रोख' ? finalCashReceiverName : undefined,
       paymentReference: paymentReference.trim() || undefined,
       receiptNumber: finalReceiptNumber,
       receiptBookNo: isPhysicalReceipt ? receiptBookNo : undefined,
@@ -231,6 +263,13 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       setReceiptNumber('');
       setAttachmentUrl('');
       setNotes('');
+      if (currentLoggedInMember) {
+        setCashReceiverMemberId(currentLoggedInMember.id);
+        setCashReceiverName(currentLoggedInMember.fullName);
+      } else if (members.length > 0) {
+        setCashReceiverMemberId(members[0].id);
+        setCashReceiverName(members[0].fullName);
+      }
       if (onSuccessNavigate) {
         onSuccessNavigate();
       }
@@ -636,6 +675,42 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
               />
             </div>
           </div>
+
+          {/* Conditional Cash Receiver Selection when Payment Method is Cash ('रोख') */}
+          {paymentMethod === 'रोख' && (
+            <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-300 dark:border-emerald-700 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase flex items-center gap-1.5">
+                  <span>💵 रोख रक्कम कोणाकडे जमा झाली? (Cash Received By)</span>
+                  <span className="text-rose-500">*</span>
+                </label>
+                <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">
+                  नोंदणीकृत सभासद निवडा
+                </span>
+              </div>
+              <select
+                required={paymentMethod === 'रोख'}
+                value={cashReceiverMemberId}
+                onChange={(e) => {
+                  const mId = e.target.value;
+                  setCashReceiverMemberId(mId);
+                  const mem = members.find((m) => m.id === mId);
+                  if (mem) setCashReceiverName(mem.fullName);
+                }}
+                className="w-full p-2.5 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-600 rounded-lg text-sm font-black text-emerald-950 dark:text-emerald-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer"
+              >
+                <option value="" disabled>-- रोख स्वीकारणारा सभासद निवडा --</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.memberCode} - {m.fullName} {m.designation ? `(${m.designation})` : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-emerald-800 dark:text-emerald-300">
+                ही रोख रक्कम {cashReceiverName ? <strong className="text-emerald-950 dark:text-white underline">{cashReceiverName}</strong> : 'निवडलेल्या सभासदाकडे'} प्रत्यक्ष जमा राहील व हिशोबात दिसेल.
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

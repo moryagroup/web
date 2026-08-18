@@ -149,6 +149,8 @@ export interface IncomeTransaction {
   occasionName?: string;
   reason: string;
   paymentMethod: PaymentMethod;
+  cashReceiverMemberId?: string; // ID of member who received cash (when paymentMethod is 'रोख')
+  cashReceiverName?: string; // Name of member who received cash
   paymentReference?: string; // UPI ID, Bank Ref, Cheque No
   receiptNumber?: string;
   receiptBookNo?: string; // e.g. "1", "2", "3" (पावती पुस्तक क्र.)

@@ -60,6 +60,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   const [selectedDepositorType, setSelectedDepositorType] = useState('ALL');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('ALL');
   const [selectedMemberId, setSelectedMemberId] = useState('ALL');
+  const [selectedCashReceiverId, setSelectedCashReceiverId] = useState('ALL');
   const [selectedSource, setSelectedSource] = useState<'ALL' | 'PHYSICAL' | 'DIGITAL'>('ALL');
   const [selectedYear, setSelectedYear] = useState(financialYear);
   const [selectedIncomeDetail, setSelectedIncomeDetail] = useState<IncomeTransaction | null>(null);
@@ -75,9 +76,10 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     if (selectedDepositorType !== 'ALL') count++;
     if (selectedPaymentMethod !== 'ALL') count++;
     if (selectedMemberId !== 'ALL') count++;
+    if (selectedCashReceiverId !== 'ALL') count++;
     if (selectedSource !== 'ALL') count++;
     return count;
-  }, [selectedYear, selectedType, selectedDepositorType, selectedPaymentMethod, selectedMemberId, selectedSource]);
+  }, [selectedYear, selectedType, selectedDepositorType, selectedPaymentMethod, selectedMemberId, selectedCashReceiverId, selectedSource]);
 
   const handleResetFilters = () => {
     setSelectedYear('ALL');
@@ -85,6 +87,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     setSelectedDepositorType('ALL');
     setSelectedPaymentMethod('ALL');
     setSelectedMemberId('ALL');
+    setSelectedCashReceiverId('ALL');
     setSelectedSource('ALL');
   };
 
@@ -134,9 +137,10 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     const userNameNorm = (currentUser?.name || '').trim().toLowerCase();
     return incomes.filter((i) => {
       const isLinkedMember = currentMember && i.linkedMemberId === currentMember.id;
+      const isCashReceiver = currentMember && i.cashReceiverMemberId === currentMember.id;
       const isDepositor = (i.depositorName || '').trim().toLowerCase().includes(userNameNorm);
       const isCreator = (i.createdBy || '').trim().toLowerCase().includes(userNameNorm);
-      return isLinkedMember || isDepositor || isCreator;
+      return isLinkedMember || isCashReceiver || isDepositor || isCreator;
     });
   }, [incomes, canViewAll, currentMember, currentUser]);
 
@@ -145,6 +149,49 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     baseIncomes.forEach((i) => types.add(i.incomeType));
     return Array.from(types);
   }, [baseIncomes]);
+
+  // Dynamic cash summary calculation across relevant records
+  const cashSummary = useMemo(() => {
+    const yearFiltered = baseIncomes.filter((item) => {
+      if (selectedYear !== 'ALL' && !isDateInSelectedYear(item.transactionDate, selectedYear, item.financialYear)) return false;
+      return true;
+    });
+
+    const cashOnlyIncomes = yearFiltered.filter((i) => i.paymentMethod === 'रोख');
+    const totalCashAmount = cashOnlyIncomes.reduce((sum, i) => sum + i.amount, 0);
+
+    const memberCashMap: Record<string, { memberId: string; name: string; totalCash: number; count: number }> = {};
+    let unassignedCash = 0;
+    let unassignedCount = 0;
+
+    cashOnlyIncomes.forEach((i) => {
+      if (i.cashReceiverMemberId) {
+        if (!memberCashMap[i.cashReceiverMemberId]) {
+          memberCashMap[i.cashReceiverMemberId] = {
+            memberId: i.cashReceiverMemberId,
+            name: i.cashReceiverName || 'अज्ञात सभासद',
+            totalCash: 0,
+            count: 0,
+          };
+        }
+        memberCashMap[i.cashReceiverMemberId].totalCash += i.amount;
+        memberCashMap[i.cashReceiverMemberId].count += 1;
+      } else {
+        unassignedCash += i.amount;
+        unassignedCount += 1;
+      }
+    });
+
+    const memberCashList = Object.values(memberCashMap).sort((a, b) => b.totalCash - a.totalCash);
+
+    return {
+      totalCashAmount,
+      cashCount: cashOnlyIncomes.length,
+      memberCashList,
+      unassignedCash,
+      unassignedCount,
+    };
+  }, [baseIncomes, selectedYear]);
 
   const filteredIncomes = useMemo(() => {
     const result = baseIncomes.filter((item) => {
@@ -156,6 +203,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
         item.depositorName.toLowerCase().includes(query) ||
         item.transactionNo.toLowerCase().includes(query) ||
         item.reason.toLowerCase().includes(query) ||
+        (item.cashReceiverName && item.cashReceiverName.toLowerCase().includes(query)) ||
         (item.paymentReference && item.paymentReference.toLowerCase().includes(query)) ||
         (item.receiptNumber && item.receiptNumber.toLowerCase().includes(query)) ||
         (item.receiptBookNo && `पुस्तक ${item.receiptBookNo}`.toLowerCase().includes(query)) ||
@@ -168,6 +216,13 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
       if (selectedPaymentMethod !== 'ALL' && item.paymentMethod !== selectedPaymentMethod)
         return false;
       if (selectedMemberId !== 'ALL' && item.linkedMemberId !== selectedMemberId) return false;
+      if (selectedCashReceiverId !== 'ALL') {
+        if (selectedCashReceiverId === 'UNSPECIFIED') {
+          if (item.paymentMethod === 'रोख' && item.cashReceiverMemberId) return false;
+        } else {
+          if (item.cashReceiverMemberId !== selectedCashReceiverId) return false;
+        }
+      }
       if (selectedSource === 'PHYSICAL' && !item.isPhysicalReceipt && !item.receiptBookNo) return false;
       if (selectedSource === 'DIGITAL' && (item.isPhysicalReceipt || item.receiptBookNo)) return false;
 
@@ -197,6 +252,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     selectedDepositorType,
     selectedPaymentMethod,
     selectedMemberId,
+    selectedCashReceiverId,
     selectedSource,
     selectedYear,
   ]);
@@ -248,6 +304,120 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
           <span>
             वैयक्तिक जमा हिशोब: आपण केवळ आपल्या स्वतःच्या जमा व वर्गणी नोंदी पाहत आहात. मंडळाचा सर्व जमा हिशोब केवळ पदाधिकाऱ्यांसाठी उपलब्ध आहे.
           </span>
+        </div>
+      )}
+
+      {/* Cash Collection Summary & Member Breakdown Card */}
+      {cashSummary.totalCashAmount > 0 && (
+        <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-950/40 dark:via-slate-800 dark:to-emerald-950/40 p-4 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 shadow-sm space-y-3">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-emerald-200/70 dark:border-emerald-800 pb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">💵</span>
+              <div>
+                <h3 className="text-sm font-black text-emerald-950 dark:text-emerald-200">
+                  रोख संकलन व सभासदनिहाय रोख हिशोब (Cash in Hand Summary)
+                </h3>
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
+                  मंडळाकडे रोखीने आलेली रक्कम कोणत्या सभासदाकडे जमा आहे त्याचा तपशील
+                </p>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 block">
+                एकूण संकलित रोख
+              </span>
+              <span className="text-lg font-black text-emerald-900 dark:text-emerald-100">
+                ₹{cashSummary.totalCashAmount.toLocaleString('en-IN')}{' '}
+                <span className="text-xs font-normal text-emerald-700 dark:text-emerald-300">
+                  ({cashSummary.cashCount} पावत्या)
+                </span>
+              </span>
+            </div>
+          </div>
+
+          {/* Member Cash Handled Pills */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-bold text-emerald-900 dark:text-emerald-300">
+                रोख रक्कम स्वीकारणारे सभासद (क्लिक करून फिल्टर करा):
+              </span>
+              {selectedCashReceiverId !== 'ALL' && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCashReceiverId('ALL')}
+                  className="text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer flex items-center gap-0.5"
+                >
+                  ✕ रोख फिल्टर काढा
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedPaymentMethod(selectedPaymentMethod === 'रोख' ? 'ALL' : 'रोख');
+                  setSelectedCashReceiverId('ALL');
+                }}
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer border ${
+                  selectedPaymentMethod === 'रोख' && selectedCashReceiverId === 'ALL'
+                    ? 'bg-emerald-700 text-white border-emerald-800 shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-emerald-900 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100'
+                }`}
+              >
+                सर्व रोख: ₹{cashSummary.totalCashAmount.toLocaleString('en-IN')}
+              </button>
+
+              {cashSummary.memberCashList.map((m) => {
+                const isSelected = selectedCashReceiverId === m.memberId;
+                return (
+                  <button
+                    key={m.memberId}
+                    type="button"
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedCashReceiverId('ALL');
+                      } else {
+                        setSelectedCashReceiverId(m.memberId);
+                        setShowFilters(true);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs scale-105'
+                        : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-emerald-200 dark:border-slate-600 hover:border-emerald-400 hover:bg-emerald-50/60'
+                    }`}
+                  >
+                    <span>{m.name}:</span>
+                    <span className={isSelected ? 'text-white font-black' : 'text-emerald-700 dark:text-emerald-400 font-black'}>
+                      ₹{m.totalCash.toLocaleString('en-IN')}
+                    </span>
+                    <span className={`text-[10px] ${isSelected ? 'text-emerald-200' : 'text-slate-400'}`}>
+                      ({m.count})
+                    </span>
+                  </button>
+                );
+              })}
+
+              {cashSummary.unassignedCash > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCashReceiverId(selectedCashReceiverId === 'UNSPECIFIED' ? 'ALL' : 'UNSPECIFIED');
+                    setShowFilters(true);
+                  }}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1 ${
+                    selectedCashReceiverId === 'UNSPECIFIED'
+                      ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
+                      : 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700 hover:bg-amber-100'
+                  }`}
+                >
+                  <span>⚠️ अनावधानाने न नोंदवलेले:</span>
+                  <span className="font-black">₹{cashSummary.unassignedCash.toLocaleString('en-IN')}</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -321,7 +491,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 text-xs">
               {/* Year Filter */}
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">
@@ -382,10 +552,10 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 </select>
               </div>
 
-              {/* Member Filter */}
+              {/* Member Filter (Depositor) */}
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">
-                  सभासद फिल्टर:
+                  जमा करणारा सभासद:
                 </label>
                 <select
                   value={selectedMemberId}
@@ -393,6 +563,30 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                   className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="ALL">सर्व सभासद</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.fullName} ({m.memberCode})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Cash Receiver Filter */}
+              <div>
+                <label className="block text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase mb-1">
+                  💵 रोख स्वीकारक (Cash Receiver):
+                </label>
+                <select
+                  value={selectedCashReceiverId}
+                  onChange={(e) => setSelectedCashReceiverId(e.target.value)}
+                  className={`w-full p-2 rounded-lg text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 border ${
+                    selectedCashReceiverId !== 'ALL'
+                      ? 'bg-emerald-100 text-emerald-950 border-emerald-400 dark:bg-emerald-950 dark:text-emerald-200'
+                      : 'bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border-slate-200 dark:border-slate-600'
+                  }`}
+                >
+                  <option value="ALL">सर्व (सर्व रोख व डिजिटल)</option>
+                  <option value="UNSPECIFIED">⚠️ रोख स्वीकारक न नोंदवलेले</option>
                   {members.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.fullName} ({m.memberCode})
@@ -530,6 +724,13 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                     </td>
                     <td className="p-3.5">
                       <div className="font-semibold">{item.paymentMethod}</div>
+                      {item.paymentMethod === 'रोख' && item.cashReceiverName && (
+                        <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-black flex items-center gap-1 mt-0.5" title={`रोख स्वीकारक: ${item.cashReceiverName}`}>
+                          <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950 px-1 py-0.2 rounded border border-emerald-300 dark:border-emerald-700">
+                            💵 {item.cashReceiverName}
+                          </span>
+                        </div>
+                      )}
                       {item.paymentReference && (
                         <div className="text-[10px] text-slate-400 truncate max-w-[100px]">
                           {item.paymentReference}
@@ -675,6 +876,16 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                   {selectedIncomeDetail.paymentReference ? ` (${selectedIncomeDetail.paymentReference})` : ''}
                 </span>
               </div>
+              {selectedIncomeDetail.paymentMethod === 'रोख' && selectedIncomeDetail.cashReceiverName && (
+                <div className="col-span-2 p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-xl flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1">
+                    💵 प्रत्यक्ष रोख रक्कम स्वीकारणारा सभासद:
+                  </span>
+                  <span className="text-xs font-black text-emerald-950 dark:text-emerald-100 underline">
+                    {selectedIncomeDetail.cashReceiverName}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1 text-xs text-slate-700">
@@ -987,6 +1198,34 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                   />
                 </div>
               </div>
+
+              {editingIncome.paymentMethod === 'रोख' && (
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-xl space-y-1">
+                  <label className="block font-bold text-xs text-emerald-900 dark:text-emerald-200">
+                    💵 रोख रक्कम स्वीकारणारा सभासद (Cash Receiver)
+                  </label>
+                  <select
+                    value={editingIncome.cashReceiverMemberId || ''}
+                    onChange={(e) => {
+                      const mId = e.target.value;
+                      const mem = members.find((m) => m.id === mId);
+                      setEditingIncome({
+                        ...editingIncome,
+                        cashReceiverMemberId: mId || undefined,
+                        cashReceiverName: mem ? mem.fullName : undefined,
+                      });
+                    }}
+                    className="w-full p-2 bg-white dark:bg-slate-700 border border-emerald-300 rounded-lg text-xs font-bold text-emerald-950 dark:text-emerald-100"
+                  >
+                    <option value="">-- सभासद निवडा --</option>
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.memberCode} - {m.fullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button

@@ -428,13 +428,17 @@ export async function generateReceiptImageCanvas(
     transaction.reason || 'मंडळ कामकाज'
   );
 
-  // Row 3: Payment Method (Left) & Reference (Right)
-  const paymentMethodStr = transaction.paymentMethod || 'रोख';
-  const paymentRefStr = transaction.paymentReference ? toMarathiDigits(transaction.paymentReference) : '---';
+  // Row 3: Payment Method (Left) & Reference / Cash Receiver (Right)
+  const isCash = transaction.paymentMethod === 'रोख';
+  const paymentMethodStr = isCash ? 'रोख (Cash)' : (transaction.paymentMethod || 'रोख');
+  const paymentRefLabel = isCash && isIncome && inc?.cashReceiverName ? 'रोख स्वीकारक सभासद:' : 'पेमेंट संदर्भ क्र.:';
+  const paymentRefStr = isCash && isIncome && inc?.cashReceiverName 
+    ? inc.cashReceiverName 
+    : (transaction.paymentReference ? toMarathiDigits(transaction.paymentReference) : '---');
   drawTwoColumnRow(
     'पेमेंट पद्धत:',
     paymentMethodStr,
-    'पेमेंट संदर्भ क्र.:',
+    paymentRefLabel,
     paymentRefStr
   );
 
