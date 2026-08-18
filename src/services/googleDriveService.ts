@@ -89,16 +89,19 @@ export interface DispatchReceiptPayload {
   subject: string;
   htmlBody: string;
   financialYear: string;
+  proofUrlOrBase64?: string;
+  proofFileName?: string;
 }
 
 export interface DispatchReceiptResult {
   success: boolean;
   driveUrl?: string;
+  proofDriveUrl?: string;
   message: string;
 }
 
 /**
- * Saves generated receipt to Google Drive and emails to moryagroupdata@gmail.com
+ * Saves generated receipt and raw payment proof to Google Drive and emails to moryagroupdata@gmail.com
  */
 export async function uploadAndEmailTransactionReceipt(
   payload: DispatchReceiptPayload
@@ -106,11 +109,34 @@ export async function uploadAndEmailTransactionReceipt(
   const base64Data = await fileToBase64(payload.blob);
   const scriptUrl = getGoogleDriveScriptUrl();
 
+  // Extract raw Base64 if proof is provided as data URL
+  let proofBase64Data: string | undefined = undefined;
+  if (payload.proofUrlOrBase64) {
+    if (payload.proofUrlOrBase64.startsWith('data:')) {
+      proofBase64Data = payload.proofUrlOrBase64.split(',')[1];
+    } else if (payload.proofUrlOrBase64.startsWith('http')) {
+      try {
+        const imgRes = await fetch(payload.proofUrlOrBase64);
+        if (imgRes.ok) {
+          const imgBlob = await imgRes.blob();
+          proofBase64Data = await fileToBase64(imgBlob);
+        }
+      } catch (e) {
+        console.warn('Could not fetch proof image blob for Drive upload:', e);
+      }
+    } else {
+      proofBase64Data = payload.proofUrlOrBase64;
+    }
+  }
+
   const bodyData = {
     action: 'SAVE_AND_EMAIL',
     base64: base64Data,
     fileName: payload.fileName,
     contentType: payload.blob.type || 'image/jpeg',
+    proofBase64: proofBase64Data,
+    proofFileName: payload.proofFileName || `Payment_Proof_${Date.now()}.jpg`,
+    proofContentType: 'image/jpeg',
     subject: payload.subject,
     htmlBody: payload.htmlBody,
     financialYear: payload.financialYear,
@@ -128,8 +154,9 @@ export async function uploadAndEmailTransactionReceipt(
       if (json.status === 'success') {
         return {
           success: true,
-          driveUrl: json.viewUrl || json.url,
-          message: `पावती moryagroupdata@gmail.com वर पाठवली व Google Drive मध्ये सेव्ह झाली.`,
+          driveUrl: json.receiptUrl || json.viewUrl || json.url,
+          proofDriveUrl: json.proofUrl,
+          message: `पावती व मूळ पेमेंट पुरावा moryagroupdata@gmail.com वर पाठवला व Google Drive मध्ये सेव्ह झाला.`,
         };
       }
     }

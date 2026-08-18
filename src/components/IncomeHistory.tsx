@@ -733,17 +733,21 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
             )}
 
             {selectedIncomeDetail.attachmentUrl && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-                  <Paperclip className="w-4 h-4 text-emerald-600" />
-                  <span>पावती पुरावा (Attachment Proof)</span>
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-xl flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
+                  <Paperclip className="w-4 h-4 text-amber-600" />
+                  <span>
+                    {isGoogleDriveUrl(selectedIncomeDetail.attachmentUrl)
+                      ? 'Google Drive मूळ पुरावा (Full-Res Proof)'
+                      : 'पावती पुरावा (Attachment Proof)'}
+                  </span>
                 </span>
                 <button
                   type="button"
                   onClick={() => handleProofClick(selectedIncomeDetail.attachmentUrl!)}
-                  className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs transition-all cursor-pointer flex items-center gap-1"
+                  className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg shadow-xs transition-all cursor-pointer flex items-center gap-1"
                 >
-                  <span>📂 पुरावा पाहा</span>
+                  <span>📂 {isGoogleDriveUrl(selectedIncomeDetail.attachmentUrl) ? 'Drive वर पाहा' : 'पुरावा पाहा'}</span>
                 </button>
               </div>
             )}

@@ -1,8 +1,8 @@
 /**
  * receiptCanvasGenerator.ts
- * Generates an official, high-resolution Marathi receipt voucher card as a PNG/JPEG image
- * containing the official mandal logo, header details, complete transaction details, embedded payment proof,
- * and authorized digital signatures of the Treasurer (खजिनदार) and Vice Treasurer (उपखजिनदार).
+ * Generates an official, crystal-clear Marathi receipt voucher card as a high-definition PNG/JPEG image.
+ * Contains official mandal branding, full transaction particulars, amounts, Google Drive proof reference,
+ * Mandal official seal, and authorized digital signatures of the Treasurer (खजिनदार) and Vice Treasurer (उपखजिनदार).
  */
 
 import { IncomeTransaction, ExpenseTransaction } from '../types';
@@ -62,21 +62,18 @@ export async function generateReceiptImageCanvas(
   const logoSource = options.groupLogo || getStoredGroupLogo() || moryaLogoDefault;
 
   // Load images in parallel
-  const [logoImg, proofImg, treasurerSigImg, viceTreasurerSigImg] = await Promise.all([
+  const [logoImg, treasurerSigImg, viceTreasurerSigImg] = await Promise.all([
     loadImageSafe(logoSource),
-    loadImageSafe(transaction.attachmentUrl),
     loadImageSafe(treasurerSigData?.signatureDataUrl),
     loadImageSafe(viceTreasurerSigData?.signatureDataUrl),
   ]);
 
   const width = 1200;
-  const hasProof = Boolean(proofImg);
-  // Calculate dynamic canvas height
-  const height = hasProof ? 1560 : 1160;
-
+  const height = 1180; // Standard official certificate height
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
+
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Failed to create 2D canvas context');
 
@@ -235,72 +232,26 @@ export async function generateReceiptImageCanvas(
     );
   }
 
+  // Google Drive Proof Reference Note
+  if (transaction.attachmentUrl) {
+    drawDetailRow(
+      'संलग्न पेमेंट पुरावा:',
+      '📁 Google Drive वर मूळ पुरावा सुरक्षित जतन केलेला आहे.'
+    );
+  }
+
   const approverStr = transaction.approvedBy
     ? `मंजूर (${transaction.approvedBy}${transaction.approvedByRole ? ` - ${transaction.approvedByRole}` : ''})`
     : 'मंजूर';
   drawDetailRow('मंजुरी दर्जा:', approverStr);
 
-  // 6. Payment Proof Image Block (if attached)
-  currentY += 15;
-  if (hasProof && proofImg) {
-    const proofBoxY = currentY;
-    const proofBoxHeight = 360;
-
-    ctx.fillStyle = '#FFF7ED';
-    ctx.fillRect(50, proofBoxY, width - 100, proofBoxHeight);
-    ctx.strokeStyle = '#FDBA74';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(50, proofBoxY, width - 100, proofBoxHeight);
-
-    // Label on proof box (pure Marathi)
-    ctx.fillStyle = '#7C2D12';
-    ctx.font = 'bold 18px "Noto Sans Devanagari", "Mukta", sans-serif';
-    ctx.fillText('📷 जोडलेला पेमेंट पुरावा / पावती प्रत:', 70, proofBoxY + 35);
-
-    // Draw scaled image inside box
-    const maxImgW = width - 140;
-    const maxImgH = proofBoxHeight - 60;
-    let drawW = proofImg.width;
-    let drawH = proofImg.height;
-
-    const scale = Math.min(maxImgW / drawW, maxImgH / drawH, 1);
-    drawW = drawW * scale;
-    drawH = drawH * scale;
-
-    const drawX = width / 2 - drawW / 2;
-    const drawY = proofBoxY + 50 + (maxImgH - drawH) / 2;
-
-    ctx.drawImage(proofImg, drawX, drawY, drawW, drawH);
-
-    // Border around proof image
-    ctx.strokeStyle = '#EA580C';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(drawX, drawY, drawW, drawH);
-
-    currentY += proofBoxHeight + 20;
-  } else {
-    // No proof placeholder badge
-    ctx.fillStyle = '#FFF7ED';
-    ctx.fillRect(50, currentY, width - 100, 50);
-    ctx.strokeStyle = '#FED7AA';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(50, currentY, width - 100, 50);
-
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#C2410C';
-    ctx.font = '600 17px "Noto Sans Devanagari", "Mukta", sans-serif';
-    ctx.fillText('ℹ️ ही थेट रोख / प्रत्यक्ष नोंद आहे (कोणताही डिजिटल पुरावा फोटो संलग्न नाही)', width / 2, currentY + 32);
-
-    currentY += 65;
-  }
-
-  // 7. Official Signatures Section (Treasurer & Vice Treasurer)
-  const sigSectionY = currentY + 10;
+  // 6. Official Signatures Section (Treasurer & Vice Treasurer)
+  const sigSectionY = currentY + 15;
   ctx.fillStyle = '#FFF7ED';
-  ctx.fillRect(50, sigSectionY, width - 100, 160);
+  ctx.fillRect(50, sigSectionY, width - 100, 165);
   ctx.strokeStyle = '#FDBA74';
   ctx.lineWidth = 1.5;
-  ctx.strokeRect(50, sigSectionY, width - 100, 160);
+  ctx.strokeRect(50, sigSectionY, width - 100, 165);
 
   // Center Mandal Stamp / Seal
   ctx.textAlign = 'center';
@@ -363,12 +314,9 @@ export async function generateReceiptImageCanvas(
   ctx.font = '600 14px "Noto Sans Devanagari", "Mukta", sans-serif';
   ctx.fillText(`(${viceTreasurerSigData?.officerName || 'अधिकृत उपखजिनदार'})`, rightSigX, sigSectionY + 150);
 
-  // Footer Note (Pure Marathi)
+  // 7. Footer Note
   ctx.textAlign = 'center';
   ctx.fillStyle = '#64748B';
-  ctx.font = '500 13px "Noto Sans Devanagari", "Mukta", sans-serif';
-  ctx.fillText('हा ई-पावती दस्तऐवज मोरया ग्रुप वेब प्रणालीद्वारे आपोआप तयार करण्यात आला आहे. (moryagroupdata@gmail.com)', width / 2, height - 32);
-
   // Convert to DataURL and Blob
   const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
   const blob: Blob = await new Promise((resolve) => {

@@ -695,17 +695,21 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
             </div>
 
             {selectedExpenseDetail.attachmentUrl && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between">
-                <span className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
-                  <Paperclip className="w-4 h-4 text-rose-600" />
-                  <span>बिल पुरावा (Attachment Proof)</span>
+              <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                  <Paperclip className="w-4 h-4 text-amber-600" />
+                  <span>
+                    {isGoogleDriveUrl(selectedExpenseDetail.attachmentUrl)
+                      ? 'Google Drive मूळ पुरावा (Full-Res Proof)'
+                      : 'बिल पुरावा (Attachment Proof)'}
+                  </span>
                 </span>
                 <button
                   type="button"
                   onClick={() => handleProofClick(selectedExpenseDetail.attachmentUrl!)}
-                  className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-xs transition-all cursor-pointer flex items-center gap-1"
+                  className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg shadow-xs transition-all cursor-pointer flex items-center gap-1"
                 >
-                  <span>📂 बिल पुरावा पाहा</span>
+                  <span>📂 {isGoogleDriveUrl(selectedExpenseDetail.attachmentUrl) ? 'Drive वर पाहा' : 'बिल पुरावा पाहा'}</span>
                 </button>
               </div>
             )}

@@ -45,45 +45,77 @@ function doPost(e) {
       });
     }
 
-    // 2. Save and Email Transaction Receipt
-    var base64Data = data.base64;
+    // 2. Save and Email Transaction Receipt & Payment Proof
+    var base64Data = data.base64; // Receipt Voucher Image Base64
     var fileName = data.fileName || ('receipt_' + Date.now() + '.jpg');
     var contentType = data.contentType || 'image/jpeg';
+
+    var proofBase64 = data.proofBase64; // Separate High-Res Original Payment Proof Base64
+    var proofFileName = data.proofFileName || ('proof_' + Date.now() + '.jpg');
+    var proofContentType = data.proofContentType || 'image/jpeg';
+
     var subject = data.subject || '[मोरया ग्रुप] अधिकृत व्यवहार पावती नोंदणी';
     var htmlBody = data.htmlBody || '<p>नवीन अधिकृत व्यवहार पावती संलग्न केली आहे.</p>';
     var financialYear = data.financialYear || '2026-2027';
 
-    var fileBlob = null;
-    var fileViewUrl = '';
+    var targetFolder = getOrCreateFolder(financialYear);
+
+    var receiptBlob = null;
+    var receiptDriveUrl = '';
 
     if (base64Data) {
-      var decodedBytes = Utilities.base64Decode(base64Data);
-      fileBlob = Utilities.newBlob(decodedBytes, contentType, fileName);
-
-      // Save to Google Drive
-      var targetFolder = getOrCreateFolder(financialYear);
-      var driveFile = targetFolder.createFile(fileBlob);
-      driveFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      fileViewUrl = driveFile.getUrl();
+      var decodedReceiptBytes = Utilities.base64Decode(base64Data);
+      receiptBlob = Utilities.newBlob(decodedReceiptBytes, contentType, fileName);
+      var driveReceiptFile = targetFolder.createFile(receiptBlob);
+      driveReceiptFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      receiptDriveUrl = driveReceiptFile.getUrl();
     }
 
-    // Send Email via GmailApp to moryagroupdata@gmail.com
+    var proofBlob = null;
+    var proofDriveUrl = '';
+
+    if (proofBase64) {
+      var decodedProofBytes = Utilities.base64Decode(proofBase64);
+      proofBlob = Utilities.newBlob(decodedProofBytes, proofContentType, proofFileName);
+      var driveProofFile = targetFolder.createFile(proofBlob);
+      driveProofFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      proofDriveUrl = driveProofFile.getUrl();
+    }
+
+    // Build Email options with attachments & direct Drive links
+    var emailAttachments = [];
+    if (receiptBlob) emailAttachments.push(receiptBlob);
+    if (proofBlob) emailAttachments.push(proofBlob);
+
+    var driveLinksHtml = '<br><hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0;">' +
+      '<div style="text-align:center;margin:12px 0;">';
+
+    if (receiptDriveUrl) {
+      driveLinksHtml += '<a href="' + receiptDriveUrl + '" target="_blank" style="display:inline-block;margin:4px 8px;padding:10px 18px;background:#d97706;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px;">📁 Google Drive वर पावती पहा</a>';
+    }
+
+    if (proofDriveUrl) {
+      driveLinksHtml += '<a href="' + proofDriveUrl + '" target="_blank" style="display:inline-block;margin:4px 8px;padding:10px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px;">📷 Google Drive वर मूळ पेमेंट पुरावा पहा</a>';
+    }
+
+    driveLinksHtml += '</div>';
+
     var emailOptions = {
       name: 'मोरया ग्रुप प्रणाली (Morya Group System)',
-      htmlBody: htmlBody + (fileViewUrl ? ('<br><br><hr><p><a href="' + fileViewUrl + '" target="_blank" style="display:inline-block;padding:10px 18px;background:#d97706;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:bold;">📁 Google Drive मध्ये पावती पहा</a></p>') : '')
+      htmlBody: htmlBody + driveLinksHtml,
+      attachments: emailAttachments
     };
-
-    if (fileBlob) {
-      emailOptions.attachments = [fileBlob];
-    }
 
     GmailApp.sendEmail(TARGET_EMAIL, subject, '', emailOptions);
 
     return responseJSON({
       status: 'success',
-      message: 'Transaction saved to Google Drive and emailed to ' + TARGET_EMAIL,
-      viewUrl: fileViewUrl,
-      fileName: fileName
+      message: 'Transaction voucher & proof saved to Google Drive and emailed to ' + TARGET_EMAIL,
+      viewUrl: receiptDriveUrl,
+      receiptUrl: receiptDriveUrl,
+      proofUrl: proofDriveUrl,
+      fileName: fileName,
+      proofFileName: proofFileName
     });
 
   } catch (err) {

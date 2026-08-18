@@ -14,6 +14,7 @@ export interface DispatchResult {
   message: string;
   dataUrl?: string;
   driveUrl?: string;
+  proofDriveUrl?: string;
 }
 
 /**
@@ -87,7 +88,7 @@ function buildTransactionEmailHtml(
         </table>
 
         <div style="background: #fff7ed; padding: 12px; border-radius: 8px; border-left: 4px solid #ea580c; font-size: 13px; color: #7c2d12; margin-bottom: 16px;">
-          📎 <strong>अधिकृत स्वाक्षरी व पावती पुरावा:</strong> संपूर्ण अधिकृत पावती फोटो (खजिनदार व उपखजिनदार यांच्या स्वाक्षरीसह व पेमेंट पुराव्यासह) या ईमेलसोबत जोडली आहे.
+          📎 <strong>अधिकृत स्वाक्षरी व स्वतंत्र पेमेंट पुरावा:</strong> संपूर्ण अधिकृत पावती फोटो (खजिनदार व उपखजिनदार यांच्या स्वाक्षरीसह) आणि मूळ हाय-डेफिनिशन पेमेंट पुरावा या ईमेलसोबत जोडला आहे.
         </div>
       </div>
 
@@ -101,7 +102,7 @@ function buildTransactionEmailHtml(
 }
 
 /**
- * Dispatches a transaction receipt to Google Drive & moryagroupdata@gmail.com
+ * Dispatches a transaction receipt and separate payment proof to Google Drive & moryagroupdata@gmail.com
  */
 export async function dispatchApprovedTransaction(
   transaction: IncomeTransaction | ExpenseTransaction,
@@ -117,7 +118,7 @@ export async function dispatchApprovedTransaction(
       };
     }
 
-    // 1. Generate receipt canvas with proof, signatures, and group logo
+    // 1. Generate crystal-sharp clean receipt canvas
     const { blob, dataUrl } = await generateReceiptImageCanvas({
       transaction,
       type,
@@ -129,14 +130,17 @@ export async function dispatchApprovedTransaction(
       ? `INCOME_${(transaction as IncomeTransaction).receiptNumber || transaction.transactionNo}`
       : `EXPENSE_${transaction.transactionNo}`;
     const cleanFileName = `Morya_Receipt_${txnCode}_${Date.now()}.jpg`;
+    const proofFileName = `Morya_Proof_${txnCode}_${Date.now()}.jpg`;
 
     // 2. Build email content
     const { subject, html } = buildTransactionEmailHtml(transaction, type);
 
-    // 3. Dispatch to Google Apps Script (Drive + Gmail)
+    // 3. Dispatch to Google Apps Script (Drive + Gmail) with separate high-res proof
     const result = await uploadAndEmailTransactionReceipt({
       blob,
       fileName: cleanFileName,
+      proofUrlOrBase64: transaction.attachmentUrl,
+      proofFileName,
       subject,
       htmlBody: html,
       financialYear: transaction.financialYear || '2026-2027',
@@ -147,6 +151,7 @@ export async function dispatchApprovedTransaction(
       message: result.message,
       dataUrl,
       driveUrl: result.driveUrl,
+      proofDriveUrl: result.proofDriveUrl,
     };
   } catch (err: any) {
     console.error('Error dispatching transaction receipt:', err);
