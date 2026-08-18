@@ -97,28 +97,34 @@ export function formatMarathiDateTime(isoOrDateStr?: string): string {
 }
 
 /**
- * Formats a currency number in Marathi Devanagari INR style
- */
-function formatCurrencyMarathi(amount: number): string {
-  const formattedEn = Number(amount || 0).toLocaleString('en-IN');
-  return `₹ ${toMarathiDigits(formattedEn)}/-`;
-}
-
-/**
- * Loads an image safely from a URL or Base64 string
+ * Loads an image safely from a URL or Base64 string with complete bitmap decoding
  */
 function loadImageSafe(src?: string): Promise<HTMLImageElement | null> {
   if (!src) return Promise.resolve(null);
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
+    img.onload = () => {
+      if (typeof img.decode === 'function') {
+        img.decode().then(() => resolve(img)).catch(() => resolve(img));
+      } else {
+        resolve(img);
+      }
+    };
     img.onerror = () => {
       console.warn('Failed to load image for receipt canvas:', src.substring(0, 50));
       resolve(null);
     };
     img.src = src;
   });
+}
+
+/**
+ * Formats a currency number in Marathi Devanagari INR style
+ */
+function formatCurrencyMarathi(amount: number): string {
+  const formattedEn = Number(amount || 0).toLocaleString('en-IN');
+  return `₹ ${toMarathiDigits(formattedEn)}/-`;
 }
 
 /**
@@ -135,7 +141,7 @@ function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number):
 
 /**
  * Generates official receipt sized to fit 2 receipts on a single vertical A4 portrait page.
- * Canvas Dimensions: 1200 x 840 (Standard half-A4 ratio: ~1.43:1)
+ * Uses 2x Super-Sampling (2400 x 1680 Ultra-HD resolution) for crystal-clear logo, emblem, and typography.
  */
 export async function generateReceiptImageCanvas(
   options: GenerateReceiptOptions
@@ -153,7 +159,7 @@ export async function generateReceiptImageCanvas(
   const logoSource = options.groupLogo || getStoredGroupLogo() || moryaLogoDefault;
   const shivajiSource = options.shivajiLogo || shivajiMaharajDefault;
 
-  // Load images in parallel
+  // Load images in parallel with full bitmap decode
   const [logoImg, shivajiImg, treasurerSigImg, viceTreasurerSigImg] = await Promise.all([
     loadImageSafe(logoSource),
     loadImageSafe(shivajiSource),
@@ -161,18 +167,22 @@ export async function generateReceiptImageCanvas(
     loadImageSafe(viceTreasurerSigData?.signatureDataUrl),
   ]);
 
-  // Sizing for Half A4 Portrait Page
+  // Logical Sizing for Half A4 Portrait Page (1200 x 840)
   const width = 1200;
   const height = 840;
+  const scaleFactor = 2; // 2x Super-Sampling -> 2400 x 1680 Ultra-HD output
 
   const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = width * scaleFactor;
+  canvas.height = height * scaleFactor;
 
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Failed to create 2D canvas context');
 
-  // Enable maximum rendering sharpness
+  // Scale rendering context for ultra-high pixel density
+  ctx.scale(scaleFactor, scaleFactor);
+
+  // Enable maximum rendering sharpness & bicubic smoothing
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
@@ -530,10 +540,10 @@ export async function generateReceiptImageCanvas(
   ctx.font = '500 12px "Noto Sans Devanagari", "Mukta", sans-serif';
   ctx.fillText('हा ई-पावती दस्तऐवज मोरया ग्रुप वेब प्रणालीद्वारे तयार करण्यात आला आहे. (moryagroupdata@gmail.com)', centerX, height - 16);
 
-  // Convert to DataURL and Blob
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+  // Convert to high quality DataURL and Blob (0.98 quality)
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.98);
   const blob: Blob = await new Promise((resolve) => {
-    canvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.95);
+    canvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.98);
   });
 
   return { canvas, dataUrl, blob };
