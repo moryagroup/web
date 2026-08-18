@@ -50,7 +50,7 @@ function buildTransactionEmailHtml(
         <p style="margin: 4px 0 0 0; font-size: 11px; color: #fde68a; font-weight: bold;">स्थापना - २०११ | (रजि. नं. रजि. पुणे / ०००११२२/२०२३)</p>
       </div>
 
-      <div style="background: ${isIncome ? '#ea580c' : '#dc2626'}; color: #ffffff; padding: 10px 16px; text-align: center; font-weight: bold; font-size: 16px; letter-spacing: 0.5px;">
+      <div style="background: #ea580c; color: #ffffff; padding: 10px 16px; text-align: center; font-weight: bold; font-size: 16px; letter-spacing: 0.5px;">
         ★ अधिकृत ${typeText} ★
       </div>
 

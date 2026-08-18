@@ -272,9 +272,9 @@ export async function generateReceiptImageCanvas(
   ctx.font = 'bold 15px "Noto Sans Devanagari", "Mukta", sans-serif';
   ctx.fillText('स्थापना - २०११ | (रजि. नं. रजि. पुणे / ०००११२२/२०२३)', centerX, headerY + 143);
 
-  // 3. Subheader Title Badge (Orange for Income, Red for Expense)
+  // 3. Subheader Title Badge (Official Orange / भगवा Theme)
   const badgeY = headerY + headerHeight + 14;
-  const badgeColor = isIncome ? '#EA580C' : '#DC2626';
+  const badgeColor = '#EA580C';
   ctx.fillStyle = badgeColor;
   ctx.beginPath();
   ctx.roundRect(centerX - 240, badgeY, 480, 40, 20);
