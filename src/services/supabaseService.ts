@@ -13,6 +13,7 @@ import {
   EventGalleryImage,
   MemberSuggestion,
   ApprovalStatus,
+  CashSettlement,
 } from '../types';
 import {
   INITIAL_MEMBERS,
@@ -654,3 +655,83 @@ export async function deleteGalleryItemFromSupabase(id: string): Promise<void> {
     console.warn('[Supabase] deleteGalleryItemFromSupabase error:', err);
   }
 }
+
+// ─── Cash Settlements (Member Cash Handover & Trust/Bank Deposits) ───
+export async function fetchCashSettlementsFromSupabase(): Promise<CashSettlement[]> {
+  if (!isSupabaseConfigured) return [];
+  try {
+    const { data, error } = await supabase
+      .from('cash_settlements')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('[Supabase] fetchCashSettlements error:', error.message);
+      return [];
+    }
+
+    return (data || []).map((row: any) => ({
+      id: row.id,
+      settlementNo: row.settlement_no,
+      memberId: row.member_id,
+      memberName: row.member_name,
+      amount: Number(row.amount || 0),
+      depositDate: row.deposit_date,
+      destination: row.destination || 'ट्रस्ट बँक खाते',
+      bankRefNo: row.bank_ref_no || undefined,
+      slipPhotoUrl: row.slip_photo_url || undefined,
+      notes: row.notes || undefined,
+      financialYear: row.financial_year || '2026-2027',
+      approvalStatus: (row.approval_status as ApprovalStatus) || 'प्रलंबित',
+      approvedBy: row.approved_by || undefined,
+      approvedByRole: row.approved_by_role || undefined,
+      approvedAt: row.approved_at || undefined,
+      createdBy: row.recorded_by || 'सभासद',
+      createdAt: row.created_at || new Date().toISOString(),
+      updatedAt: row.updated_at || undefined,
+    }));
+  } catch (err) {
+    console.warn('[Supabase] fetchCashSettlements catch:', err);
+    return [];
+  }
+}
+
+export async function saveCashSettlementToSupabase(settlement: CashSettlement): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    const row = {
+      id: settlement.id,
+      settlement_no: settlement.settlementNo || null,
+      member_id: settlement.memberId,
+      member_name: settlement.memberName,
+      amount: settlement.amount,
+      deposit_date: settlement.depositDate,
+      destination: settlement.destination,
+      bank_ref_no: settlement.bankRefNo || null,
+      slip_photo_url: settlement.slipPhotoUrl || null,
+      notes: settlement.notes || null,
+      financial_year: settlement.financialYear,
+      approval_status: settlement.approvalStatus || 'प्रलंबित',
+      approved_by: settlement.approvedBy || null,
+      approved_by_role: settlement.approvedByRole || null,
+      approved_at: settlement.approvedAt || null,
+      recorded_by: settlement.createdBy,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('cash_settlements').upsert(row);
+    if (error) console.error('[Supabase] saveCashSettlement error:', error.message);
+  } catch (err) {
+    console.warn('[Supabase] saveCashSettlement catch:', err);
+  }
+}
+
+export async function deleteCashSettlementFromSupabase(id: string): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    const { error } = await supabase.from('cash_settlements').delete().eq('id', id);
+    if (error) console.error('[Supabase] deleteCashSettlement error:', error);
+  } catch (err) {
+    console.warn('[Supabase] deleteCashSettlement catch:', err);
+  }
+}
+

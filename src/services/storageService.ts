@@ -7,6 +7,7 @@ import {
   FinancialYearSummary,
   EventGalleryImage,
   MemberSuggestion,
+  CashSettlement,
 } from '../types';
 import {
   INITIAL_INCOMES,
@@ -30,6 +31,7 @@ export const STORAGE_KEYS = {
   EXPENSES: 'morya_mandal_expenses_v2',
   MEMBERS: 'morya_mandal_members_v2',
   SUGGESTIONS: 'morya_mandal_suggestions_v2',
+  CASH_SETTLEMENTS: 'morya_mandal_cash_settlements_v2',
   CUSTOM_INCOME_TYPES: 'morya_mandal_custom_income_types_v2',
 };
 
@@ -197,3 +199,27 @@ export const getMemberExtraDonationPaid = (memberId: string, incomes: IncomeTran
     .filter((i) => i.linkedMemberId === memberId && i.incomeType !== 'सभासद वर्गणी')
     .reduce((sum, i) => sum + i.amount, 0);
 };
+
+// Cash Handled & Trust Settlement calculations
+export const getMemberCashReceivedTotal = (memberId: string, incomes: IncomeTransaction[]): number => {
+  return incomes
+    .filter((i) => i.paymentMethod === 'रोख' && i.cashReceiverMemberId === memberId)
+    .reduce((sum, i) => sum + i.amount, 0);
+};
+
+export const getMemberApprovedCashSettledTotal = (memberId: string, settlements: CashSettlement[]): number => {
+  return settlements
+    .filter((s) => s.memberId === memberId && s.approvalStatus === 'मंजूर')
+    .reduce((sum, s) => sum + s.amount, 0);
+};
+
+export const getMemberNetCashInHand = (
+  memberId: string,
+  incomes: IncomeTransaction[],
+  settlements: CashSettlement[]
+): number => {
+  const received = getMemberCashReceivedTotal(memberId, incomes);
+  const settled = getMemberApprovedCashSettledTotal(memberId, settlements);
+  return Math.max(0, received - settled);
+};
+

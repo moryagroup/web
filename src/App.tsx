@@ -7,6 +7,8 @@ import {
   OccasionEvent,
   EventGalleryImage,
   CurrentUser,
+  CashSettlement,
+  UserDesignation,
 } from './types';
 import {
   getStoredIncomes,
@@ -30,6 +32,7 @@ import {
   DEFAULT_USER,
   calculateFinancialSummary,
   clearAllTransactionsFromStorage,
+  STORAGE_KEYS,
 } from './services/storageService';
 import { createLocalBackupSnapshot, downloadBackupJSON } from './utils/backupUtils';
 
@@ -137,6 +140,9 @@ import {
   fetchGalleryFromSupabase,
   saveGalleryItemToSupabase,
   deleteGalleryItemFromSupabase,
+  fetchCashSettlementsFromSupabase,
+  saveCashSettlementToSupabase,
+  deleteCashSettlementFromSupabase,
 } from './services/supabaseService';
 import { isSupabaseConfigured } from './services/supabaseClient';
 import { sendDailyEmailReport, isReportAlreadySentToday } from './services/emailService';
@@ -189,6 +195,14 @@ export default function App() {
   const [gallery, setGalleryState] = useState<EventGalleryImage[]>(getStoredEventGallery);
   const [groupLogo, setGroupLogo] = useState<string>(getStoredGroupLogo);
   const [suggestions, setSuggestions] = useState<any[]>(getStoredSuggestions);
+  const [cashSettlements, setCashSettlements] = useState<CashSettlement[]>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.CASH_SETTLEMENTS);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
       return (localStorage.getItem('morya_theme') as 'light' | 'dark') || 'light';
@@ -286,13 +300,14 @@ export default function App() {
             seedSupabaseIfEmpty(),
             syncOfficerSignaturesFromOnline(),
           ]);
-          const [m, inc, exp, occ, logo, gal] = await Promise.all([
+          const [m, inc, exp, occ, logo, gal, settlements] = await Promise.all([
             fetchMembersFromSupabase(),
             fetchIncomesFromSupabase(),
             fetchExpensesFromSupabase(),
             fetchOccasionsFromSupabase(),
             fetchGroupLogoFromSupabase(),
             fetchGalleryFromSupabase(),
+            fetchCashSettlementsFromSupabase(),
           ]);
           if (m && m.length > 0) setMembers(m);
           if (inc && inc.length > 0) setIncomes(inc);
@@ -312,6 +327,12 @@ export default function App() {
             setGroupLogo(logo);
             saveGroupLogo(logo);
           }
+          if (settlements && settlements.length > 0) {
+            setCashSettlements(settlements);
+            try {
+              localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(settlements));
+            } catch {}
+          }
         } catch (err) {
           console.warn('[Supabase] Initial load error:', err);
         }
@@ -322,13 +343,14 @@ export default function App() {
 
     const unsubSupabaseRealtime = subscribeToSupabaseRealtime(async () => {
       if (isSupabaseConfigured) {
-        const [m, inc, exp, occ, logo, gal] = await Promise.all([
+        const [m, inc, exp, occ, logo, gal, settlements] = await Promise.all([
           fetchMembersFromSupabase(),
           fetchIncomesFromSupabase(),
           fetchExpensesFromSupabase(),
           fetchOccasionsFromSupabase(),
           fetchGroupLogoFromSupabase(),
           fetchGalleryFromSupabase(),
+          fetchCashSettlementsFromSupabase(),
         ]);
         if (m && m.length > 0) setMembers(m);
         if (inc) setIncomes(inc);
@@ -347,6 +369,12 @@ export default function App() {
         if (logo && logo.trim() !== '') {
           setGroupLogo(logo);
           saveGroupLogo(logo);
+        }
+        if (settlements) {
+          setCashSettlements(settlements);
+          try {
+            localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(settlements));
+          } catch {}
         }
       }
     });
@@ -787,6 +815,83 @@ export default function App() {
     deleteMemberFromSupabase(memberId).catch(console.error);
   };
 
+  // Cash Settlement Handlers (Member Cash Handover to Trust/Bank)
+  const handleAddCashSettlement = (newSettlement: CashSettlement) => {
+    setCashSettlements((prev) => {
+      const updated = [newSettlement, ...prev.filter((s) => s.id !== newSettlement.id)];
+      try {
+        localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(updated));
+      } catch {}
+      saveCashSettlementToSupabase(newSettlement).catch(console.error);
+      return updated;
+    });
+  };
+
+  const handleApproveCashSettlement = (
+    settlementId: string,
+    approverName: string,
+    approverRole: UserDesignation
+  ) => {
+    setCashSettlements((prev) => {
+      const updated = prev.map((s) => {
+        if (s.id === settlementId) {
+          const item: CashSettlement = {
+            ...s,
+            approvalStatus: 'मंजूर',
+            approvedBy: approverName,
+            approvedByRole: approverRole,
+            approvedAt: new Date().toISOString(),
+          };
+          saveCashSettlementToSupabase(item).catch(console.error);
+          return item;
+        }
+        return s;
+      });
+      try {
+        localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const handleRejectCashSettlement = (
+    settlementId: string,
+    rejecterName: string,
+    rejecterRole: UserDesignation
+  ) => {
+    setCashSettlements((prev) => {
+      const updated = prev.map((s) => {
+        if (s.id === settlementId) {
+          const item: CashSettlement = {
+            ...s,
+            approvalStatus: 'रद्द',
+            approvedBy: rejecterName,
+            approvedByRole: rejecterRole,
+            approvedAt: new Date().toISOString(),
+          };
+          saveCashSettlementToSupabase(item).catch(console.error);
+          return item;
+        }
+        return s;
+      });
+      try {
+        localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const handleDeleteCashSettlement = (settlementId: string) => {
+    setCashSettlements((prev) => {
+      const updated = prev.filter((s) => s.id !== settlementId);
+      try {
+        localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(updated));
+      } catch {}
+      deleteCashSettlementFromSupabase(settlementId).catch(console.error);
+      return updated;
+    });
+  };
+
   // Reset to Demo Data
   const handleResetData = () => {
     if (window.confirm('तुम्हाला खरोखर सर्व मूळ प्रात्यक्षिक (Demo) डेटा रिसेट करायचा आहे का?')) {
@@ -997,11 +1102,16 @@ export default function App() {
                 <MemberSubscriptionsView
                   members={members}
                   incomes={formattedIncomes}
+                  cashSettlements={cashSettlements}
                   financialYear={selectedYear}
                   currentUser={currentUser}
                   onAddMember={handleAddMember}
                   onUpdateMember={handleUpdateMember}
                   onDeleteMember={handleDeleteMember}
+                  onAddCashSettlement={handleAddCashSettlement}
+                  onApproveCashSettlement={handleApproveCashSettlement}
+                  onRejectCashSettlement={handleRejectCashSettlement}
+                  onDeleteCashSettlement={handleDeleteCashSettlement}
                   onNavigate={(tab) => setActiveTab(tab)}
                   onOpenLogin={handleOpenLogin}
                 />

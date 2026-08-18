@@ -138,6 +138,28 @@ CREATE POLICY "Public Update Assets" ON storage.objects
 CREATE POLICY "Public Delete Assets" ON storage.objects
     FOR DELETE USING (bucket_id = 'morya-assets');
 
+-- 8. Member Cash Settlements / Handover Table
+CREATE TABLE IF NOT EXISTS public.cash_settlements (
+    id TEXT PRIMARY KEY,
+    settlement_no TEXT,
+    member_id TEXT REFERENCES public.members(id) ON DELETE CASCADE,
+    member_name TEXT NOT NULL,
+    amount NUMERIC NOT NULL,
+    deposit_date TEXT NOT NULL,
+    destination TEXT NOT NULL,
+    bank_ref_no TEXT,
+    slip_photo_url TEXT,
+    notes TEXT,
+    financial_year TEXT NOT NULL,
+    approval_status TEXT DEFAULT 'प्रलंबित',
+    approved_by TEXT,
+    approved_by_role TEXT,
+    approved_at TEXT,
+    recorded_by TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- 10. Enable Row Level Security (RLS) & Policies
 ALTER TABLE public.members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.incomes ENABLE ROW LEVEL SECURITY;
@@ -146,6 +168,7 @@ ALTER TABLE public.occasions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gallery ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.suggestions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cash_settlements ENABLE ROW LEVEL SECURITY;
 
 -- Allow Public / Anon Read & Write for Morya Group ERP client application
 CREATE POLICY "Allow All Select" ON public.members FOR SELECT USING (true);
@@ -182,3 +205,9 @@ CREATE POLICY "Allow All Select" ON public.settings FOR SELECT USING (true);
 CREATE POLICY "Allow All Insert" ON public.settings FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow All Update" ON public.settings FOR UPDATE USING (true);
 CREATE POLICY "Allow All Delete" ON public.settings FOR DELETE USING (true);
+
+CREATE POLICY "Allow All Select" ON public.cash_settlements FOR SELECT USING (true);
+CREATE POLICY "Allow All Insert" ON public.cash_settlements FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow All Update" ON public.cash_settlements FOR UPDATE USING (true);
+CREATE POLICY "Allow All Delete" ON public.cash_settlements FOR DELETE USING (true);
+

@@ -1,9 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { Member, IncomeTransaction, CurrentUser } from '../types';
+import {
+  Member,
+  IncomeTransaction,
+  CurrentUser,
+  CashSettlement,
+  CashSettlementDestination,
+  UserDesignation,
+} from '../types';
 import { getMemberSubscriptionPaid, getMemberExtraDonationPaid } from '../services/storageService';
 import { hasAdminPermissions, getDesignationRank, isBadgedMember } from '../utils/rbac';
 import { isDateInSelectedYear } from '../utils/dateUtils';
 import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
+import { ProofLightboxModal } from './ProofLightboxModal';
+import { uploadFileToGoogleDrive } from '../services/googleDriveService';
 import {
   Users,
   PlusCircle,
@@ -26,16 +35,31 @@ import {
   ArrowLeft,
   Calendar,
   User,
+  Wallet,
+  Landmark,
+  ArrowDownCircle,
+  ArrowUpRight,
+  CheckCircle,
+  XCircle,
+  FileText,
+  Image as ImageIcon,
+  Clock,
+  X,
 } from 'lucide-react';
 
 interface MemberSubscriptionsViewProps {
   members: Member[];
   incomes: IncomeTransaction[];
+  cashSettlements?: CashSettlement[];
   financialYear?: string;
   currentUser: CurrentUser;
   onAddMember: (newMember: Member) => void;
   onUpdateMember: (updatedMember: Member) => void;
   onDeleteMember: (memberId: string) => void;
+  onAddCashSettlement?: (newSettlement: CashSettlement) => void;
+  onApproveCashSettlement?: (settlementId: string, approverName: string, approverRole: UserDesignation) => void;
+  onRejectCashSettlement?: (settlementId: string, rejecterName: string, rejecterRole: UserDesignation) => void;
+  onDeleteCashSettlement?: (settlementId: string) => void;
   onNavigate?: (tab: string) => void;
   onOpenLogin?: (memberId?: string, type?: 'admin' | 'member') => void;
 }
@@ -58,11 +82,16 @@ const STANDARD_DESIGNATIONS = [
 export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = ({
   members,
   incomes,
+  cashSettlements = [],
   financialYear,
   currentUser,
   onAddMember,
   onUpdateMember,
   onDeleteMember,
+  onAddCashSettlement,
+  onApproveCashSettlement,
+  onRejectCashSettlement,
+  onDeleteCashSettlement,
   onNavigate,
   onOpenLogin,
 }) => {
@@ -149,6 +178,186 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
   const [shareEmailVal, setShareEmailVal] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
   const [shareSentNotice, setShareSentNotice] = useState(false);
+
+  // Cash Settlement Modal & State
+  const [showCashSettlementModal, setShowCashSettlementModal] = useState(false);
+  const [settleMemberId, setSettleMemberId] = useState('');
+  const [settleAmount, setSettleAmount] = useState('');
+  const [settleDestination, setSettleDestination] = useState<CashSettlementDestination>('ट्रस्ट बँक खाते');
+  const [settleDate, setSettleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [settleBankRefNo, setSettleBankRefNo] = useState('');
+  const [settleSlipPhotoUrl, setSettleSlipPhotoUrl] = useState('');
+  const [settleNotes, setSettleNotes] = useState('');
+  const [isUploadingSlip, setIsUploadingSlip] = useState(false);
+  const [settleError, setSettleError] = useState<string | null>(null);
+  const [settleSuccessMsg, setSettleSuccessMsg] = useState<string | null>(null);
+  const [previewProofUrl, setPreviewProofUrl] = useState<string | null>(null);
+
+  // Treasurer / Vice-Treasurer role permission check
+  const isTreasurerOrVice =
+    currentUser.role === 'खजिनदार' ||
+    currentUser.role === 'उपखजिनदार' ||
+    currentUser.role === 'Treasurer' ||
+    currentUser.role === 'Vice Treasurer';
+
+  // Compute Member Cash Received, Approved Deposited to Trust/Bank, and Net Cash in Hand
+  const memberCashStats = useMemo(() => {
+    const settlementsList = cashSettlements || [];
+    const yearSettlements =
+      selectedYear === 'ALL'
+        ? settlementsList
+        : settlementsList.filter((s) =>
+            isDateInSelectedYear(s.depositDate, selectedYear, s.financialYear)
+          );
+
+    let totalCashReceivedAll = 0;
+    let totalCashSettledAll = 0;
+    let totalNetCashAll = 0;
+
+    const memberMap: Record<
+      string,
+      {
+        member: Member;
+        cashReceived: number;
+        cashSettled: number;
+        netCashInHand: number;
+        pendingSettlement: number;
+        pendingCount: number;
+      }
+    > = {};
+
+    members.forEach((m) => {
+      const received = filteredIncomesByYear
+        .filter((i) => i.paymentMethod === 'रोख' && i.cashReceiverMemberId === m.id)
+        .reduce((sum, i) => sum + i.amount, 0);
+
+      const approvedSettled = yearSettlements
+        .filter((s) => s.memberId === m.id && s.approvalStatus === 'मंजूर')
+        .reduce((sum, s) => sum + s.amount, 0);
+
+      const pendingSettled = yearSettlements
+        .filter((s) => s.memberId === m.id && s.approvalStatus === 'प्रलंबित')
+        .reduce((sum, s) => sum + s.amount, 0);
+
+      const pendingCount = yearSettlements.filter(
+        (s) => s.memberId === m.id && s.approvalStatus === 'प्रलंबित'
+      ).length;
+
+      const netInHand = Math.max(0, received - approvedSettled);
+
+      memberMap[m.id] = {
+        member: m,
+        cashReceived: received,
+        cashSettled: approvedSettled,
+        netCashInHand: netInHand,
+        pendingSettlement: pendingSettled,
+        pendingCount,
+      };
+
+      totalCashReceivedAll += received;
+      totalCashSettledAll += approvedSettled;
+      totalNetCashAll += netInHand;
+    });
+
+    const pendingApprovalsList = yearSettlements.filter((s) => s.approvalStatus === 'प्रलंबित');
+
+    const activeCashMembers = Object.values(memberMap)
+      .filter((item) => item.cashReceived > 0 || item.cashSettled > 0 || item.netCashInHand > 0)
+      .sort((a, b) => b.netCashInHand - a.netCashInHand);
+
+    return {
+      memberMap,
+      activeCashMembers,
+      totalCashReceivedAll,
+      totalCashSettledAll,
+      totalNetCashAll,
+      pendingApprovalsList,
+    };
+  }, [members, filteredIncomesByYear, cashSettlements, selectedYear]);
+
+  // Open Settlement Modal
+  const handleOpenAddSettlement = (memberId?: string) => {
+    setSettleError(null);
+    setSettleSuccessMsg(null);
+    const selfMember = members.find(
+      (m) => m.fullName.trim().toLowerCase() === (currentUser?.name || '').trim().toLowerCase()
+    );
+    const targetId =
+      memberId ||
+      (selfMember?.id ||
+        (memberCashStats.activeCashMembers[0]?.member.id || members[0]?.id || ''));
+    setSettleMemberId(targetId);
+    const stats = memberCashStats.memberMap[targetId];
+    if (stats && stats.netCashInHand > 0) {
+      setSettleAmount(String(stats.netCashInHand));
+    } else {
+      setSettleAmount('');
+    }
+    setSettleDestination('ट्रस्ट बँक खाते');
+    setSettleDate(new Date().toISOString().split('T')[0]);
+    setSettleBankRefNo('');
+    setSettleSlipPhotoUrl('');
+    setSettleNotes('');
+    setShowCashSettlementModal(true);
+  };
+
+  // Submit Settlement Entry
+  const handleSettlementSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSettleError(null);
+    const numAmount = parseFloat(settleAmount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      setSettleError('कृपया वैध रक्कम प्रविष्ट करा.');
+      return;
+    }
+    if (!settleMemberId) {
+      setSettleError('कृपया भरणा करणारा सभासद निवडा.');
+      return;
+    }
+    const mem = members.find((m) => m.id === settleMemberId);
+    if (!mem) return;
+
+    const newSettlement: CashSettlement = {
+      id: `cset-${Date.now()}`,
+      settlementNo: `CST-${Date.now().toString().slice(-4)}`,
+      memberId: mem.id,
+      memberName: mem.fullName,
+      amount: numAmount,
+      depositDate: settleDate,
+      destination: settleDestination,
+      bankRefNo: settleBankRefNo.trim() || undefined,
+      slipPhotoUrl: settleSlipPhotoUrl.trim() || undefined,
+      notes: settleNotes.trim() || undefined,
+      financialYear: selectedYear === 'ALL' ? '2026-2027' : selectedYear,
+      approvalStatus: 'प्रलंबित',
+      createdBy: `${currentUser.name} (${currentUser.role})`,
+      createdAt: new Date().toISOString(),
+    };
+
+    onAddCashSettlement?.(newSettlement);
+    setSettleSuccessMsg(
+      'रोख भरणा नोंद सबमिट झाली! खजिनदार किंवा उपखजिनदार यांच्या मंजुरीनंतर ही रक्कम शिल्लक रोखीतून वजा होईल.'
+    );
+    setTimeout(() => {
+      setShowCashSettlementModal(false);
+      setSettleSuccessMsg(null);
+    }, 1800);
+  };
+
+  // Handle Bank Slip upload to Google Drive
+  const handleSlipFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingSlip(true);
+    try {
+      const driveUrl = await uploadFileToGoogleDrive(file, `bank-slip-${file.name}`);
+      setSettleSlipPhotoUrl(driveUrl);
+    } catch (err) {
+      console.warn('Slip upload error:', err);
+    } finally {
+      setIsUploadingSlip(false);
+    }
+  };
 
   // Delete Confirm Modal state
   const [memberToDelete, setMemberToDelete] = useState<Member | null>(null);
@@ -465,6 +674,246 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
 
 
 
+      {/* ─── Cash Collection & Trust/Bank Settlement Section ─── */}
+      <div className="bg-gradient-to-br from-emerald-950/90 via-slate-900 to-slate-950 text-white rounded-3xl p-5 md:p-6 border border-emerald-500/30 shadow-xl space-y-5">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-700/80 pb-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center border border-emerald-500/30 shadow-inner shrink-0">
+              <Wallet className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-black text-white flex items-center gap-2">
+                  रोख संकलन व बँक/ट्रस्ट भरणा हिशोब
+                </h3>
+                <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-md text-[11px] font-black">
+                  Cash in Hand Summary
+                </span>
+                {memberCashStats.pendingApprovalsList.length > 0 && (
+                  <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-md text-[10px] font-black animate-pulse">
+                    ⏳ {memberCashStats.pendingApprovalsList.length} प्रलंबित मंजुऱ्या
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                सभासदांनी जमा केलेली रोख रक्कम, ट्रस्ट बँक खात्यात थेट भरणा आणि खजिनदार मंजुरीनंतर वजा झालेली शिल्लक रोख.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => handleOpenAddSettlement()}
+            className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center gap-2 cursor-pointer transition-all shrink-0 active:scale-95"
+          >
+            <Landmark className="w-4 h-4" />
+            <span>➕ ट्रस्टकडे / बँकेत रोख भरणा नोंद</span>
+          </button>
+        </div>
+
+        {/* 3 Summary Counters */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          <div className="bg-slate-800/80 backdrop-blur-xs p-4 rounded-2xl border border-slate-700/80 flex items-center gap-3.5">
+            <div className="w-10 h-10 bg-amber-500/20 text-amber-400 rounded-xl flex items-center justify-center shrink-0">
+              <ArrowDownCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                एकूण रोख संकलन (Received)
+              </p>
+              <p className="text-lg font-black text-amber-400">
+                ₹{memberCashStats.totalCashReceivedAll.toLocaleString('en-IN')}
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-slate-800/80 backdrop-blur-xs p-4 rounded-2xl border border-slate-700/80 flex items-center gap-3.5">
+            <div className="w-10 h-10 bg-blue-500/20 text-blue-400 rounded-xl flex items-center justify-center shrink-0">
+              <Landmark className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                बँकेत/ट्रस्टकडे जमा (Settled)
+              </p>
+              <p className="text-lg font-black text-blue-300">
+                ₹{memberCashStats.totalCashSettledAll.toLocaleString('en-IN')}
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-slate-800/80 backdrop-blur-xs p-4 rounded-2xl border border-emerald-500/40 flex items-center gap-3.5 ring-1 ring-emerald-500/30">
+            <div className="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center shrink-0">
+              <Wallet className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider">
+                एकूण शिल्लक रोख (Net Cash in Hand)
+              </p>
+              <p className="text-lg font-black text-emerald-400">
+                ₹{memberCashStats.totalNetCashAll.toLocaleString('en-IN')}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── Pending Approval Requests (Treasurer & Vice Treasurer) ─── */}
+        {memberCashStats.pendingApprovalsList.length > 0 && (
+          <div className="bg-amber-950/60 border border-amber-500/50 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-amber-300 font-bold text-xs">
+                <Clock className="w-4 h-4 text-amber-400 animate-spin" />
+                <span>प्रलंबित रोख भरणा मंजुरी विनंत्या ({memberCashStats.pendingApprovalsList.length})</span>
+                {!isTreasurerOrVice && !isAdmin && (
+                  <span className="text-[10px] text-amber-200/80 font-normal">
+                    (केवळ खजिनदार व उपखजिनदार यांच्या मंजुरीसाठी)
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              {memberCashStats.pendingApprovalsList.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-slate-900/90 border border-amber-500/30 p-3 rounded-xl flex flex-col justify-between gap-2.5"
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-black text-white text-xs">{item.memberName}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 bg-slate-800 text-slate-300 rounded border border-slate-700">
+                          {item.depositDate}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-emerald-400 font-bold mt-0.5">
+                        भरणा रक्कम: ₹{item.amount.toLocaleString('en-IN')}
+                      </p>
+                      <p className="text-[10px] text-slate-300">
+                        गंतव्य: <strong>{item.destination}</strong>
+                        {item.bankRefNo && ` | संदर्भ: ${item.bankRefNo}`}
+                      </p>
+                      {item.notes && <p className="text-[10px] text-slate-400 italic mt-0.5">"{item.notes}"</p>}
+                    </div>
+
+                    {item.slipPhotoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewProofUrl(item.slipPhotoUrl || null)}
+                        className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded text-[10px] font-bold flex items-center gap-1 shrink-0 border border-slate-700 cursor-pointer"
+                      >
+                        <ImageIcon className="w-3 h-3" />
+                        <span>स्लिप फोटो</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {isTreasurerOrVice || isAdmin ? (
+                    <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onApproveCashSettlement?.(item.id, currentUser.name, currentUser.role)
+                        }
+                        className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-lg shadow flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>मंजूर करा (Deduct Cash)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onRejectCashSettlement?.(item.id, currentUser.name, currentUser.role)
+                        }
+                        className="px-3 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs rounded-lg shadow flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>रद्द</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-amber-300/80 italic pt-1 border-t border-slate-800">
+                      मंजुरीसाठी खजिनदार / उपखजिनदार यांच्याकडे प्रलंबित आहे.
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Member-wise Cash Status Pills / Mini Cards ─── */}
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-slate-300">
+              सभासदनिहाय शिल्लक रोख हिशोब ({memberCashStats.activeCashMembers.length} सभासद):
+            </span>
+          </div>
+
+          {memberCashStats.activeCashMembers.length === 0 ? (
+            <p className="text-xs text-slate-400 italic bg-slate-900/60 p-3 rounded-xl border border-slate-800 text-center">
+              कोणत्याही सभासदाकडे सध्या शिल्लक रोख रक्कम नोंदवलेली नाही.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {memberCashStats.activeCashMembers.map((item) => (
+                <div
+                  key={item.member.id}
+                  className={`p-3 rounded-2xl border flex items-center justify-between gap-2 transition-all ${
+                    item.netCashInHand > 0
+                      ? 'bg-slate-900/90 border-emerald-500/40 ring-1 ring-emerald-500/20'
+                      : 'bg-slate-900/40 border-slate-800'
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="font-bold text-white text-xs truncate">
+                        {item.member.fullName}
+                      </span>
+                      <span className="text-[9px] px-1 py-0.2 bg-slate-800 text-slate-400 rounded border border-slate-700">
+                        {item.member.designation || 'सभासद'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-300 mt-1">
+                      <span>जमा: ₹{item.cashReceived.toLocaleString('en-IN')}</span>
+                      <span>•</span>
+                      <span>भरणा: ₹{item.cashSettled.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-1">
+                      <span className="text-[10px] font-bold text-slate-400">शिल्लक रोख:</span>
+                      <span
+                        className={`text-xs font-black px-1.5 py-0.2 rounded ${
+                          item.netCashInHand > 0
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-slate-800 text-slate-400'
+                        }`}
+                      >
+                        ₹{item.netCashInHand.toLocaleString('en-IN')}
+                      </span>
+                      {item.pendingSettlement > 0 && (
+                        <span className="text-[9px] text-amber-400 font-medium">
+                          (₹{item.pendingSettlement} प्रलंबित)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {item.netCashInHand > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAddSettlement(item.member.id)}
+                      className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[11px] font-bold flex items-center gap-1 shrink-0 shadow cursor-pointer transition-all active:scale-95"
+                      title="या सभासदाचा रोख भरणा नोंद करा"
+                    >
+                      <span>➕ भरणा</span>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Members Grid / Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sortedAndFilteredMembers.map((member) => {
@@ -473,6 +922,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
           const target = member.annualTargetAmount || 6000;
           const remainingSubscription = Math.max(0, target - subscriptionPaid);
           const percentage = Math.min(100, Math.round((subscriptionPaid / target) * 100));
+          const memberCash = memberCashStats.memberMap[member.id];
 
           const isOfficeBearer = member.designation && member.designation !== 'सभासद';
 
@@ -587,6 +1037,33 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                     <span className="font-bold text-emerald-700 dark:text-emerald-400">
                       + ₹{extraDonationPaid.toLocaleString('en-IN')}
                     </span>
+                  </div>
+                )}
+
+                {/* Member Cash in Hand Indicator */}
+                {memberCash && (memberCash.cashReceived > 0 || memberCash.netCashInHand > 0) && (
+                  <div className="mt-3 p-2.5 bg-emerald-50/80 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800/80 flex items-center justify-between text-xs">
+                    <div>
+                      <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-900 dark:text-emerald-300">
+                        <Wallet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>शिल्लक रोख (Cash in Hand):</span>
+                        <strong className="text-emerald-700 dark:text-emerald-300 font-black">
+                          ₹{memberCash.netCashInHand.toLocaleString('en-IN')}
+                        </strong>
+                      </div>
+                      <p className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">
+                        जमा: ₹{memberCash.cashReceived.toLocaleString('en-IN')} | भरणा: ₹{memberCash.cashSettled.toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                    {memberCash.netCashInHand > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenAddSettlement(member.id)}
+                        className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[10px] shadow-xs cursor-pointer shrink-0 transition-all active:scale-95"
+                      >
+                        ➕ भरणा
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -1216,6 +1693,225 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
           memberName={photoModalMember.fullName}
           memberRole={photoModalMember.designation}
           memberCode={photoModalMember.memberCode}
+        />
+      )}
+
+      {/* ─── Add Cash Settlement (Handover to Trust/Bank) Modal ─── */}
+      {showCashSettlementModal && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-700 my-8">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center">
+                  <Landmark className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-800 dark:text-slate-100">
+                    ट्रस्टकडे / बँकेत रोख भरणा नोंद
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    रोख संकलन जमाव ट्रस्ट बँक खात्यात किंवा खजिनदाराकडे सुपूर्द करा
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCashSettlementModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg font-bold text-sm cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSettlementSubmit} className="space-y-4 text-xs">
+              {/* Member Selection */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  भरणा करणारा सभासद निवडा <span className="text-rose-500">*</span>:
+                </label>
+                <select
+                  value={settleMemberId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setSettleMemberId(id);
+                    const stats = memberCashStats.memberMap[id];
+                    if (stats && stats.netCashInHand > 0) {
+                      setSettleAmount(String(stats.netCashInHand));
+                    }
+                  }}
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  required
+                >
+                  <option value="">-- सभासद निवडा --</option>
+                  {members.map((m) => {
+                    const stats = memberCashStats.memberMap[m.id];
+                    const inHand = stats?.netCashInHand || 0;
+                    return (
+                      <option key={m.id} value={m.id}>
+                        {m.fullName} ({m.designation || 'सभासद'}) {inHand > 0 ? `— शिल्लक रोख: ₹${inHand.toLocaleString('en-IN')}` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+                {settleMemberId && memberCashStats.memberMap[settleMemberId] && (
+                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
+                    💵 या सभासदाकडील सध्याची शिल्लक रोख रक्कम: ₹
+                    {memberCashStats.memberMap[settleMemberId].netCashInHand.toLocaleString('en-IN')}
+                  </p>
+                )}
+              </div>
+
+              {/* Amount & Destination */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    भरणा रक्कम (₹) <span className="text-rose-500">*</span>:
+                  </label>
+                  <input
+                    type="number"
+                    value={settleAmount}
+                    onChange={(e) => setSettleAmount(e.target.value)}
+                    placeholder="उदा. ५०००"
+                    min="1"
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl font-black text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    भरणा पद्धत / गंतव्य <span className="text-rose-500">*</span>:
+                  </label>
+                  <select
+                    value={settleDestination}
+                    onChange={(e) => setSettleDestination(e.target.value as CashSettlementDestination)}
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  >
+                    <option value="ट्रस्ट बँक खाते">🏦 ट्रस्ट बँक खाते भरणा (Bank Deposit)</option>
+                    <option value="खजिनदार / उपखजिनदार">🤝 खजिनदार / उपखजिनदाराकडे थेट रोख सुपूर्द (Handover)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Deposit Date & Bank Ref */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    भरणा दिनांक (Date) <span className="text-rose-500">*</span>:
+                  </label>
+                  <input
+                    type="date"
+                    value={settleDate}
+                    onChange={(e) => setSettleDate(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    बँक संदर्भ / स्लिप क्र. (Ref / Slip No):
+                  </label>
+                  <input
+                    type="text"
+                    value={settleBankRefNo}
+                    onChange={(e) => setSettleBankRefNo(e.target.value)}
+                    placeholder="उदा. UTR / Chq / Slip 45892"
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl font-medium text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Bank Deposit Slip Photo Upload */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                  <span>📷 बँक पावती / स्लिप फोटो (Proof Slip):</span>
+                  {isUploadingSlip && <span className="text-[10px] text-amber-500 font-bold animate-pulse">अपलोड होत आहे...</span>}
+                </label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleSlipFileUpload}
+                    className="flex-1 text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                  />
+                  {settleSlipPhotoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewProofUrl(settleSlipPhotoUrl)}
+                      className="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-xs flex items-center gap-1 shrink-0 cursor-pointer"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>फोटो पहा</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  नोंद / शेरा (Notes):
+                </label>
+                <input
+                  type="text"
+                  value={settleNotes}
+                  onChange={(e) => setSettleNotes(e.target.value)}
+                  placeholder="उदा. गणेशोत्सव संकलित रोख रक्कम बँक खात्यात जमा"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+              </div>
+
+              {/* Alert notice about Treasurer Approval */}
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-900 dark:text-amber-300 text-[11px] leading-relaxed flex items-start gap-2">
+                <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>
+                  <strong>महत्त्वाची नोंद:</strong> ही भरणा नोंद सबमिट झाल्यानंतर खजिनदार (Treasurer) किंवा उपखजिनदार (Vice Treasurer) यांच्या अधिकृत मंजुरीनंतरच संबंधित सभासदाच्या शिल्लक रोख रकमेतून वजा (Minus) केली जाईल.
+                </span>
+              </div>
+
+              {settleError && (
+                <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl font-bold text-xs flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{settleError}</span>
+                </div>
+              )}
+
+              {settleSuccessMsg && (
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl font-bold text-xs flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{settleSuccessMsg}</span>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setShowCashSettlementModal(false)}
+                  className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold rounded-xl cursor-pointer"
+                >
+                  रद्द करा
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black rounded-xl shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>रोख भरणा सबमिट करा</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Proof Lightbox Modal */}
+      {previewProofUrl && (
+        <ProofLightboxModal
+          isOpen={!!previewProofUrl}
+          onClose={() => setPreviewProofUrl(null)}
+          imageUrl={previewProofUrl}
+          title="बँक भरणा पावती / स्लिप फोटो पुरावा"
         />
       )}
     </div>

@@ -247,3 +247,26 @@ export interface StoredImageRecord {
   createdAt: string;
   updatedAt: string;
 }
+
+export type CashSettlementDestination = 'ट्रस्ट बँक खाते' | 'खजिनदार / उपखजिनदार' | string;
+
+export interface CashSettlement {
+  id: string;
+  settlementNo?: string;
+  memberId: string;
+  memberName: string;
+  amount: number;
+  depositDate: string; // YYYY-MM-DD
+  destination: CashSettlementDestination;
+  bankRefNo?: string;
+  slipPhotoUrl?: string;
+  notes?: string;
+  financialYear: string;
+  approvalStatus: ApprovalStatus;
+  approvedBy?: string;
+  approvedByRole?: UserDesignation;
+  approvedAt?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt?: string;
+}
