@@ -686,6 +686,12 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                   {selectedExpenseDetail.billNumber}
                 </p>
               )}
+              <p>
+                <strong className="text-slate-500">नोंदणीकर्ता (Entry By):</strong>{' '}
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {selectedExpenseDetail.createdBy || 'कार्यकर्ता / ॲडमिन'}
+                </span>
+              </p>
               {selectedExpenseDetail.approvalStatus === 'मंजूर' && (
                 <p className="p-2 bg-emerald-50 rounded text-emerald-800 border border-emerald-200">
                   <ShieldCheck className="w-3.5 h-3.5 inline mr-1 text-emerald-600" />

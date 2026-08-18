@@ -87,6 +87,12 @@ function buildTransactionEmailHtml(
               मंजूर (${txn.approvedBy || 'खजिनदार'}${txn.approvedByRole ? ` - ${txn.approvedByRole}` : ''})
             </td>
           </tr>
+          <tr style="background: #fff7ed; border-bottom: 1px solid #fed7aa;">
+            <td style="padding: 10px; font-weight: bold; color: #7c2d12;">नोंदणीकर्ता (Entry By):</td>
+            <td style="padding: 10px; font-weight: bold; color: #334155;">
+              ${txn.createdBy || 'कार्यकर्ता / ॲडमिन'}
+            </td>
+          </tr>
         </table>
 
         <div style="background: #fff7ed; padding: 12px; border-radius: 8px; border-left: 4px solid #ea580c; font-size: 13px; color: #7c2d12; margin-bottom: 16px;">

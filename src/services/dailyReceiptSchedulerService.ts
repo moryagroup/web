@@ -113,6 +113,7 @@ function buildDailyBatchEmailHtml(
           <td style="padding: 8px;">${i.paymentMethod || 'रोख'}</td>
           <td style="padding: 8px; font-weight: 900; color: #ea580c; text-align: right;">₹${toMarathiDigits(Number(i.amount).toLocaleString('en-IN'))}/-</td>
           <td style="padding: 8px; color: #059669; font-weight: bold;">मंजूर (${i.approvedBy || 'खजिनदार'})</td>
+          <td style="padding: 8px; color: #475569;">${i.createdBy || 'कार्यकर्ता'}</td>
         </tr>
       `
       )
@@ -132,6 +133,7 @@ function buildDailyBatchEmailHtml(
           <td style="padding: 8px;">${e.paymentMethod || 'रोख'}</td>
           <td style="padding: 8px; font-weight: 900; color: #dc2626; text-align: right;">₹${toMarathiDigits(Number(e.amount).toLocaleString('en-IN'))}/-</td>
           <td style="padding: 8px; color: #059669; font-weight: bold;">मंजूर (${e.approvedBy || 'खजिनदार'})</td>
+          <td style="padding: 8px; color: #475569;">${e.createdBy || 'कार्यकर्ता'}</td>
         </tr>
       `
       )
@@ -155,7 +157,7 @@ function buildDailyBatchEmailHtml(
 
       <div style="padding: 20px; color: #1e293b; font-size: 14px; line-height: 1.6;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 16px; font-weight: bold; color: #7c2d12; background: #fff7ed; padding: 10px 14px; border-radius: 8px; border: 1px solid #fed7aa;">
-          <span>📅 अहवाल दिनांक: <strong>${dateFormatted} (${dateStr})</strong></span>
+          <span>📅 अहवाल दिनांक: <strong>${marathiDateFormatted} (${dateStr})</strong></span>
           <span>⏰ वेळ: <strong>११:५९ PM (दैनिक ऑटो-सिंक)</strong></span>
         </div>
 
@@ -164,18 +166,18 @@ function buildDailyBatchEmailHtml(
           <tr>
             <td style="width: 33.33%; padding: 12px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px 0 0 8px; text-align: center;">
               <span style="font-size: 11px; color: #9a3412; font-weight: bold; display: block;">आजचा एकूण मंजूर जमा</span>
-              <strong style="font-size: 18px; color: #ea580c;">₹${totalIncome.toLocaleString('en-IN')}/-</strong>
-              <span style="font-size: 10px; color: #7c2d12; display: block;">(${approvedIncomes.length} पावत्या)</span>
+              <strong style="font-size: 18px; color: #ea580c;">₹${toMarathiDigits(totalIncome.toLocaleString('en-IN'))}/-</strong>
+              <span style="font-size: 10px; color: #7c2d12; display: block;">(${toMarathiDigits(approvedIncomes.length)} पावत्या)</span>
             </td>
             <td style="width: 33.33%; padding: 12px; background: #fef2f2; border: 1px solid #fecaca; text-align: center;">
               <span style="font-size: 11px; color: #991b1b; font-weight: bold; display: block;">आजचा एकूण मंजूर खर्च</span>
-              <strong style="font-size: 18px; color: #dc2626;">₹${totalExpense.toLocaleString('en-IN')}/-</strong>
-              <span style="font-size: 10px; color: #991b1b; display: block;">(${approvedExpenses.length} व्हाऊचर्स)</span>
+              <strong style="font-size: 18px; color: #dc2626;">₹${toMarathiDigits(totalExpense.toLocaleString('en-IN'))}/-</strong>
+              <span style="font-size: 10px; color: #991b1b; display: block;">(${toMarathiDigits(approvedExpenses.length)} व्हाऊचर्स)</span>
             </td>
             <td style="width: 33.33%; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0 8px 8px 0; text-align: center;">
               <span style="font-size: 11px; color: #475569; font-weight: bold; display: block;">आजचा निव्वळ फरक/शिल्लक</span>
-              <strong style="font-size: 18px; color: ${netBalance >= 0 ? '#059669' : '#dc2626'};">₹${netBalance.toLocaleString('en-IN')}/-</strong>
-              <span style="font-size: 10px; color: #64748b; display: block;">(एकूण ${totalCount} नोंदी)</span>
+              <strong style="font-size: 18px; color: ${netBalance >= 0 ? '#059669' : '#dc2626'};">₹${toMarathiDigits(netBalance.toLocaleString('en-IN'))}/-</strong>
+              <span style="font-size: 10px; color: #64748b; display: block;">(एकूण ${toMarathiDigits(totalCount)} नोंदी)</span>
             </td>
           </tr>
         </table>
@@ -184,7 +186,7 @@ function buildDailyBatchEmailHtml(
           approvedIncomes.length > 0
             ? `
           <h3 style="color: #7c2d12; margin: 16px 0 8px 0; font-size: 15px; border-bottom: 2px solid #ea580c; padding-bottom: 4px;">
-            १. आजच्या सर्व मंजूर जमा पावत्या (${approvedIncomes.length})
+            १. आजच्या सर्व मंजूर जमा पावत्या (${toMarathiDigits(approvedIncomes.length)})
           </h3>
           <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px;">
             <thead>
@@ -196,6 +198,7 @@ function buildDailyBatchEmailHtml(
                 <th style="padding: 8px;">पद्धत</th>
                 <th style="padding: 8px; text-align: right;">रक्कम</th>
                 <th style="padding: 8px;">मंजुरी</th>
+                <th style="padding: 8px;">नोंदणीकर्ता</th>
               </tr>
             </thead>
             <tbody>
@@ -210,7 +213,7 @@ function buildDailyBatchEmailHtml(
           approvedExpenses.length > 0
             ? `
           <h3 style="color: #991b1b; margin: 16px 0 8px 0; font-size: 15px; border-bottom: 2px solid #dc2626; padding-bottom: 4px;">
-            २. आजचे सर्व मंजूर खर्च व्हाऊचर्स (${approvedExpenses.length})
+            २. आजचे सर्व मंजूर खर्च व्हाऊचर्स (${toMarathiDigits(approvedExpenses.length)})
           </h3>
           <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px;">
             <thead>
@@ -222,6 +225,7 @@ function buildDailyBatchEmailHtml(
                 <th style="padding: 8px;">पद्धत</th>
                 <th style="padding: 8px; text-align: right;">रक्कम</th>
                 <th style="padding: 8px;">मंजुरी</th>
+                <th style="padding: 8px;">नोंदणीकर्ता</th>
               </tr>
             </thead>
             <tbody>
@@ -233,7 +237,7 @@ function buildDailyBatchEmailHtml(
         }
 
         <div style="background: #fff7ed; padding: 14px; border-radius: 8px; border-left: 4px solid #ea580c; font-size: 13px; color: #7c2d12; margin-top: 16px;">
-          📎 <strong>सर्व मूळ पावती प्रती (Receipt Attachments):</strong> आजच्या सर्व ${totalCount} मंजूर पावत्यांचे अधिकृत फोटो (खजिनदार व उपखजिनदार यांच्या स्वाक्षरीसह आणि पेमेंट पुराव्यासह) या ईमेलसोबत स्वतंत्रपणे जोडले आहेत.
+          📎 <strong>सर्व मूळ पावती प्रती (Receipt Attachments):</strong> आजच्या सर्व ${toMarathiDigits(totalCount)} मंजूर पावत्यांचे अधिकृत फोटो (खजिनदार व उपखजिनदार यांच्या स्वाक्षरीसह आणि पेमेंट पुराव्यासह) या ईमेलसोबत स्वतंत्रपणे जोडले आहेत.
         </div>
       </div>
 

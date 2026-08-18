@@ -320,23 +320,21 @@ export async function generateReceiptImageCanvas(
   // Row 4: Total Amount (Vibrant Highlight)
   drawDetailRow('एकूण रक्कम:', formatCurrencyMarathi(transaction.amount), true);
 
-  // Row 5: Approval Status & Book reference
+  // Row 5: Approval Status & Entry Maker Name
   const approverStr = transaction.approvedBy
     ? `मंजूर (${transaction.approvedBy})`
     : 'मंजूर';
+  const entryMakerStr = transaction.createdBy || 'कार्यकर्ता / ॲडमिन';
 
-  let secondaryRefLabel: string | undefined = undefined;
-  let secondaryRefValue: string | undefined = undefined;
+  drawDetailRow('मंजुरी दर्जा:', approverStr, false, 'नोंदणीकर्ता (Entry By):', entryMakerStr);
 
+  // Row 6 (Optional): Physical Receipt Book or Payment Proof Reference
   if (isIncome && (inc?.isPhysicalReceipt || inc?.receiptBookNo)) {
-    secondaryRefLabel = 'पावती पुस्तक:';
-    secondaryRefValue = `पुस्तक क्र. ${toMarathiDigits(inc.receiptBookNo || '1')} (अनुक्रमांक: #${toMarathiDigits(inc.receiptSerialNo || '1')})`;
+    const bookRef = `पुस्तक क्र. ${toMarathiDigits(inc.receiptBookNo || '1')} (पावती अनुक्रमांक: #${toMarathiDigits(inc.receiptSerialNo || '1')})`;
+    drawDetailRow('पावती पुस्तक संदर्भ:', bookRef);
   } else if (transaction.attachmentUrl) {
-    secondaryRefLabel = 'पेमेंट पुरावा:';
-    secondaryRefValue = '📁 Google Drive वर मूळ प्रत सुरक्षित';
+    drawDetailRow('संलग्न पेमेंट पुरावा:', '📁 Google Drive वर मूळ पावती/पुरावा जतन');
   }
-
-  drawDetailRow('मंजुरी दर्जा:', approverStr, false, secondaryRefLabel, secondaryRefValue);
 
   // 6. Signatures Section (Treasurer, Vice-Treasurer & Mandal Seal)
   const sigSectionY = currentY + 8;

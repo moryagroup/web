@@ -676,6 +676,12 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                   {selectedIncomeDetail.receiptNumber}
                 </p>
               )}
+              <p>
+                <strong className="text-slate-500">नोंदणीकर्ता (Entry By):</strong>{' '}
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {selectedIncomeDetail.createdBy || 'कार्यकर्ता / ॲडमिन'}
+                </span>
+              </p>
               {selectedIncomeDetail.notes && (
                 <p>
                   <strong className="text-slate-500">अतिरिक्त टीप:</strong>{' '}
