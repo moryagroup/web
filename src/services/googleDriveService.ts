@@ -1,9 +1,10 @@
 /**
- * Google Drive Storage Service for Morya Group Web
+ * Google Drive & Email Dispatch Storage Service for Morya Group Web
  * Uploads receipt/bill photos directly to moryagroupdata@gmail.com Google Drive
- * and generates public viewable links.
+ * and sends email notifications via Google Apps Script Web App.
  */
 
+export const TARGET_EMAIL = 'moryagroupdata@gmail.com';
 const DEFAULT_DRIVE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_morya_drive_upload_v1/exec';
 const STORAGE_KEY_DRIVE_WEB_APP = 'morya_mandal_google_drive_script_url_v2';
 
@@ -37,9 +38,9 @@ export function isGoogleDriveUrl(url: string): boolean {
 }
 
 /**
- * Converts a file or data URL to a compressed Base64 string for Drive upload
+ * Converts a file or Blob to a compressed Base64 string for Drive/Email payload
  */
-async function fileToBase64(file: File | Blob): Promise<string> {
+export async function fileToBase64(file: File | Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -53,7 +54,97 @@ async function fileToBase64(file: File | Blob): Promise<string> {
 }
 
 /**
- * Uploads an attachment file to moryagroupdata@gmail.com Google Drive
+ * Tests connection to configured Google Apps Script Web App
+ */
+export async function testGoogleDriveConnection(customUrl?: string): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const scriptUrl = customUrl || getGoogleDriveScriptUrl();
+  try {
+    const res = await fetch(scriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'PING' }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'success') {
+        return { success: true, message: 'Google Apps Script जोडणी यशस्वी! (Connected)' };
+      }
+    }
+    return { success: false, message: 'Google Apps Script कडून प्रतिसाद मिळाला नाही.' };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: `जोडणी त्रुटी: ${err?.message || 'तपासा आणि पुन्हा प्रयत्न करा'}`,
+    };
+  }
+}
+
+export interface DispatchReceiptPayload {
+  blob: Blob;
+  fileName: string;
+  subject: string;
+  htmlBody: string;
+  financialYear: string;
+}
+
+export interface DispatchReceiptResult {
+  success: boolean;
+  driveUrl?: string;
+  message: string;
+}
+
+/**
+ * Saves generated receipt to Google Drive and emails to moryagroupdata@gmail.com
+ */
+export async function uploadAndEmailTransactionReceipt(
+  payload: DispatchReceiptPayload
+): Promise<DispatchReceiptResult> {
+  const base64Data = await fileToBase64(payload.blob);
+  const scriptUrl = getGoogleDriveScriptUrl();
+
+  const bodyData = {
+    action: 'SAVE_AND_EMAIL',
+    base64: base64Data,
+    fileName: payload.fileName,
+    contentType: payload.blob.type || 'image/jpeg',
+    subject: payload.subject,
+    htmlBody: payload.htmlBody,
+    financialYear: payload.financialYear,
+  };
+
+  try {
+    const res = await fetch(scriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(bodyData),
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json.status === 'success') {
+        return {
+          success: true,
+          driveUrl: json.viewUrl || json.url,
+          message: `पावती moryagroupdata@gmail.com वर पाठवली व Google Drive मध्ये सेव्ह झाली.`,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[Transaction Dispatch] Google Apps Script dispatch error:', err);
+  }
+
+  return {
+    success: false,
+    message: 'Google Apps Script थेट कनेक्ट होऊ शकले नाही. स्थानिक स्वरूपात सेव्ह केले.',
+  };
+}
+
+/**
+ * Standard upload function for general files
  */
 export async function uploadFileToGoogleDrive(
   file: File | Blob,
@@ -63,6 +154,7 @@ export async function uploadFileToGoogleDrive(
   const scriptUrl = getGoogleDriveScriptUrl();
 
   const payload = {
+    action: 'UPLOAD_ONLY',
     base64: base64Data,
     fileName: `morya_${Date.now()}_${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`,
     contentType: file.type || 'image/jpeg',
@@ -71,9 +163,7 @@ export async function uploadFileToGoogleDrive(
   try {
     const res = await fetch(scriptUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8',
-      },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
     });
 
@@ -84,9 +174,8 @@ export async function uploadFileToGoogleDrive(
       }
     }
   } catch (err) {
-    console.warn('[Google Drive] Web App direct POST error, attempting fallback payload:', err);
+    console.warn('[Google Drive] Web App direct POST error:', err);
   }
 
-  // Fallback: Return standard Data URL if custom script endpoint is not deployed yet
   return `data:${file.type || 'image/jpeg'};base64,${base64Data}`;
 }

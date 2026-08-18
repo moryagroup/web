@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CurrentUser } from '../types';
-import { Settings, Plus, Trash2, X, Check, Camera, Tag, Download, Sun, Moon, Upload } from 'lucide-react';
+import { Settings, Plus, Trash2, X, Check, Camera, Tag, Download, Sun, Moon, Upload, PenTool, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { hasAdminPermissions } from '../utils/rbac';
-import { getGoogleDriveScriptUrl, setGoogleDriveScriptUrl } from '../services/googleDriveService';
+import { getGoogleDriveScriptUrl, setGoogleDriveScriptUrl, testGoogleDriveConnection } from '../services/googleDriveService';
+import {
+  getTreasurerSignature,
+  setTreasurerSignature,
+  clearTreasurerSignature,
+  getViceTreasurerSignature,
+  setViceTreasurerSignature,
+  clearViceTreasurerSignature,
+  OfficerSignature,
+} from '../services/signatureService';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -37,9 +46,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [newType, setNewType] = useState<string>('');
   const [driveScriptUrl, setDriveScriptUrl] = useState<string>(() => getGoogleDriveScriptUrl());
+  const [testStatus, setTestStatus] = useState<{ loading: boolean; success?: boolean; message?: string } | null>(null);
+
+  // Signatures State
+  const [treasurerSig, setTreasurerSigState] = useState<OfficerSignature | null>(() => getTreasurerSignature());
+  const [viceTreasurerSig, setViceTreasurerSigState] = useState<OfficerSignature | null>(() => getViceTreasurerSignature());
+  const [treasurerName, setTreasurerName] = useState<string>(() => getTreasurerSignature()?.officerName || 'खजिनदार');
+  const [viceTreasurerName, setViceTreasurerName] = useState<string>(() => getViceTreasurerSignature()?.officerName || 'उपखजिनदार');
+
+  const treasurerFileInputRef = useRef<HTMLInputElement>(null);
+  const viceTreasurerFileInputRef = useRef<HTMLInputElement>(null);
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
   const isAdmin = isLoggedIn && hasAdminPermissions(currentUser.role);
+  const isOfficer = isAdmin || currentUser.role === 'खजिनदार' || currentUser.role === 'उपखजिनदार' || currentUser.role === 'अध्यक्ष' || currentUser.role === 'सचिव';
+
+  useEffect(() => {
+    if (isOpen) {
+      setTreasurerSigState(getTreasurerSignature());
+      setViceTreasurerSigState(getViceTreasurerSignature());
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -67,6 +94,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
+  const handleSignatureUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    role: 'TREASURER' | 'VICE_TREASURER'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      if (role === 'TREASURER') {
+        setTreasurerSignature(dataUrl, treasurerName);
+        setTreasurerSigState(getTreasurerSignature());
+      } else {
+        setViceTreasurerSignature(dataUrl, viceTreasurerName);
+        setViceTreasurerSigState(getViceTreasurerSignature());
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleTestConnection = async () => {
+    setTestStatus({ loading: true, message: 'Google Apps Script जोडणी तपासत आहे...' });
+    const res = await testGoogleDriveConnection(driveScriptUrl);
+    setTestStatus({
+      loading: false,
+      success: res.success,
+      message: res.message,
+    });
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white max-w-lg w-full rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
@@ -77,9 +136,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <Settings className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-white">सिस्टम सेटिंग्ज व जमा प्रकार</h3>
+              <h3 className="font-bold text-sm text-white">सिस्टम सेटिंग्ज व अधिकृत स्वाक्षरी</h3>
               <p className="text-[11px] text-slate-400">
-                रिएल-टाईम फायरस्टोअर सिंक्रोनायझेशन (`morya-group-352ad`)
+                ई-मेल अहवाल व Google Drive सिंक (moryagroupdata@gmail.com)
               </p>
             </div>
           </div>
@@ -104,9 +163,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {theme === 'dark' ? '🌙 डार्क मोड सक्रीय' : '☀️ लाईट मोड सक्रीय'}
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed">
-              आपल्या पसंतीनुसार अ‍ॅपची व्हिज्युअल थीम लाईट मोड (Light) किंवा डार्क मोड (Dark) मध्ये बदला.
-            </p>
             <div className="grid grid-cols-2 gap-3 pt-1">
               <button
                 type="button"
@@ -135,6 +191,222 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
+          {/* Officer Signatures Section (Treasurer & Vice Treasurer) */}
+          <div className="space-y-3 pb-4 border-b border-slate-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <PenTool className="w-4 h-4 text-amber-600" />
+                <h4 className="font-bold text-slate-800">अधिकृत स्वाक्षरी व्यवस्थापन (Official Signatures)</h4>
+              </div>
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                पावतीवर आपोआप दिसेल
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              खजिनदार व उपखजिनदार यांच्या स्वाक्षरीचे फोटो येथे अपलोड करा. प्रत्येक मंजूर पावती व व्हाऊचरवर ही स्वाक्षरी अधिकृतपणे दिसेल.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              {/* Treasurer Signature Card */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-slate-800 text-xs">१. खजिनदार स्वाक्षरी</span>
+                  {treasurerSig ? (
+                    <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded">
+                      अपलोड झाली ✓
+                    </span>
+                  ) : (
+                    <span className="text-[9px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded">
+                      प्रलंबित
+                    </span>
+                  )}
+                </div>
+
+                <input
+                  type="text"
+                  value={treasurerName}
+                  onChange={(e) => {
+                    setTreasurerName(e.target.value);
+                    if (treasurerSig) setTreasurerSignature(treasurerSig.signatureDataUrl, e.target.value);
+                  }}
+                  placeholder="खजिनदाराचे पूर्ण नाव"
+                  className="w-full p-1.5 border border-slate-300 rounded text-[11px] font-semibold bg-white outline-none focus:ring-1 focus:ring-amber-500"
+                />
+
+                <div className="h-20 bg-white rounded border border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative">
+                  {treasurerSig?.signatureDataUrl ? (
+                    <img
+                      src={treasurerSig.signatureDataUrl}
+                      alt="Treasurer Signature"
+                      className="max-h-full object-contain p-1"
+                    />
+                  ) : (
+                    <span className="text-slate-400 text-[10px] italic">स्वाक्षरी फोटो उपलब्ध नाही</span>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    ref={treasurerFileInputRef}
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleSignatureUpload(e, 'TREASURER')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => treasurerFileInputRef.current?.click()}
+                    className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded text-[11px] flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>अपलोड करा</span>
+                  </button>
+                  {treasurerSig && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearTreasurerSignature();
+                        setTreasurerSigState(null);
+                      }}
+                      className="p-1.5 text-rose-600 hover:bg-rose-50 rounded border border-rose-200 cursor-pointer"
+                      title="हटवा"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Vice Treasurer Signature Card */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-slate-800 text-xs">२. उपखजिनदार स्वाक्षरी</span>
+                  {viceTreasurerSig ? (
+                    <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded">
+                      अपलोड झाली ✓
+                    </span>
+                  ) : (
+                    <span className="text-[9px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded">
+                      प्रलंबित
+                    </span>
+                  )}
+                </div>
+
+                <input
+                  type="text"
+                  value={viceTreasurerName}
+                  onChange={(e) => {
+                    setViceTreasurerName(e.target.value);
+                    if (viceTreasurerSig) setViceTreasurerSignature(viceTreasurerSig.signatureDataUrl, e.target.value);
+                  }}
+                  placeholder="उपखजिनदाराचे पूर्ण नाव"
+                  className="w-full p-1.5 border border-slate-300 rounded text-[11px] font-semibold bg-white outline-none focus:ring-1 focus:ring-amber-500"
+                />
+
+                <div className="h-20 bg-white rounded border border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative">
+                  {viceTreasurerSig?.signatureDataUrl ? (
+                    <img
+                      src={viceTreasurerSig.signatureDataUrl}
+                      alt="Vice Treasurer Signature"
+                      className="max-h-full object-contain p-1"
+                    />
+                  ) : (
+                    <span className="text-slate-400 text-[10px] italic">स्वाक्षरी फोटो उपलब्ध नाही</span>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    ref={viceTreasurerFileInputRef}
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleSignatureUpload(e, 'VICE_TREASURER')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => viceTreasurerFileInputRef.current?.click()}
+                    className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded text-[11px] flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>अपलोड करा</span>
+                  </button>
+                  {viceTreasurerSig && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearViceTreasurerSignature();
+                        setViceTreasurerSigState(null);
+                      }}
+                      className="p-1.5 text-rose-600 hover:bg-rose-50 rounded border border-rose-200 cursor-pointer"
+                      title="हटवा"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Google Drive & Email Configuration Section (Admin / Officers) */}
+          {isOfficer && (
+            <div className="space-y-3 pb-4 border-b border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-amber-600" />
+                  <h4 className="font-bold text-slate-800">Google Drive व ईमेल सिंक (moryagroupdata@gmail.com)</h4>
+                </div>
+                <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">
+                  Apps Script
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                प्रत्येक मंजूर पावती व पेमेंट पुरावा थेट <span className="font-bold text-amber-800">moryagroupdata@gmail.com</span> Google Drive वर सेव्ह होऊन ई-मेलद्वारे पाठवले जाते.
+              </p>
+
+              <div className="space-y-2">
+                <input
+                  type="url"
+                  value={driveScriptUrl}
+                  onChange={(e) => {
+                    setDriveScriptUrl(e.target.value);
+                    setGoogleDriveScriptUrl(e.target.value);
+                  }}
+                  placeholder="Google Apps Script Web App URL (https://script.google.com/macros/s/...)"
+                  className="w-full p-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-amber-500 outline-none font-mono text-slate-700 bg-white"
+                />
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleTestConnection}
+                    disabled={testStatus?.loading}
+                    className="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-[11px] flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
+                  >
+                    {testStatus?.loading ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    )}
+                    <span>जोडणी तपासा (Test Connection)</span>
+                  </button>
+
+                  {testStatus && !testStatus.loading && (
+                    <span
+                      className={`text-[11px] font-bold flex items-center gap-1 ${
+                        testStatus.success ? 'text-emerald-600' : 'text-rose-600'
+                      }`}
+                    >
+                      {testStatus.success ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                      {testStatus.message}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Custom Income Types Section */}
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
@@ -148,7 +420,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             <p className="text-[11px] text-slate-500 leading-relaxed">
-              येथे जोडलेले सानुकूल जमा प्रकार फायरस्टोअर सेटिंग्समध्ये साठवले जातात व सर्व डिव्हाइसेसवर थेट अपडेट होतात.
+              येथे जोडलेले सानुकूल जमा प्रकार सर्व फॉर्म्समध्ये थेट उपलब्ध होतात.
             </p>
 
             {isAdmin && (
@@ -158,7 +430,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   value={newType}
                   onChange={(e) => setNewType(e.target.value)}
                   placeholder="उदा. जाहिरात प्रायोजकत्व, मंडप भाडे..."
-                  className="flex-1 p-2 border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-amber-500 outline-none"
+                  className="flex-1 p-2 border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-amber-500 outline-none bg-white"
                 />
                 <button
                   type="submit"
@@ -196,29 +468,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               )}
             </div>
           </div>
-
-          {/* Google Drive Configuration Section (Admin Only) */}
-          {isAdmin && (
-            <div className="pt-4 border-t border-slate-200 space-y-2">
-              <div className="flex items-center gap-2">
-                <Upload className="w-4 h-4 text-amber-600" />
-                <h4 className="font-bold text-slate-800">Google Drive स्टोरेज (moryagroupdata@gmail.com)</h4>
-              </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                मंडळाच्या सर्व जमा/खर्च पावती छायाचित्रे सुरक्षितपणे <span className="font-bold text-amber-800">moryagroupdata@gmail.com</span> Google Drive वर सेव्ह होतात.
-              </p>
-              <input
-                type="url"
-                value={driveScriptUrl}
-                onChange={(e) => {
-                  setDriveScriptUrl(e.target.value);
-                  setGoogleDriveScriptUrl(e.target.value);
-                }}
-                placeholder="Google Apps Script Web App URL (https://script.google.com/macros/s/...)"
-                className="w-full p-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-amber-500 outline-none font-mono text-slate-700"
-              />
-            </div>
-          )}
 
           {/* Data Backup Section (Admin Only) */}
           {onDownloadBackup && isAdmin && (

@@ -21,11 +21,16 @@ import {
   Lock,
   Pencil,
   Trash2,
-  ArrowLeft,
-  FileSpreadsheet,
   Printer,
   Paperclip,
+  ArrowLeft,
+  FileSpreadsheet,
+  Mail,
+  Download,
+  CheckCircle2,
+  RefreshCw,
 } from 'lucide-react';
+import { dispatchApprovedTransaction, downloadReceiptImage } from '../services/transactionDispatchService';
 
 interface ExpenseHistoryProps {
   expenses: ExpenseTransaction[];
@@ -60,6 +65,7 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
   );
   const [editingExpense, setEditingExpense] = useState<ExpenseTransaction | null>(null);
   const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
+  const [dispatchStatus, setDispatchStatus] = useState<{ loading: boolean; message?: string; success?: boolean } | null>(null);
 
   const [showFilters, setShowFilters] = useState(false);
 
@@ -704,6 +710,69 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
               </div>
             )}
 
+            {/* Email & Google Drive Dispatch Status Notice */}
+            {dispatchStatus && (
+              <div
+                className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 ${
+                  dispatchStatus.success
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                    : dispatchStatus.loading
+                    ? 'bg-amber-50 border-amber-300 text-amber-800'
+                    : 'bg-rose-50 border-rose-300 text-rose-800'
+                }`}
+              >
+                {dispatchStatus.loading ? (
+                  <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
+                ) : dispatchStatus.success ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <Mail className="w-4 h-4 text-rose-600 shrink-0" />
+                )}
+                <span>{dispatchStatus.message}</span>
+              </div>
+            )}
+
+            {selectedExpenseDetail.approvalStatus === 'मंजूर' && (
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  disabled={dispatchStatus?.loading}
+                  onClick={async () => {
+                    try {
+                      setDispatchStatus({ loading: true, message: 'व्हाऊचर तयार करून ई-मेल व ड्राईव्हवर पाठवत आहे...' });
+                      const res = await dispatchApprovedTransaction(selectedExpenseDetail, 'EXPENSE');
+                      setDispatchStatus({
+                        loading: false,
+                        success: res.success,
+                        message: res.message,
+                      });
+                    } catch (e: any) {
+                      setDispatchStatus({ loading: false, success: false, message: e?.message || 'त्रुटी' });
+                    }
+                  }}
+                  className="py-2.5 px-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>ई-मेल व ड्राईव्हवर पाठवा</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await downloadReceiptImage(selectedExpenseDetail, 'EXPENSE');
+                    } catch (e) {
+                      console.error('Download error:', e);
+                    }
+                  }}
+                  className="py-2.5 px-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>व्हाऊचर इमेज डाउनलोड</span>
+                </button>
+              </div>
+            )}
+
             {selectedExpenseDetail.approvalStatus === 'प्रलंबित' && canApprove && (
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between">
                 <div>
@@ -724,7 +793,10 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
             )}
 
             <button
-              onClick={() => setSelectedExpenseDetail(null)}
+              onClick={() => {
+                setSelectedExpenseDetail(null);
+                setDispatchStatus(null);
+              }}
               className="w-full py-2 bg-slate-800 text-white font-bold text-xs rounded-xl hover:bg-slate-900 cursor-pointer"
             >
               बंद करा

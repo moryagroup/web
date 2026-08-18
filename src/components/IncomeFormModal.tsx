@@ -38,7 +38,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
   if (!isOpen) return null;
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const autoTransNo = generateNextIncomeTransactionNo(incomes);
+  const autoTransNo = generateNextIncomeTransactionNo(todayStr, incomes);
 
   const [amount, setAmount] = useState<number | ''>('');
   const [transactionDate, setTransactionDate] = useState<string>(todayStr);
@@ -119,6 +119,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       .split(' ')[0]}`;
 
     const finalTransNo = generateNextIncomeTransactionNo(transactionDate, incomes);
+    const isApproved = autoApprove;
 
     onSubmit({
       transactionNo: finalTransNo,

@@ -138,6 +138,7 @@ import {
 } from './services/supabaseService';
 import { isSupabaseConfigured } from './services/supabaseClient';
 import { sendDailyEmailReport, isReportAlreadySentToday } from './services/emailService';
+import { dispatchApprovedTransaction } from './services/transactionDispatchService';
 import { Agentation } from 'agentation';
 
 import { Sidebar } from './components/Sidebar';
@@ -499,6 +500,9 @@ export default function App() {
     saveIncome(finalIncome).catch(console.error);
     cloudSaveIncome(finalIncome).catch(console.error);
     saveIncomeToSupabase(finalIncome).catch(console.error);
+    if (isApproved) {
+      dispatchApprovedTransaction(finalIncome, 'INCOME').catch(console.error);
+    }
   };
 
   // Update Income Transaction (Admin Only)
@@ -656,6 +660,9 @@ export default function App() {
     saveExpense(finalExpense).catch(console.error);
     cloudSaveExpense(finalExpense).catch(console.error);
     saveExpenseToSupabase(finalExpense).catch(console.error);
+    if (isApproved) {
+      dispatchApprovedTransaction(finalExpense, 'EXPENSE').catch(console.error);
+    }
   };
 
   // Update Expense Transaction (Admin Only)
@@ -689,6 +696,7 @@ export default function App() {
     saveExpense(updated).catch(console.error);
     cloudSaveExpense(updated).catch(console.error);
     saveExpenseToSupabase(updated).catch(console.error);
+    dispatchApprovedTransaction(updated, 'EXPENSE').catch(console.error);
   };
 
   // Approve Income
@@ -706,6 +714,7 @@ export default function App() {
     saveIncome(updated).catch(console.error);
     cloudSaveIncome(updated).catch(console.error);
     saveIncomeToSupabase(updated).catch(console.error);
+    dispatchApprovedTransaction(updated, 'INCOME').catch(console.error);
   };
 
   // Add Member

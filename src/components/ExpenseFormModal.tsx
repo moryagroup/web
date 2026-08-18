@@ -52,6 +52,8 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
   const [financialYear, setFinancialYear] = useState<string>('2026-2027');
   const [autoApprove, setAutoApprove] = useState<boolean>(true);
 
+  const autoTransNo = generateNextExpenseTransactionNo(todayStr, expenses);
+
   const handleAddCustomCategory = () => {
     if (customCategoryInput.trim()) {
       onAddCustomExpenseCategory(customCategoryInput.trim());

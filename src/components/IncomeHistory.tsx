@@ -20,10 +20,15 @@ import {
   Trash2,
   ArrowLeft,
   Paperclip,
+  Mail,
+  Download,
+  CheckCircle2,
+  RefreshCw,
 } from 'lucide-react';
 import { NativeService } from '../services/nativeService';
 import { ProofLightboxModal } from './ProofLightboxModal';
 import { isGoogleDriveUrl } from '../services/googleDriveService';
+import { dispatchApprovedTransaction, downloadReceiptImage } from '../services/transactionDispatchService';
 
 interface IncomeHistoryProps {
   incomes: IncomeTransaction[];
@@ -56,6 +61,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   const [selectedYear, setSelectedYear] = useState(financialYear);
   const [selectedIncomeDetail, setSelectedIncomeDetail] = useState<IncomeTransaction | null>(null);
   const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
+  const [dispatchStatus, setDispatchStatus] = useState<{ loading: boolean; message?: string; success?: boolean } | null>(null);
 
   const [showFilters, setShowFilters] = useState(false);
 
@@ -670,7 +676,68 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               </span>
             </div>
 
-            <div className="flex gap-2">
+            {/* Email & Google Drive Dispatch Status Notice */}
+            {dispatchStatus && (
+              <div
+                className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 ${
+                  dispatchStatus.success
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                    : dispatchStatus.loading
+                    ? 'bg-amber-50 border-amber-300 text-amber-800'
+                    : 'bg-rose-50 border-rose-300 text-rose-800'
+                }`}
+              >
+                {dispatchStatus.loading ? (
+                  <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
+                ) : dispatchStatus.success ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <Mail className="w-4 h-4 text-rose-600 shrink-0" />
+                )}
+                <span>{dispatchStatus.message}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                disabled={dispatchStatus?.loading}
+                onClick={async () => {
+                  try {
+                    setDispatchStatus({ loading: true, message: 'पावती तयार करून ई-मेल व ड्राईव्हवर पाठवत आहे...' });
+                    const res = await dispatchApprovedTransaction(selectedIncomeDetail, 'INCOME');
+                    setDispatchStatus({
+                      loading: false,
+                      success: res.success,
+                      message: res.message,
+                    });
+                  } catch (e: any) {
+                    setDispatchStatus({ loading: false, success: false, message: e?.message || 'त्रुटी' });
+                  }
+                }}
+                className="py-2.5 px-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Mail className="w-4 h-4" />
+                <span>ई-मेल व ड्राईव्हवर पाठवा</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await downloadReceiptImage(selectedIncomeDetail, 'INCOME');
+                  } catch (e) {
+                    console.error('Download error:', e);
+                  }
+                }}
+                className="py-2.5 px-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>पावती इमेज डाउनलोड</span>
+              </button>
+            </div>
+
+            <div className="flex gap-2 pt-1">
               <button
                 onClick={async () => {
                   try {
@@ -681,17 +748,20 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                     console.warn('Share error:', e);
                   }
                 }}
-                className="flex-1 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                className="flex-1 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
               >
                 <Share2 className="w-4 h-4" />
-                शेअर करा (WhatsApp)
+                <span>शेअर करा (WhatsApp)</span>
               </button>
 
               <button
-                onClick={() => setSelectedIncomeDetail(null)}
-                className="flex-1 py-2 bg-slate-800 text-white font-bold text-xs rounded-xl hover:bg-slate-900 shadow-sm"
+                onClick={() => {
+                  setSelectedIncomeDetail(null);
+                  setDispatchStatus(null);
+                }}
+                className="flex-1 py-2 bg-slate-800 text-white font-bold text-xs rounded-xl hover:bg-slate-900 shadow-sm cursor-pointer"
               >
-                बंद करा
+                <span>बंद करा</span>
               </button>
             </div>
           </div>
