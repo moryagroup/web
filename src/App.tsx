@@ -1194,6 +1194,7 @@ export default function App() {
         onLogout={handleLogout}
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
+        onOpen={() => setIsMobileMenuOpen(true)}
         onOpenOccasions={() => setIsOccasionModalOpen(true)}
         onOpenSettings={() => setIsSettingsModalOpen(true)}
         theme={theme}
@@ -1202,13 +1203,15 @@ export default function App() {
 
       {/* Main Workspace Canvas */}
       <main className="flex-1 flex flex-col overflow-hidden w-full">
-        {/* Mobile Top Navigation Header */}
-        <header className="lg:hidden bg-gradient-to-r from-amber-950 via-rose-950 to-orange-950 text-white px-4 py-2.5 border-b border-amber-500/40 flex items-center justify-between shrink-0 z-30 shadow-md">
+        {/* Top Navigation Header (Always Accessible on Desktop & Mobile) */}
+        <header className="bg-gradient-to-r from-amber-950 via-rose-950 to-orange-950 text-white px-4 py-2.5 border-b border-amber-500/40 flex items-center justify-between shrink-0 z-30 shadow-md">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onMouseEnter={() => setIsMobileMenuOpen(true)}
               className="p-2 rounded-xl bg-amber-900/80 text-amber-300 hover:bg-amber-800 border border-amber-500/40 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
               aria-label="Toggle navigation menu"
+              title="मेन्यू उघडा (Hover or Click)"
             >
               <Menu className="w-5 h-5" />
               <span className="text-xs font-bold text-amber-200">मेन्यू</span>

@@ -27,10 +27,12 @@ import {
   MessageSquarePlus,
   FileDown,
   Calendar,
-  Settings,
   Sun,
   Moon,
   Wallet,
+  Pin,
+  PinOff,
+  Menu,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -48,6 +50,7 @@ interface SidebarProps {
   onLogout: () => void;
   isOpen?: boolean;
   onClose?: () => void;
+  onOpen?: () => void;
   onOpenOccasions?: () => void;
   onOpenSettings?: () => void;
   theme?: 'light' | 'dark';
@@ -80,6 +83,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [cropImageSrc, setCropImageSrc] = useState<string>('');
   const [isCropModalOpen, setIsCropModalOpen] = useState<boolean>(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+
+  // Auto-draw on hover & pin state management
+  const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [isPinned, setIsPinned] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('morya_sidebar_pinned') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleTogglePin = () => {
+    const next = !isPinned;
+    setIsPinned(next);
+    try {
+      localStorage.setItem('morya_sidebar_pinned', String(next));
+    } catch {
+      // ignore
+    }
+  };
+
+  const isDrawerActive = isPinned || isOpen || isHovered;
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -271,34 +296,85 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Mobile Drawer Overlay Backdrop */}
-      {isOpen && (
+      {/* Drawer Overlay Backdrop (when drawer is active and not pinned) */}
+      {!isPinned && isDrawerActive && (
         <div
-          onClick={onClose}
-          className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+          onClick={() => {
+            setIsHovered(false);
+            onClose?.();
+          }}
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-40 transition-opacity duration-300"
           aria-hidden="true"
         />
       )}
 
+      {/* Floating Edge Trigger Handle (visible when drawer is collapsed and unpinned) */}
+      {!isPinned && !isDrawerActive && (
+        <div
+          onMouseEnter={() => setIsHovered(true)}
+          onClick={() => {
+            if (isOpen) onClose?.();
+            else onOpen?.();
+          }}
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-40 cursor-pointer group"
+          title="मेन्यू उघडा (Hover or Click to Draw Out)"
+        >
+          <div className="bg-gradient-to-r from-amber-950 to-orange-950 text-amber-300 hover:text-white px-2 py-4 rounded-r-2xl border-y border-r border-amber-500/60 shadow-2xl flex flex-col items-center gap-1.5 transition-all group-hover:scale-105 group-hover:pr-3 group-hover:border-amber-400">
+            <Menu className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
+            <span className="[writing-mode:vertical-lr] text-[10px] font-black tracking-widest text-amber-200">
+              मेन्यू
+            </span>
+          </div>
+        </div>
+      )}
+
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[300px] sm:w-72 bg-gradient-to-b from-[#1C0A00] via-[#2A0E00] to-[#140600] text-white flex flex-col justify-between shrink-0 select-none border-r border-amber-900/60 transition-transform duration-300 ease-in-out overflow-y-auto overscroll-contain h-full max-h-[100dvh] lg:static lg:translate-x-0 lg:w-64 ${
-          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
-        }`}
+        onMouseEnter={() => {
+          if (!isPinned) setIsHovered(true);
+        }}
+        onMouseLeave={() => {
+          if (!isPinned) setIsHovered(false);
+        }}
+        className={`${
+          isPinned
+            ? 'static translate-x-0 w-64 shrink-0'
+            : `fixed inset-y-0 left-0 z-50 w-[85vw] max-w-[300px] sm:w-72 shadow-2xl transition-transform duration-300 ease-in-out ${
+                isDrawerActive ? 'translate-x-0' : '-translate-x-full'
+              }`
+        } bg-gradient-to-b from-[#1C0A00] via-[#2A0E00] to-[#140600] text-white flex flex-col justify-between shrink-0 select-none border-r border-amber-900/60 overflow-y-auto overscroll-contain h-full max-h-[100dvh]`}
       >
         <div>
           {/* Mandal Branding Header */}
           <div className="p-4 border-b border-amber-900/60 bg-amber-950/40 flex flex-col items-center text-center relative">
-            {/* Mobile Close Drawer Button */}
-            {onClose && (
+            {/* Header Controls: Pin/Unpin & Close */}
+            <div className="absolute top-3 right-3 flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={onClose}
-                className="absolute top-3 right-3 p-1 rounded-full bg-slate-800 text-slate-400 hover:text-white lg:hidden cursor-pointer border border-slate-700 active:scale-95 transition-all"
+                onClick={handleTogglePin}
+                className={`p-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  isPinned
+                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm'
+                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white'
+                }`}
+                title={isPinned ? 'पिन काढण्यासाठी क्लिक करा (ऑटो-ड्रावर मोड)' : 'मेन्यू नेहमी खुला ठेवण्यासाठी पिन करा'}
+              >
+                {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                <span className="text-[10px] font-black">{isPinned ? 'पिन' : 'ऑटो'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsHovered(false);
+                  onClose?.();
+                }}
+                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer border border-slate-700 active:scale-95 transition-all"
                 title="मेन्यू बंद करा"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
-            )}
+            </div>
+
           <div className="relative mb-2 group">
             <img
               src={groupLogo || moryaLogo}
@@ -387,7 +463,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   } else {
                     setActiveTab(item.id);
                   }
-                  onClose?.();
+                  if (!isPinned) {
+                    setIsHovered(false);
+                    onClose?.();
+                  }
                 }}
                 className={`w-full flex items-center justify-between p-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                   isActive
