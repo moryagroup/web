@@ -178,7 +178,7 @@ import { LoginModal } from './components/LoginModal';
 import { OccasionModal } from './components/OccasionModal';
 import { SettingsModal } from './components/SettingsModal';
 import { isBadgedMember, hasAdminPermissions, canApproveFinancialTransactions } from './utils/rbac';
-import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo } from './utils/dateUtils';
+import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo, getCalendarYearFromDate } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { Menu, Sun, Moon } from 'lucide-react';
 
@@ -215,10 +215,14 @@ const getInitialTab = (): string => {
 
 const getInitialYear = (): string => {
   try {
-    return localStorage.getItem('morya_selected_year') || '२०२६';
+    const saved = localStorage.getItem('morya_selected_year');
+    if (saved && saved.trim()) {
+      return saved;
+    }
   } catch {
-    return '२०२६';
+    // fallback
   }
+  return getCalendarYearFromDate(new Date().toISOString().split('T')[0]);
 };
 
 export default function App() {

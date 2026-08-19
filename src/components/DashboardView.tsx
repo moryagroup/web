@@ -19,6 +19,7 @@ import { ProofLightboxModal } from './ProofLightboxModal';
 import { TaskObstacleModal } from './TaskObstacleModal';
 import { isGoogleDriveUrl } from '../services/googleDriveService';
 import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions, canApproveFinancialTransactions } from '../utils/rbac';
+import { isDateInSelectedYear, getCalendarYearFromDate } from '../utils/dateUtils';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -198,31 +199,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       currentUser.name.includes('कौले')
     ));
 
+  const activeYear = selectedYear || getCalendarYearFromDate(new Date().toISOString().split('T')[0]);
+
   const displayIncomes = useMemo(() => {
     if (!Array.isArray(incomes)) return [];
-    if (canApprove) return incomes;
+    const yearIncomes = incomes.filter((i) =>
+      isDateInSelectedYear(i.transactionDate, activeYear, i.financialYear)
+    );
+    if (canApprove) return yearIncomes;
     const userNorm = (currentUser?.name || '').trim().toLowerCase();
-    return incomes.filter(
+    return yearIncomes.filter(
       (i) =>
         (currentMember && i.linkedMemberId === currentMember.id) ||
         (i.depositorName || '').trim().toLowerCase().includes(userNorm) ||
         (i.createdBy || '').trim().toLowerCase().includes(userNorm)
     );
-  }, [incomes, canApprove, currentMember, currentUser]);
+  }, [incomes, canApprove, currentMember, currentUser, activeYear]);
 
   const displayExpenses = useMemo(() => {
     if (!Array.isArray(expenses)) return [];
-    if (canApprove) return expenses;
+    const yearExpenses = expenses.filter((e) =>
+      isDateInSelectedYear(e.expenseDate, activeYear, e.financialYear)
+    );
+    if (canApprove) return yearExpenses;
     const userNorm = (currentUser?.name || '').trim().toLowerCase();
-    return expenses.filter(
+    return yearExpenses.filter(
       (e) =>
         (currentMember && e.linkedMemberId === currentMember.id) ||
         (e.recipientName || '').trim().toLowerCase().includes(userNorm) ||
         (e.createdBy || '').trim().toLowerCase().includes(userNorm)
     );
-  }, [expenses, canApprove, currentMember, currentUser]);
+  }, [expenses, canApprove, currentMember, currentUser, activeYear]);
 
-  // User's personal total deposits and expenses (Total, Online & Cash)
+  // User's personal total deposits and expenses for the Selected/Current Year (Total, Online & Cash)
   const userPersonalSummary = useMemo(() => {
     if (!currentUser || !currentUser.name) {
       return {
@@ -234,13 +243,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         cashExpense: 0,
         depositCount: 0,
         expenseCount: 0,
+        activeYear: '२०२६',
       };
     }
 
     const userNorm = (currentUser.name || '').trim().toLowerCase();
+    const activeYear = selectedYear || getCalendarYearFromDate(new Date().toISOString().split('T')[0]);
 
     const userIncomes = (incomes || []).filter((i) => {
       if (i.approvalStatus === 'रद्द') return false;
+      if (!isDateInSelectedYear(i.transactionDate, activeYear, i.financialYear)) return false;
       const isLinked = Boolean(currentMember && i.linkedMemberId === currentMember.id);
       const isDepositor = (i.depositorName || '').trim().toLowerCase().includes(userNorm);
       const isCreator = (i.createdBy || '').trim().toLowerCase().includes(userNorm);
@@ -257,6 +269,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
     const userExpenses = (expenses || []).filter((e) => {
       if (e.approvalStatus === 'रद्द') return false;
+      if (!isDateInSelectedYear(e.expenseDate, activeYear, e.financialYear)) return false;
       const isLinked = Boolean(currentMember && (e.linkedMemberId === currentMember.id || e.paidByMemberId === currentMember.id));
       const isRecipient = (e.recipientName || '').trim().toLowerCase().includes(userNorm);
       const isPaidBy = (e.paidByMemberName || '').trim().toLowerCase().includes(userNorm);
@@ -281,8 +294,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       cashExpense,
       depositCount: userIncomes.length,
       expenseCount: userExpenses.length,
+      activeYear,
     };
-  }, [incomes, expenses, currentUser, currentMember]);
+  }, [incomes, expenses, currentUser, currentMember, selectedYear]);
 
   const recentIncomes = displayIncomes.slice(0, 5);
   const recentExpenses = displayExpenses.slice(0, 5);
