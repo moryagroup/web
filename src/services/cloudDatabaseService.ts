@@ -50,7 +50,6 @@ export async function fetchCloudDatabase(): Promise<MoryaCloudDatabase> {
     const res = await fetch(`${GIST_API_URL}?t=${Date.now()}`, {
       headers: {
         Authorization: `token ${AUTH_TOKEN}`,
-        'User-Agent': 'morya-group-web',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     });
@@ -117,7 +116,6 @@ export async function saveCloudDatabase(dbData: MoryaCloudDatabase): Promise<voi
       headers: {
         Authorization: `token ${AUTH_TOKEN}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'morya-group-web',
       },
       body: JSON.stringify(requestBody),
     });
