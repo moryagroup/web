@@ -401,10 +401,11 @@ export async function cloudClearAllTransactions(): Promise<void> {
 
 export async function cloudSaveCashSettlement(settlement: CashSettlement): Promise<void> {
   try {
+    const cleanSettlement: CashSettlement = JSON.parse(JSON.stringify(settlement));
     const currentDb = inMemoryCache || (await fetchCloudDatabase());
     const existing = currentDb.cashSettlements || [];
-    const filtered = existing.filter((s) => s.id !== settlement.id);
-    const updated = [settlement, ...filtered];
+    const filtered = existing.filter((s) => s.id !== cleanSettlement.id);
+    const updated = [cleanSettlement, ...filtered];
 
     await saveCloudDatabase({
       ...currentDb,

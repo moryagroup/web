@@ -219,6 +219,23 @@ export function subscribeToCashSettlements(
   );
 }
 
+// Helper to recursively remove all undefined properties for Firestore & Cloud compatibility
+export function cleanObjectForCloud<T>(obj: T): T {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map((item) => cleanObjectForCloud(item)) as any;
+  }
+  const clean: any = {};
+  Object.keys(obj as any).forEach((key) => {
+    const value = (obj as any)[key];
+    if (value !== undefined) {
+      clean[key] = cleanObjectForCloud(value);
+    }
+  });
+  return clean;
+}
+
 // ─── Write helpers with Audit Timestamps ─────────────────────────────────────
 
 export async function saveCashSettlement(settlement: CashSettlement): Promise<void> {
@@ -228,7 +245,7 @@ export async function saveCashSettlement(settlement: CashSettlement): Promise<vo
     createdAt: settlement.createdAt || timestamp,
     updatedAt: timestamp,
   };
-  await setDoc(doc(db, COLS.cash_settlements, settlement.id), payload);
+  await setDoc(doc(db, COLS.cash_settlements, settlement.id), cleanObjectForCloud(payload));
 }
 
 export async function deleteCashSettlement(id: string): Promise<void> {
@@ -242,7 +259,7 @@ export async function saveIncome(income: IncomeTransaction): Promise<void> {
     createdAt: income.createdAt || timestamp,
     updatedAt: timestamp,
   };
-  await setDoc(doc(db, COLS.incomes, income.id), payload);
+  await setDoc(doc(db, COLS.incomes, income.id), cleanObjectForCloud(payload));
 }
 
 export async function deleteIncome(id: string): Promise<void> {
@@ -256,7 +273,7 @@ export async function saveExpense(expense: ExpenseTransaction): Promise<void> {
     createdAt: expense.createdAt || timestamp,
     updatedAt: timestamp,
   };
-  await setDoc(doc(db, COLS.expenses, expense.id), payload);
+  await setDoc(doc(db, COLS.expenses, expense.id), cleanObjectForCloud(payload));
 }
 
 export async function deleteExpense(id: string): Promise<void> {
@@ -270,7 +287,7 @@ export async function saveMember(member: Member): Promise<void> {
     createdAt: member.createdAt || timestamp,
     updatedAt: timestamp,
   };
-  await setDoc(doc(db, COLS.members, member.id), payload);
+  await setDoc(doc(db, COLS.members, member.id), cleanObjectForCloud(payload));
 }
 
 export async function deleteMember(id: string): Promise<void> {
@@ -284,7 +301,7 @@ export async function saveOccasion(occasion: OccasionEvent): Promise<void> {
     createdAt: occasion.createdAt || timestamp,
     updatedAt: timestamp,
   };
-  await setDoc(doc(db, COLS.occasions, occasion.id), payload);
+  await setDoc(doc(db, COLS.occasions, occasion.id), cleanObjectForCloud(payload));
 }
 
 export async function deleteOccasion(id: string): Promise<void> {
@@ -298,7 +315,7 @@ export async function saveGalleryImage(image: EventGalleryImage): Promise<void> 
     createdAt: image.createdAt || timestamp,
     updatedAt: timestamp,
   };
-  await setDoc(doc(db, COLS.gallery, image.id), payload);
+  await setDoc(doc(db, COLS.gallery, image.id), cleanObjectForCloud(payload));
 }
 
 export async function deleteGalleryImage(id: string): Promise<void> {
@@ -312,7 +329,7 @@ export async function saveSuggestion(sug: MemberSuggestion): Promise<void> {
     createdAt: sug.createdAt || timestamp,
     updatedAt: timestamp,
   };
-  await setDoc(doc(db, COLS.suggestions, sug.id), payload);
+  await setDoc(doc(db, COLS.suggestions, sug.id), cleanObjectForCloud(payload));
 }
 
 export async function deleteSuggestion(id: string): Promise<void> {
