@@ -144,7 +144,12 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
     currentUser.role === 'Vice Treasurer' ||
     currentUser.role === 'ॲडमिन' ||
     currentUser.role === 'Admin' ||
-    (currentUser.name && (currentUser.name.includes('उदय') || currentUser.name.includes('हेरवाडे')));
+    (currentUser.name && (
+      currentUser.name.includes('उदय') ||
+      currentUser.name.includes('हेरवाडे') ||
+      currentUser.name.includes('संकेत') ||
+      currentUser.name.includes('कौले')
+    ));
 
   // Filter incomes and expenses by selected year
   const activeYear = setSelectedYear ? selectedYear : localYear;

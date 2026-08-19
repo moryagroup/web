@@ -220,7 +220,12 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
     currentUser.role === 'Vice Treasurer' ||
     currentUser.role === 'ॲडमिन' ||
     currentUser.role === 'Admin' ||
-    (currentUser.name && (currentUser.name.includes('उदय') || currentUser.name.includes('हेरवाडे')));
+    (currentUser.name && (
+      currentUser.name.includes('उदय') ||
+      currentUser.name.includes('हेरवाडे') ||
+      currentUser.name.includes('संकेत') ||
+      currentUser.name.includes('कौले')
+    ));
 
   // Compute Member Cash Received, Approved Deposited to Trust/Bank, and Net Cash in Hand
   const memberCashStats = useMemo(() => {
