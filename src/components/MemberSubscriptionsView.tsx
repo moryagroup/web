@@ -10,7 +10,7 @@ import {
 } from '../types';
 import { getMemberSubscriptionPaid, getMemberExtraDonationPaid } from '../services/storageService';
 import { hasAdminPermissions, getDesignationRank, isBadgedMember } from '../utils/rbac';
-import { isDateInSelectedYear, generateNextCashSettlementNo } from '../utils/dateUtils';
+import { isDateInSelectedYear, generateNextCashSettlementNo, getFinancialYearFromDate } from '../utils/dateUtils';
 import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
 import { ProofLightboxModal } from './ProofLightboxModal';
 import { uploadFileToGoogleDrive } from '../services/googleDriveService';
@@ -381,7 +381,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       bankRefNo: settleBankRefNo.trim() || 'नमूद नाही',
       slipPhotoUrl: settleSlipPhotoUrl.trim() || undefined,
       notes: settleNotes.trim() || 'नमूद नाही',
-      financialYear: selectedYear === 'ALL' ? '2026-2027' : selectedYear,
+      financialYear: getFinancialYearFromDate(settleDate),
       approvalStatus: 'प्रलंबित',
       createdBy: `${currentUser.name} (${currentUser.role})`,
       createdAt: new Date().toISOString(),

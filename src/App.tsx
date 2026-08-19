@@ -926,10 +926,19 @@ export default function App() {
 
   // Cash Settlement Handlers (Member Cash Handover to Trust/Bank)
   const handleAddCashSettlement = (newSettlement: CashSettlement) => {
-    setCashSettlements((prev) => [newSettlement, ...prev.filter((s) => s.id !== newSettlement.id)]);
-    saveCashSettlement(newSettlement).catch(console.error);
-    cloudSaveCashSettlement(newSettlement).catch(console.error);
-    saveCashSettlementToSupabase(newSettlement).catch(console.error);
+    const isAuthorized = canApproveFinancialTransactions(currentUser.role);
+    const isApproved = isAuthorized && newSettlement.approvalStatus === 'मंजूर';
+    const finalSettlement: CashSettlement = {
+      ...newSettlement,
+      approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
+      approvedBy: isApproved ? (newSettlement.approvedBy || currentUser.name) : undefined,
+      approvedByRole: isApproved ? (newSettlement.approvedByRole || currentUser.role) : undefined,
+      approvedAt: isApproved ? (newSettlement.approvedAt || new Date().toISOString()) : undefined,
+    };
+    setCashSettlements((prev) => [finalSettlement, ...prev.filter((s) => s.id !== finalSettlement.id)]);
+    saveCashSettlement(finalSettlement).catch(console.error);
+    cloudSaveCashSettlement(finalSettlement).catch(console.error);
+    saveCashSettlementToSupabase(finalSettlement).catch(console.error);
   };
 
   const handleApproveCashSettlement = (
