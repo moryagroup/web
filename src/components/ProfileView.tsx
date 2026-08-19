@@ -256,8 +256,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   // Financial calculations for this member
-  const subscriptionPaid = getMemberSubscriptionPaid(currentProfile.id, incomes);
-  const donationPaid = getMemberExtraDonationPaid(currentProfile.id, incomes);
+  const subscriptionPaid = getMemberSubscriptionPaid(currentProfile.id, incomes, undefined, currentProfile.fullName);
+  const donationPaid = getMemberExtraDonationPaid(currentProfile.id, incomes, undefined, currentProfile.fullName);
   const totalContributed = subscriptionPaid + donationPaid;
   const target = currentProfile.annualTargetAmount || 6000;
   const pendingTarget = Math.max(0, target - subscriptionPaid);

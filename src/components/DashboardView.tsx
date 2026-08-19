@@ -42,6 +42,7 @@ import {
   Paperclip,
   AlertTriangle,
   MessageSquare,
+  Trash2,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -64,6 +65,7 @@ interface DashboardViewProps {
   onRejectIncome?: (incId: string, name: string, role: any) => void;
   onApproveCashSettlement?: (id: string, name: string, role: any) => void;
   onRejectCashSettlement?: (id: string, name: string, role: any) => void;
+  onDeleteCashSettlement?: (id: string) => void;
   onLogout?: () => void;
   onOpenLogin?: () => void;
   onUpdateOccasion?: (occasion: OccasionEvent) => void;
@@ -89,6 +91,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onRejectIncome,
   onApproveCashSettlement,
   onRejectCashSettlement,
+  onDeleteCashSettlement,
   onLogout,
   onOpenLogin,
   onUpdateOccasion,

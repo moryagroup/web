@@ -8,7 +8,11 @@ import {
   CashSettlementDestination,
   UserDesignation,
 } from '../types';
-import { getMemberSubscriptionPaid, getMemberExtraDonationPaid } from '../services/storageService';
+import {
+  getMemberSubscriptionPaid,
+  getMemberExtraDonationPaid,
+  isIncomeLinkedToMember,
+} from '../services/storageService';
 import { hasAdminPermissions, getDesignationRank, isBadgedMember } from '../utils/rbac';
 import { isDateInSelectedYear, generateNextCashSettlementNo, getFinancialYearFromDate } from '../utils/dateUtils';
 import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
@@ -143,6 +147,9 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
 
   // Photo Lightbox state
   const [photoModalMember, setPhotoModalMember] = useState<Member | null>(null);
+
+  // Member Receipts & Deposit History Modal state
+  const [selectedMemberForReceipts, setSelectedMemberForReceipts] = useState<Member | null>(null);
 
   // Add Member Modal state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -643,6 +650,37 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       });
   }, [members, searchQuery]);
 
+  // Compute Overall Membership Target, Collection and Pending Stats
+  const overallStats = useMemo(() => {
+    let totalTarget = 0;
+    let totalSubscriptionCollected = 0;
+    let totalDonationCollected = 0;
+    let completedMembersCount = 0;
+
+    members.forEach((m) => {
+      const target = m.annualTargetAmount || 6000;
+      totalTarget += target;
+      const sub = getMemberSubscriptionPaid(m.id, filteredIncomesByYear, undefined, m.fullName);
+      const don = getMemberExtraDonationPaid(m.id, filteredIncomesByYear, undefined, m.fullName);
+      totalSubscriptionCollected += sub;
+      totalDonationCollected += don;
+      if (sub >= target) {
+        completedMembersCount++;
+      }
+    });
+
+    const totalRemaining = Math.max(0, totalTarget - totalSubscriptionCollected);
+
+    return {
+      totalTarget,
+      totalSubscriptionCollected,
+      totalRemaining,
+      totalDonationCollected,
+      completedMembersCount,
+      totalMembers: members.length,
+    };
+  }, [members, filteredIncomesByYear]);
+
   return (
     <div className="space-y-6 my-4">
       {/* Top Banner & Control Bar */}
@@ -725,11 +763,67 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
         </div>
       </div>
 
+      {/* Overall Summary KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+          <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">एकूण वर्गणी उद्दिष्ट</p>
+          <p className="text-lg font-black text-slate-800 dark:text-slate-100 mt-1">
+            ₹{overallStats.totalTarget.toLocaleString('en-IN')}
+          </p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+            {overallStats.totalMembers} सभासद (₹६,००० प्रति)
+          </p>
+        </div>
+
+        <div className="bg-emerald-50/70 dark:bg-emerald-950/30 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+          <p className="text-[11px] font-bold text-emerald-800 dark:text-emerald-400">एकूण जमा झालेली वर्गणी</p>
+          <p className="text-lg font-black text-emerald-700 dark:text-emerald-300 mt-1">
+            ₹{overallStats.totalSubscriptionCollected.toLocaleString('en-IN')}
+          </p>
+          <p className="text-[10px] text-emerald-600/80 dark:text-emerald-500 mt-0.5">
+            {overallStats.completedMembersCount} सभासदांची पूर्ण
+          </p>
+        </div>
+
+        <div className="bg-rose-50/70 dark:bg-rose-950/30 p-4 rounded-2xl border border-rose-200 dark:border-rose-800 shadow-2xs">
+          <p className="text-[11px] font-bold text-rose-800 dark:text-rose-400">एकूण येणे बाकी वर्गणी</p>
+          <p className="text-lg font-black text-rose-700 dark:text-rose-300 mt-1">
+            ₹{overallStats.totalRemaining.toLocaleString('en-IN')}
+          </p>
+          <p className="text-[10px] text-rose-600/80 dark:text-rose-500 mt-0.5">
+            उर्वरित बाकी रक्कम
+          </p>
+        </div>
+
+        <div className="bg-amber-50/70 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 shadow-2xs">
+          <p className="text-[11px] font-bold text-amber-800 dark:text-amber-400">सभासद अतिरिक्त देणगी</p>
+          <p className="text-lg font-black text-amber-700 dark:text-amber-300 mt-1">
+            ₹{overallStats.totalDonationCollected.toLocaleString('en-IN')}
+          </p>
+          <p className="text-[10px] text-amber-600/80 dark:text-amber-500 mt-0.5">
+            विशेष देणगी / प्रायोजकत्व
+          </p>
+        </div>
+
+        <div className="bg-indigo-50/70 dark:bg-indigo-950/30 p-4 rounded-2xl border border-indigo-200 dark:border-indigo-800 shadow-2xs col-span-2 sm:col-span-1">
+          <p className="text-[11px] font-bold text-indigo-800 dark:text-indigo-400">सभासदांकडे शिल्लक रोख</p>
+          <p className="text-lg font-black text-indigo-700 dark:text-indigo-300 mt-1">
+            ₹{memberCashStats.totalNetCashAll.toLocaleString('en-IN')}
+          </p>
+          <p className="text-[10px] text-indigo-600/80 dark:text-indigo-500 mt-0.5">
+            रोख संकलन - बँक भरणा
+          </p>
+        </div>
+      </div>
+
       {/* Members Grid / Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sortedAndFilteredMembers.map((member) => {
-          const subscriptionPaid = getMemberSubscriptionPaid(member.id, filteredIncomesByYear);
-          const extraDonationPaid = getMemberExtraDonationPaid(member.id, filteredIncomesByYear);
+          const subscriptionPaid = getMemberSubscriptionPaid(member.id, filteredIncomesByYear, undefined, member.fullName);
+          const extraDonationPaid = getMemberExtraDonationPaid(member.id, filteredIncomesByYear, undefined, member.fullName);
+          const memberIncomes = filteredIncomesByYear.filter((i) =>
+            isIncomeLinkedToMember(i, member.id, member.fullName)
+          );
           const target = member.annualTargetAmount || 6000;
           const remainingSubscription = Math.max(0, target - subscriptionPaid);
           const percentage = Math.min(100, Math.round((subscriptionPaid / target) * 100));
@@ -877,6 +971,22 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                     )}
                   </div>
                 )}
+
+                {/* Member Deposits & Receipts Button */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedMemberForReceipts(member)}
+                  className="w-full mt-3 py-2 px-3 bg-amber-50/80 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-300 rounded-xl border border-amber-200 dark:border-amber-700/60 font-bold text-xs flex items-center justify-between transition-all cursor-pointer shadow-2xs"
+                  title="या सभासदाच्या सर्व जमा पावत्या व तपशील पहा"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Receipt className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>जमा पावत्या व तपशील</span>
+                  </div>
+                  <span className="px-2 py-0.5 bg-amber-200/80 dark:bg-amber-800 text-amber-950 dark:text-amber-100 rounded-md font-mono text-[10px] font-black">
+                    {memberIncomes.length} {memberIncomes.length === 1 ? 'पावती' : 'पावत्या'}
+                  </span>
+                </button>
               </div>
 
               {/* Card Footer Actions */}
@@ -1748,6 +1858,192 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
           </div>
         </div>
       )}
+
+      {/* Member Receipts & Deposit History Modal */}
+      {selectedMemberForReceipts && (() => {
+        const memberIncomes = filteredIncomesByYear.filter((i) =>
+          isIncomeLinkedToMember(i, selectedMemberForReceipts.id, selectedMemberForReceipts.fullName)
+        );
+        const subTotal = getMemberSubscriptionPaid(
+          selectedMemberForReceipts.id,
+          filteredIncomesByYear,
+          undefined,
+          selectedMemberForReceipts.fullName
+        );
+        const donTotal = getMemberExtraDonationPaid(
+          selectedMemberForReceipts.id,
+          filteredIncomesByYear,
+          undefined,
+          selectedMemberForReceipts.fullName
+        );
+        const target = selectedMemberForReceipts.annualTargetAmount || 6000;
+        const remaining = Math.max(0, target - subTotal);
+
+        return (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in overflow-y-auto">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-700 max-h-[90vh] flex flex-col">
+              {/* Header */}
+              <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full border-2 border-amber-400 p-0.5 bg-slate-900 shadow-md shrink-0 flex items-center justify-center overflow-hidden">
+                    {selectedMemberForReceipts.photoUrl ? (
+                      <img
+                        src={selectedMemberForReceipts.photoUrl}
+                        alt={selectedMemberForReceipts.fullName}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-amber-500/20 flex items-center justify-center text-amber-300 font-bold text-xs">
+                        {selectedMemberForReceipts.fullName.slice(0, 2)}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono font-bold text-[10px] rounded border border-slate-200 dark:border-slate-600">
+                        {selectedMemberForReceipts.memberCode}
+                      </span>
+                      <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-300 font-bold text-[10px] rounded-md">
+                        {selectedMemberForReceipts.designation || 'सभासद'}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-black text-slate-800 dark:text-slate-100 mt-0.5">
+                      {selectedMemberForReceipts.fullName} - जमा पावत्या हिशोब
+                    </h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      वर्ष: {selectedYear === 'ALL' ? 'सर्व वर्षे' : selectedYear} | मो: {selectedMemberForReceipts.phone}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedMemberForReceipts(null)}
+                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full cursor-pointer transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Progress & Summary Bar inside Modal */}
+              <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400">वर्गणी टार्गेट</p>
+                  <p className="text-sm font-black text-slate-800 dark:text-slate-200">
+                    ₹{target.toLocaleString('en-IN')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">एकूण जमा वर्गणी</p>
+                  <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                    ₹{subTotal.toLocaleString('en-IN')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-rose-600 dark:text-rose-400">बाकी रक्कम</p>
+                  <p className="text-sm font-black text-rose-600 dark:text-rose-400">
+                    ₹{remaining.toLocaleString('en-IN')}
+                  </p>
+                </div>
+              </div>
+
+              {donTotal > 0 && (
+                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-bold text-emerald-800 dark:text-emerald-300 flex justify-between">
+                  <span>अतिरिक्त देणगी / देणगी जमा:</span>
+                  <span>+ ₹{donTotal.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+
+              {/* Transaction List */}
+              <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 max-h-[50vh]">
+                {memberIncomes.length === 0 ? (
+                  <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                    <Receipt className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                    <p className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                      या सभासदाची {selectedYear === 'ALL' ? '' : selectedYear + ' वर्षातील '}कोणतीही जमा नोंद आढळली नाही.
+                    </p>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                      नवीन जमा नोंद करण्यासाठी मुख्य मेनूमधून "नवीन जमा नोंद" पर्याय वापरा.
+                    </p>
+                  </div>
+                ) : (
+                  memberIncomes.map((inc) => (
+                    <div
+                      key={inc.id}
+                      className="p-3 bg-white dark:bg-slate-700/60 rounded-2xl border border-slate-200 dark:border-slate-600 shadow-2xs space-y-2 hover:border-amber-400 transition-colors"
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-300 rounded font-mono font-bold text-[10px]">
+                              {inc.receiptNumber ? `पावती: ${inc.receiptNumber}` : inc.transactionNo}
+                            </span>
+                            <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 font-bold text-[10px] rounded">
+                              {inc.incomeType}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              📅 {inc.transactionDate}
+                            </span>
+                          </div>
+                          <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 mt-1">
+                            {inc.reason || `${inc.incomeType} - जमा`}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                            ₹{inc.amount.toLocaleString('en-IN')}
+                          </p>
+                          <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-600 text-slate-600 dark:text-slate-300 rounded font-medium">
+                            {inc.paymentMethod}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Cash Receiver / Payment details */}
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-600/60 flex-wrap gap-2">
+                        <div>
+                          {inc.paymentMethod === 'रोख' && inc.cashReceiverName && (
+                            <span>रोख स्वीकारणारे: <strong>{inc.cashReceiverName}</strong></span>
+                          )}
+                          {inc.paymentReference && inc.paymentReference !== 'नमूद नाही' && (
+                            <span>संदर्भ क्र: {inc.paymentReference}</span>
+                          )}
+                          {inc.occasionName && (
+                            <span className="ml-2">उत्सव: {inc.occasionName}</span>
+                          )}
+                        </div>
+                        {inc.attachmentUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewProofUrl(inc.attachmentUrl || null)}
+                            className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                          >
+                            <ImageIcon className="w-3 h-3" />
+                            <span>पावती फोटो पहा</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-between items-center pt-3 border-t border-slate-100 dark:border-slate-700">
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  एकूण जमा: <strong className="text-emerald-600">₹{(subTotal + donTotal).toLocaleString('en-IN')}</strong>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSelectedMemberForReceipts(null)}
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-xs rounded-xl shadow cursor-pointer transition-all"
+                >
+                  बंद करा (Close)
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Proof Lightbox Modal */}
       {previewProofUrl && (

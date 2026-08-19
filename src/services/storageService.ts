@@ -158,11 +158,22 @@ export const calculateFinancialSummary = (
   const netBalance = totalIncome - totalExpense;
 
   const totalSubscriptionsCollected = activeIncomes
-    .filter((item) => item.incomeType === 'वर्गणी')
+    .filter((item) => {
+      const type = (item.incomeType || '').toLowerCase();
+      return type.includes('वर्गणी') || type.includes('subscription');
+    })
     .reduce((sum, item) => sum + item.amount, 0);
 
   const totalDonationsCollected = activeIncomes
-    .filter((item) => item.incomeType === 'देणगी' || item.incomeType === 'विशेष देणगी')
+    .filter((item) => {
+      const type = (item.incomeType || '').toLowerCase();
+      return (
+        type.includes('देणगी') ||
+        type.includes('donation') ||
+        type.includes('प्रायोजक') ||
+        type === 'विशेष देणगी'
+      );
+    })
     .reduce((sum, item) => sum + item.amount, 0);
 
   const totalOnlineIncome = activeIncomes
@@ -186,26 +197,56 @@ export const calculateFinancialSummary = (
   };
 };
 
+export const isIncomeLinkedToMember = (
+  item: IncomeTransaction,
+  memberId: string,
+  memberName?: string
+): boolean => {
+  if (item.approvalStatus === 'रद्द') return false;
+  if (item.linkedMemberId && item.linkedMemberId === memberId) return true;
+  if (memberName && memberName.trim()) {
+    const memNameLower = memberName.trim().toLowerCase();
+    if (item.depositorName && item.depositorName.trim().toLowerCase() === memNameLower) return true;
+    if (item.linkedMemberName && item.linkedMemberName.toLowerCase().includes(memNameLower)) return true;
+  }
+  return false;
+};
+
 export const getMemberSubscriptionPaid = (
   memberId: string,
   incomes: IncomeTransaction[],
-  _financialYear?: string
+  _financialYear?: string,
+  memberName?: string
 ): number => {
   return incomes
-    .filter((item) => item.linkedMemberId === memberId && item.incomeType === 'वर्गणी')
+    .filter((item) => {
+      if (!isIncomeLinkedToMember(item, memberId, memberName)) return false;
+      const type = (item.incomeType || '').toLowerCase();
+      return (
+        type.includes('वर्गणी') ||
+        type.includes('subscription') ||
+        (item.depositorType === 'सभासद' && !type.includes('देणगी') && !type.includes('donation'))
+      );
+    })
     .reduce((sum, item) => sum + item.amount, 0);
 };
 
 export const getMemberExtraDonationPaid = (
   memberId: string,
   incomes: IncomeTransaction[],
-  _financialYear?: string
+  _financialYear?: string,
+  memberName?: string
 ): number => {
   return incomes
-    .filter(
-      (item) =>
-        item.linkedMemberId === memberId &&
-        (item.incomeType === 'देणगी' || item.incomeType === 'विशेष देणगी')
-    )
+    .filter((item) => {
+      if (!isIncomeLinkedToMember(item, memberId, memberName)) return false;
+      const type = (item.incomeType || '').toLowerCase();
+      return (
+        type.includes('देणगी') ||
+        type.includes('donation') ||
+        type.includes('प्रायोजक') ||
+        type === 'विशेष देणगी'
+      );
+    })
     .reduce((sum, item) => sum + item.amount, 0);
 };
