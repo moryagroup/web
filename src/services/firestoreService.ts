@@ -209,11 +209,12 @@ export function subscribeToCashSettlements(
   callback: (data: CashSettlement[]) => void
 ): () => void {
   return onSnapshot(
-    collection(db, COLS.cash_settlements),
+    doc(db, COLS.settings, 'cashSettlements'),
     (snap) => {
-      const list: CashSettlement[] = [];
-      snap.forEach((d) => list.push(d.data() as CashSettlement));
-      callback(list);
+      const data = snap.data();
+      if (data?.list && Array.isArray(data.list)) {
+        callback(data.list);
+      }
     },
     (err) => console.warn('[Firestore] subscribeToCashSettlements error:', err)
   );
@@ -249,11 +250,27 @@ export async function saveCashSettlement(settlement: CashSettlement): Promise<vo
     createdAt: settlement.createdAt || timestamp,
     updatedAt: timestamp,
   };
-  await setDoc(doc(db, COLS.cash_settlements, settlement.id), cleanObjectForCloud(payload));
+  try {
+    const snap = await getDoc(doc(db, COLS.settings, 'cashSettlements'));
+    const currentList: CashSettlement[] = snap.exists() && Array.isArray(snap.data()?.list) ? snap.data()?.list : [];
+    const filtered = currentList.filter((s) => s.id !== payload.id);
+    const updated = [cleanObjectForCloud(payload), ...filtered];
+    await setDoc(doc(db, COLS.settings, 'cashSettlements'), { list: updated });
+  } catch (err) {
+    console.warn('[Firestore] saveCashSettlement error:', err);
+  }
 }
 
 export async function deleteCashSettlement(id: string): Promise<void> {
-  await deleteDoc(doc(db, COLS.cash_settlements, id));
+  try {
+    const snap = await getDoc(doc(db, COLS.settings, 'cashSettlements'));
+    if (snap.exists() && Array.isArray(snap.data()?.list)) {
+      const updated = snap.data().list.filter((s: CashSettlement) => s.id !== id);
+      await setDoc(doc(db, COLS.settings, 'cashSettlements'), { list: updated });
+    }
+  } catch (err) {
+    console.warn('[Firestore] deleteCashSettlement error:', err);
+  }
 }
 
 export async function saveIncome(income: IncomeTransaction): Promise<void> {

@@ -59,7 +59,6 @@ export const purgeLegacyLocalStorage = () => {
       'morya_cash_settlements',
       'morya_cash_settlements_v1',
       'morya_cash_settlements_v2',
-      'morya_settlements_cache',
     ];
     keysToPurge.forEach((key) => {
       try {
