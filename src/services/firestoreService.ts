@@ -219,7 +219,7 @@ export function subscribeToCashSettlements(
   );
 }
 
-// Helper to recursively remove all undefined properties for Firestore & Cloud compatibility
+// Helper to recursively normalize undefined properties to 'नमूद नाही' (or remove) for Firestore & Cloud compatibility
 export function cleanObjectForCloud<T>(obj: T): T {
   if (obj === null || obj === undefined) return obj;
   if (typeof obj !== 'object') return obj;
@@ -229,7 +229,11 @@ export function cleanObjectForCloud<T>(obj: T): T {
   const clean: any = {};
   Object.keys(obj as any).forEach((key) => {
     const value = (obj as any)[key];
-    if (value !== undefined) {
+    if (value === undefined) {
+      if (['notes', 'bankRefNo', 'billNumber', 'paymentReference', 'obstacleDetails', 'address'].includes(key)) {
+        clean[key] = 'नमूद नाही';
+      }
+    } else {
       clean[key] = cleanObjectForCloud(value);
     }
   });

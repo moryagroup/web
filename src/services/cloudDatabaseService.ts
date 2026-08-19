@@ -15,6 +15,7 @@ import {
   StoredImageRecord,
   CashSettlement,
 } from '../types';
+import { cleanObjectForCloud } from './firestoreService';
 
 const GIST_ID = 'a0b48ee9a7270a04fb05557f1aa3922a';
 const AUTH_TOKEN = import.meta.env.VITE_GITHUB_PAT || ['ghp_', 'h4hayufewUa', 'UFki1QVysSuAO', 'AymB5a1k9gsv'].join('');
@@ -97,11 +98,12 @@ export async function saveCloudDatabase(dbData: MoryaCloudDatabase): Promise<voi
       lastUpdated: timestamp,
     };
 
+    const cleanPayload = cleanObjectForCloud(payloadDb);
     const requestBody = {
       description: 'Morya Group ERP Central Production Database Store',
       files: {
         'morya_group_db.json': {
-          content: JSON.stringify(payloadDb, null, 2),
+          content: JSON.stringify(cleanPayload, null, 2),
         },
       },
     };
