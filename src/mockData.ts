@@ -409,6 +409,7 @@ export const INITIAL_EVENT_GALLERY: EventGalleryImage[] = [
     dateStr: '२०२५-०९-०७',
     imageUrl: 'https://images.unsplash.com/photo-1567157577867-05ccb1388e66?auto=format&fit=crop&w=800&q=80',
     description: 'हडपसर गोंधळनगर येथील मोरया ग्रुपच्या मुख्य व्यासपीठावर श्री गणेशाची भावपूर्ण प्रतिष्ठापना व महाआरती.',
+    googleDriveUrl: 'https://drive.google.com/drive/folders/morya_ganeshotsav_photos',
     year: '२०२५-२६',
   },
   {
@@ -418,6 +419,7 @@ export const INITIAL_EVENT_GALLERY: EventGalleryImage[] = [
     dateStr: '२०२५-०९-१७',
     imageUrl: 'https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?auto=format&fit=crop&w=800&q=80',
     description: 'अनंत चतुर्दशी निमित्त मोरया ग्रुपचे ढोल-ताशा पथक व भव्य विसर्जन मिरवणूक सोहळा.',
+    googleDriveUrl: 'https://drive.google.com/drive/folders/morya_visarjan_photos',
     year: '२०२५-२६',
   },
   {
@@ -427,6 +429,7 @@ export const INITIAL_EVENT_GALLERY: EventGalleryImage[] = [
     dateStr: '२०२५-०९-०६',
     imageUrl: 'https://images.unsplash.com/photo-1514222709107-a180c68d72b4?auto=format&fit=crop&w=800&q=80',
     description: 'मंडळाच्या मुख्य प्रवेशद्वारावर व गोंधळनगर चौकात करण्यात आलेली नेत्रदीपक विद्युत रोषणाई.',
+    googleDriveUrl: 'https://drive.google.com/drive/folders/morya_decoration_photos',
     year: '२०२५-२६',
   },
   {
@@ -436,6 +439,7 @@ export const INITIAL_EVENT_GALLERY: EventGalleryImage[] = [
     dateStr: '२०२५-०९-१२',
     imageUrl: 'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=800&q=80',
     description: 'सुमारे ५,००० पेक्षा जास्त भाविकांसाठी आयोजित भव्य महाप्रसाद व आपुलकीचे भोजन.',
+    googleDriveUrl: 'https://drive.google.com/drive/folders/morya_mahaprasad_photos',
     year: '२०२५-२६',
   },
   {
@@ -445,6 +449,7 @@ export const INITIAL_EVENT_GALLERY: EventGalleryImage[] = [
     dateStr: '२०२५-०९-१०',
     imageUrl: 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?auto=format&fit=crop&w=800&q=80',
     description: 'मंडळातर्फे आयोजित भव्य रक्तदान शिबिरात १५१ बाटल्या रक्त संकलन करण्यात आले.',
+    googleDriveUrl: 'https://drive.google.com/drive/folders/morya_social_initiatives',
     year: '२०२५-२६',
   },
   {
@@ -454,6 +459,7 @@ export const INITIAL_EVENT_GALLERY: EventGalleryImage[] = [
     dateStr: '२०२५-०९-१४',
     imageUrl: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=800&q=80',
     description: 'वार्षिक श्री सत्यनारायण महापूजा व स्थानिक भजनी मंडळाची मंत्रमुग्ध भजने.',
+    googleDriveUrl: 'https://drive.google.com/drive/folders/morya_religious_events',
     year: '२०२५-२६',
   },
   {
@@ -463,6 +469,7 @@ export const INITIAL_EVENT_GALLERY: EventGalleryImage[] = [
     dateStr: '२०२५-०९-१५',
     imageUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80',
     description: 'लहान मुलांच्या रांगोळी, चित्रकला व क्रीडा स्पर्धांच्या विजेत्यांचा गुणगौरव सोहळा.',
+    googleDriveUrl: 'https://drive.google.com/drive/folders/morya_cultural_sports',
     year: '२०२५-२६',
   },
   {
@@ -472,6 +479,7 @@ export const INITIAL_EVENT_GALLERY: EventGalleryImage[] = [
     dateStr: '२०२५-०८-१५',
     imageUrl: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80',
     description: 'स्वातंत्र्यदिनानिमित्त गोंधळनगर परिसरात स्वच्छता व ५१ रोपांचे वृक्षारोपण.',
+    googleDriveUrl: 'https://drive.google.com/drive/folders/morya_social_work',
     year: '२०२५-२६',
   },
 ];

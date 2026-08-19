@@ -15,6 +15,9 @@ import {
   Tag,
   Maximize2,
   Check,
+  FolderOpen,
+  Folder,
+  ExternalLink,
 } from 'lucide-react';
 
 interface EventGallerySectionProps {
@@ -24,7 +27,7 @@ interface EventGallerySectionProps {
   onOpenLogin?: () => void;
 }
 
-const CATEGORY_OPTIONS = [
+export const CATEGORY_OPTIONS = [
   'गणेशोत्सव',
   'विसर्जन मिरवणूक',
   'सजावट व रोषणाई',
@@ -35,6 +38,25 @@ const CATEGORY_OPTIONS = [
   'सामाजिक कार्य',
   'इतर',
 ];
+
+export const DEFAULT_CATEGORY_DRIVE_LINKS: Record<string, string> = {
+  'गणेशोत्सव': 'https://drive.google.com/drive/folders/morya_ganeshotsav_photos',
+  'विसर्जन मिरवणूक': 'https://drive.google.com/drive/folders/morya_visarjan_photos',
+  'सजावट व रोषणाई': 'https://drive.google.com/drive/folders/morya_decoration_photos',
+  'महाप्रसाद': 'https://drive.google.com/drive/folders/morya_mahaprasad_photos',
+  'सामाजिक उपक्रम': 'https://drive.google.com/drive/folders/morya_social_initiatives',
+  'धार्मिक कार्यक्रम': 'https://drive.google.com/drive/folders/morya_religious_events',
+  'सांस्कृतिक व क्रीडा': 'https://drive.google.com/drive/folders/morya_cultural_sports',
+  'सामाजिक कार्य': 'https://drive.google.com/drive/folders/morya_social_work',
+  'इतर': 'https://drive.google.com/drive/folders/morya_event_photos',
+  'सर्व': 'https://drive.google.com/drive/folders/morya_all_event_photos',
+};
+
+export const getCategoryDriveUrl = (category?: string, itemDriveUrl?: string) => {
+  if (itemDriveUrl && itemDriveUrl.trim() !== '') return itemDriveUrl.trim();
+  if (category && DEFAULT_CATEGORY_DRIVE_LINKS[category]) return DEFAULT_CATEGORY_DRIVE_LINKS[category];
+  return 'https://drive.google.com';
+};
 
 export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
   gallery,
@@ -56,6 +78,7 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
   const [formDate, setFormDate] = useState('');
   const [formImageUrl, setFormImageUrl] = useState('');
   const [formDescription, setFormDescription] = useState('');
+  const [formDriveUrl, setFormDriveUrl] = useState('');
   const [formYear, setFormYear] = useState('२०२५-२६');
 
   // Inline description & title edit state for Lightbox
@@ -83,6 +106,7 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
     setFormDate(new Date().toISOString().split('T')[0]);
     setFormImageUrl('');
     setFormDescription('');
+    setFormDriveUrl(DEFAULT_CATEGORY_DRIVE_LINKS['गणेशोत्सव'] || '');
     setFormYear('२०२५-२६');
     setIsModalOpen(true);
   };
@@ -100,6 +124,7 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
     setFormDate(item.dateStr || '');
     setFormImageUrl(item.imageUrl);
     setFormDescription(item.description || '');
+    setFormDriveUrl(item.googleDriveUrl || DEFAULT_CATEGORY_DRIVE_LINKS[item.category || 'गणेशोत्सव'] || '');
     setFormYear(item.year || '२०२५-२६');
     setIsModalOpen(true);
   };
@@ -163,6 +188,7 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
               dateStr: formDate,
               imageUrl: formImageUrl,
               description: formDescription.trim(),
+              googleDriveUrl: formDriveUrl.trim(),
               year: formYear,
             }
           : item
@@ -177,6 +203,7 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
         dateStr: formDate,
         imageUrl: formImageUrl,
         description: formDescription.trim(),
+        googleDriveUrl: formDriveUrl.trim(),
         year: formYear,
       };
       onSaveGallery([newItem, ...gallery]);
@@ -214,9 +241,6 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
             <div>
               <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
                 <span>उत्सव व कार्यक्रम फोटो दालन</span>
-                <span className="text-xs bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-200">
-                  {gallery.length} फोटो
-                </span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
                 मोरया ग्रुपच्या गणेशोत्सव, महाप्रसाद, सामाजिक व सांस्कृतिक उपक्रमांच्या आठवणी (बदलण्यायोग्य)
@@ -244,35 +268,50 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
         </div>
       </div>
 
-      {/* Category Filter Pills */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
-        <button
-          onClick={() => setSelectedCategory('सर्व')}
-          className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
-            selectedCategory === 'सर्व'
-              ? 'bg-slate-900 text-amber-400 shadow-xs'
-              : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-          }`}
+      {/* Category Filter Pills & Google Drive Quick Folder Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs flex-wrap">
+          <button
+            onClick={() => setSelectedCategory('सर्व')}
+            className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
+              selectedCategory === 'सर्व'
+                ? 'bg-slate-900 text-amber-400 shadow-xs'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+            }`}
+          >
+            सर्व
+          </button>
+          {CATEGORY_OPTIONS.map((cat) => {
+            const count = gallery.filter((item) => item.category === cat).length;
+            if (count === 0) return null;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
+                  selectedCategory === cat
+                    ? 'bg-amber-500 text-slate-950 shadow-xs'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                }`}
+              >
+                {cat}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Quick Google Drive Folder Button for Active Category */}
+        <a
+          href={getCategoryDriveUrl(selectedCategory)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 font-bold border border-amber-500/40 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-xs shrink-0 self-start sm:self-auto cursor-pointer"
+          title="Google Drive वरील सर्व फोटो फोल्डर उघडा"
         >
-          सर्व ({gallery.length})
-        </button>
-        {CATEGORY_OPTIONS.map((cat) => {
-          const count = gallery.filter((item) => item.category === cat).length;
-          if (count === 0) return null;
-          return (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
-                selectedCategory === cat
-                  ? 'bg-amber-500 text-slate-950 shadow-xs'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-              }`}
-            >
-              {cat} ({count})
-            </button>
-          );
-        })}
+          <FolderOpen className="w-4 h-4 text-amber-600" />
+          <span>{selectedCategory === 'सर्व' ? 'सर्व फोटो (Google Drive)' : `${selectedCategory} Drive फोल्डर`}</span>
+          <ExternalLink className="w-3 h-3 text-amber-600" />
+        </a>
       </div>
 
       {/* Photo Grid */}
@@ -290,298 +329,332 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {filteredGallery.map((item, index) => (
-            <div
-              key={item.id}
-              onClick={() => setLightboxIndex(index)}
-              className="group relative bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 hover:border-amber-400 shadow-xs hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
-            >
-              {/* Image Container */}
-              <div className="relative aspect-4/3 overflow-hidden bg-slate-950">
-                <img
-                  src={item.imageUrl}
-                  alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  onError={(e) => {
-                    // Fallback image on load error
-                    (e.target as HTMLImageElement).src =
-                      'https://images.unsplash.com/photo-1567157577867-05ccb1388e66?auto=format&fit=crop&w=800&q=80';
-                  }}
-                />
+          {filteredGallery.map((item, index) => {
+            const driveUrl = getCategoryDriveUrl(item.category, item.googleDriveUrl);
+            return (
+              <div
+                key={item.id}
+                onClick={() => setLightboxIndex(index)}
+                className="group relative bg-slate-900 rounded-2xl overflow-hidden border border-slate-200 hover:border-amber-400 shadow-xs hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
+              >
+                {/* Image Container */}
+                <div className="relative aspect-4/3 overflow-hidden bg-slate-950">
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                      // Fallback image on load error
+                      (e.target as HTMLImageElement).src =
+                        'https://images.unsplash.com/photo-1567157577867-05ccb1388e66?auto=format&fit=crop&w=800&q=80';
+                    }}
+                  />
 
-                {/* Overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
+                  {/* Overlay gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
 
-                {/* Top badges */}
-                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-                  <span className="px-2 py-0.5 bg-slate-950/80 backdrop-blur-md text-amber-300 font-bold text-[10px] rounded-md border border-amber-500/30">
-                    {item.category || 'कार्यक्रम'}
-                  </span>
-                  {item.dateStr && (
-                    <span className="px-2 py-0.5 bg-slate-950/80 backdrop-blur-md text-slate-300 text-[10px] rounded-md">
-                      {item.dateStr}
+                  {/* Top badges */}
+                  <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+                    <span className="px-2 py-0.5 bg-slate-950/80 backdrop-blur-md text-amber-300 font-bold text-[10px] rounded-md border border-amber-500/30">
+                      {item.category || 'कार्यक्रम'}
                     </span>
-                  )}
+                    {item.dateStr && (
+                      <span className="px-2 py-0.5 bg-slate-950/80 backdrop-blur-md text-slate-300 text-[10px] rounded-md">
+                        {item.dateStr}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Edit & Delete Quick Action Hover Buttons */}
+                  <div className="absolute top-2.5 right-2.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <button
+                      onClick={(e) => openEditModal(item, e)}
+                      title="संपादित करा"
+                      className="p-1.5 bg-slate-900/90 hover:bg-amber-500 text-white hover:text-slate-950 rounded-lg shadow cursor-pointer transition-colors"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(item.id, e)}
+                      title="काढून टाका"
+                      className="p-1.5 bg-slate-900/90 hover:bg-rose-600 text-white rounded-lg shadow cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Zoom Icon indicator */}
+                  <div className="absolute bottom-2.5 right-2.5 p-1.5 bg-slate-900/70 text-amber-400 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </div>
                 </div>
 
-                {/* Edit & Delete Quick Action Hover Buttons */}
-                <div className="absolute top-2.5 right-2.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                  <button
-                    onClick={(e) => openEditModal(item, e)}
-                    title="संपादित करा"
-                    className="p-1.5 bg-slate-900/90 hover:bg-amber-500 text-white hover:text-slate-950 rounded-lg shadow cursor-pointer transition-colors"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={(e) => handleDelete(item.id, e)}
-                    title="काढून टाका"
-                    className="p-1.5 bg-slate-900/90 hover:bg-rose-600 text-white rounded-lg shadow cursor-pointer transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                {/* Text content */}
+                <div className="p-3 bg-slate-900 text-white flex-1 flex flex-col justify-between border-t border-slate-800">
+                  <div>
+                    <h4 className="font-bold text-xs text-amber-300 line-clamp-1 group-hover:text-amber-400 transition-colors">
+                      {item.title}
+                    </h4>
+                    {item.description && (
+                      <p className="text-[11px] text-slate-300 line-clamp-2 mt-1 leading-snug">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
 
-                {/* Zoom Icon indicator */}
-                <div className="absolute bottom-2.5 right-2.5 p-1.5 bg-slate-900/70 text-amber-400 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Maximize2 className="w-3.5 h-3.5" />
+                  <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400 gap-1.5">
+                    {/* Google Drive Link */}
+                    <a
+                      href={driveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500 text-amber-300 hover:text-slate-950 rounded-md border border-amber-500/30 transition-colors flex items-center gap-1 font-bold cursor-pointer"
+                      title="Google Drive वर अधिक फोटो पहा"
+                    >
+                      <FolderOpen className="w-3 h-3" />
+                      <span>अधिक फोटो (Drive)</span>
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+
+                    <span className="text-amber-400 font-bold group-hover:underline">
+                      पहा & edit ➔
+                    </span>
+                  </div>
                 </div>
               </div>
-
-              {/* Text content */}
-              <div className="p-3 bg-slate-900 text-white flex-1 flex flex-col justify-between border-t border-slate-800">
-                <div>
-                  <h4 className="font-bold text-xs text-amber-300 line-clamp-1 group-hover:text-amber-400 transition-colors">
-                    {item.title}
-                  </h4>
-                  {item.description && (
-                    <p className="text-[11px] text-slate-300 line-clamp-2 mt-1 leading-snug">
-                      {item.description}
-                    </p>
-                  )}
-                </div>
-
-                <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
-                  <span className="text-amber-200/80 font-medium">मोरया ग्रुप ट्र्स्ट</span>
-                  <span className="text-amber-400 font-bold group-hover:underline">
-                    पहा & edit ➔
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Lightbox Modal */}
-      {lightboxIndex !== null && filteredGallery[lightboxIndex] && (
-        <div
-          className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4"
-          onClick={() => setLightboxIndex(null)}
-        >
+      {lightboxIndex !== null && filteredGallery[lightboxIndex] && (() => {
+        const activeItem = filteredGallery[lightboxIndex];
+        const driveUrl = getCategoryDriveUrl(activeItem.category, activeItem.googleDriveUrl);
+        return (
           <div
-            className="relative max-w-4xl w-full bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl flex flex-col max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={() => setLightboxIndex(null)}
           >
-            {/* Top Bar */}
-            <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between text-white">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 bg-amber-500 text-slate-950 font-black text-xs rounded-md">
-                  {filteredGallery[lightboxIndex].category}
-                </span>
-                <span className="text-xs text-slate-400">
-                  फोटो {lightboxIndex + 1} पैकी {filteredGallery.length}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={(e) => openEditModal(filteredGallery[lightboxIndex], e)}
-                  className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 font-bold text-xs rounded-lg border border-amber-500/40 transition-colors flex items-center gap-1 cursor-pointer"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  <span>संपादित करा</span>
-                </button>
-                <button
-                  onClick={() => setLightboxIndex(null)}
-                  className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Main Image Display */}
-            <div className="relative flex-1 bg-black flex items-center justify-center min-h-[300px] max-h-[60vh] overflow-hidden">
-              <img
-                src={filteredGallery[lightboxIndex].imageUrl}
-                alt={filteredGallery[lightboxIndex].title}
-                className="max-h-[60vh] w-auto max-w-full object-contain"
-              />
-
-              {/* Prev / Next Arrows */}
-              {filteredGallery.length > 1 && (
-                <>
-                  <button
-                    onClick={prevLightbox}
-                    className="absolute left-3 p-2 bg-slate-950/80 hover:bg-amber-500 text-white hover:text-slate-950 rounded-full border border-slate-700 transition-colors cursor-pointer"
-                  >
-                    <ChevronLeft className="w-6 h-6" />
-                  </button>
-                  <button
-                    onClick={nextLightbox}
-                    className="absolute right-3 p-2 bg-slate-950/80 hover:bg-amber-500 text-white hover:text-slate-950 rounded-full border border-slate-700 transition-colors cursor-pointer"
-                  >
-                    <ChevronRight className="w-6 h-6" />
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* Bottom Caption Info with Admin Title & Description Edit Options */}
-            <div className="p-4 bg-slate-950 border-t border-slate-800 text-white space-y-2">
-              {/* Title Section with Inline Edit */}
-              {isEditingInlineTitle ? (
-                <div className="bg-slate-900 p-3 rounded-xl border border-amber-500/50 space-y-2">
-                  <label className="block text-[11px] font-bold text-amber-300">
-                    ॲडमिन: फोटोचे नवीन शीर्षक (Title) प्रविष्ट करा
-                  </label>
-                  <input
-                    type="text"
-                    value={inlineTitleText}
-                    onChange={(e) => setInlineTitleText(e.target.value)}
-                    placeholder="उदा. श्री गणेश मूर्ती प्रतिष्ठापना सोहळा"
-                    className="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-amber-300 font-bold text-sm focus:ring-2 focus:ring-amber-500 outline-none"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => setIsEditingInlineTitle(false)}
-                      className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-lg cursor-pointer"
-                    >
-                      रद्द करा
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (!inlineTitleText.trim()) {
-                          alert('कृपया शीर्षक रिकामे ठेवू नका.');
-                          return;
-                        }
-                        const targetId = filteredGallery[lightboxIndex].id;
-                        const updated = gallery.map((item) =>
-                          item.id === targetId ? { ...item, title: inlineTitleText.trim() } : item
-                        );
-                        onSaveGallery(updated);
-                        setIsEditingInlineTitle(false);
-                      }}
-                      className="px-4 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-lg cursor-pointer flex items-center gap-1"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>शीर्षक साठवा (Save Title)</span>
-                    </button>
-                  </div>
+            <div
+              className="relative max-w-4xl w-full bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl flex flex-col max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Top Bar */}
+              <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between text-white gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 bg-amber-500 text-slate-950 font-black text-xs rounded-md">
+                    {activeItem.category}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    फोटो {lightboxIndex + 1} पैकी {filteredGallery.length}
+                  </span>
                 </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                  <div>
-                    <h3 className="text-base font-black text-amber-400">
-                      {filteredGallery[lightboxIndex].title}
-                    </h3>
-                  </div>
 
-                  {isAdmin && (
-                    <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2">
+                  {/* Google Drive Link in Lightbox */}
+                  <a
+                    href={driveUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-lg flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                    title="या कार्यक्रमाचे सर्व फोटो Google Drive वर उघडा"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Drive वरील सर्व फोटो उघडा</span>
+                    <span className="sm:hidden">Drive फोटो</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+
+                  <button
+                    onClick={(e) => openEditModal(activeItem, e)}
+                    className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 font-bold text-xs rounded-lg border border-amber-500/40 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>संपादित करा</span>
+                  </button>
+                  <button
+                    onClick={() => setLightboxIndex(null)}
+                    className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Image Display */}
+              <div className="relative flex-1 bg-black flex items-center justify-center min-h-[300px] max-h-[60vh] overflow-hidden">
+                <img
+                  src={activeItem.imageUrl}
+                  alt={activeItem.title}
+                  className="max-h-[60vh] w-auto max-w-full object-contain"
+                />
+
+                {/* Prev / Next Arrows */}
+                {filteredGallery.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevLightbox}
+                      className="absolute left-3 p-2 bg-slate-950/80 hover:bg-amber-500 text-white hover:text-slate-950 rounded-full border border-slate-700 transition-colors cursor-pointer"
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </button>
+                    <button
+                      onClick={nextLightbox}
+                      className="absolute right-3 p-2 bg-slate-950/80 hover:bg-amber-500 text-white hover:text-slate-950 rounded-full border border-slate-700 transition-colors cursor-pointer"
+                    >
+                      <ChevronRight className="w-6 h-6" />
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Bottom Caption Info with Admin Title & Description Edit Options */}
+              <div className="p-4 bg-slate-950 border-t border-slate-800 text-white space-y-2">
+                {/* Title Section with Inline Edit */}
+                {isEditingInlineTitle ? (
+                  <div className="bg-slate-900 p-3 rounded-xl border border-amber-500/50 space-y-2">
+                    <label className="block text-[11px] font-bold text-amber-300">
+                      ॲडमिन: फोटोचे नवीन शीर्षक (Title) प्रविष्ट करा
+                    </label>
+                    <input
+                      type="text"
+                      value={inlineTitleText}
+                      onChange={(e) => setInlineTitleText(e.target.value)}
+                      placeholder="उदा. श्री गणेश मूर्ती प्रतिष्ठापना सोहळा"
+                      className="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-amber-300 font-bold text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => setIsEditingInlineTitle(false)}
+                        className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-lg cursor-pointer"
+                      >
+                        रद्द करा
+                      </button>
                       <button
                         onClick={() => {
-                          setInlineTitleText(filteredGallery[lightboxIndex].title || '');
-                          setIsEditingInlineTitle(true);
+                          if (!inlineTitleText.trim()) {
+                            alert('कृपया शीर्षक रिकामे ठेवू नका.');
+                            return;
+                          }
+                          const targetId = activeItem.id;
+                          const updated = gallery.map((item) =>
+                            item.id === targetId ? { ...item, title: inlineTitleText.trim() } : item
+                          );
+                          onSaveGallery(updated);
+                          setIsEditingInlineTitle(false);
                         }}
-                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
-                        title="ॲडमिन: फोटोचे शीर्षक बदला"
+                        className="px-4 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-lg cursor-pointer flex items-center gap-1"
                       >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span>शीर्षक बदला (Edit Title)</span>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>शीर्षक साठवा (Save Title)</span>
                       </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                      <h3 className="text-base font-black text-amber-400">
+                        {activeItem.title}
+                      </h3>
+                    </div>
 
-                      {!isEditingInlineDesc && (
+                    {isAdmin && (
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
                           onClick={() => {
-                            setInlineDescText(filteredGallery[lightboxIndex].description || '');
-                            setIsEditingInlineDesc(true);
+                            setInlineTitleText(activeItem.title || '');
+                            setIsEditingInlineTitle(true);
                           }}
-                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs rounded-xl border border-slate-700 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
-                          title="ॲडमिन: फोटोचे वर्णन बदला"
+                          className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                          title="ॲडमिन: फोटोचे शीर्षक बदला"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
-                          <span>वर्णन बदला (Edit Description)</span>
+                          <span>शीर्षक बदला (Edit Title)</span>
                         </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
 
-              {isEditingInlineDesc ? (
-                <div className="bg-slate-900 p-3 rounded-xl border border-amber-500/50 space-y-2 mt-1">
-                  <label className="block text-[11px] font-bold text-amber-300">
-                    ॲडमिन: फोटोचे नवीन वर्णन प्रविष्ट करा
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={inlineDescText}
-                    onChange={(e) => setInlineDescText(e.target.value)}
-                    placeholder="उदा. गणेशोत्सव महाप्रसाद वाटप कार्यक्रम गोंधळनगर..."
-                    className="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-amber-100 text-xs font-medium focus:ring-2 focus:ring-amber-500 outline-none"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => setIsEditingInlineDesc(false)}
-                      className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-lg cursor-pointer"
-                    >
-                      रद्द करा
-                    </button>
-                    <button
-                      onClick={() => {
-                        const targetId = filteredGallery[lightboxIndex].id;
-                        const updated = gallery.map((item) =>
-                          item.id === targetId ? { ...item, description: inlineDescText.trim() } : item
-                        );
-                        onSaveGallery(updated);
-                        setIsEditingInlineDesc(false);
-                      }}
-                      className="px-4 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-lg cursor-pointer flex items-center gap-1"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>साठवा (Save Description)</span>
-                    </button>
+                        {!isEditingInlineDesc && (
+                          <button
+                            onClick={() => {
+                              setInlineDescText(activeItem.description || '');
+                              setIsEditingInlineDesc(true);
+                            }}
+                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs rounded-xl border border-slate-700 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                            title="ॲडमिन: फोटोचे वर्णन बदला"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            <span>वर्णन बदला (Edit Description)</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ) : (
-                <div>
-                  {filteredGallery[lightboxIndex].description ? (
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      {filteredGallery[lightboxIndex].description}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-slate-500 italic">
-                      (या फोटोचे वर्णन जोडलेले नाही. ॲडमिन हे वर्णन बदलू शकतात.)
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="flex items-center gap-4 text-[11px] text-slate-400 pt-1 border-t border-slate-900">
-                {filteredGallery[lightboxIndex].dateStr && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                    तारीख: {filteredGallery[lightboxIndex].dateStr}
-                  </span>
                 )}
-                <span>स्थान: गोंधळनगर, हडपसर, पुणे</span>
+
+                {isEditingInlineDesc ? (
+                  <div className="bg-slate-900 p-3 rounded-xl border border-amber-500/50 space-y-2 mt-1">
+                    <label className="block text-[11px] font-bold text-amber-300">
+                      ॲडमिन: फोटोचे नवीन वर्णन प्रविष्ट करा
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={inlineDescText}
+                      onChange={(e) => setInlineDescText(e.target.value)}
+                      placeholder="उदा. गणेशोत्सव महाप्रसाद वाटप कार्यक्रम गोंधळनगर..."
+                      className="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-amber-100 text-xs font-medium focus:ring-2 focus:ring-amber-500 outline-none"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => setIsEditingInlineDesc(false)}
+                        className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-lg cursor-pointer"
+                      >
+                        रद्द करा
+                      </button>
+                      <button
+                        onClick={() => {
+                          const targetId = activeItem.id;
+                          const updated = gallery.map((item) =>
+                            item.id === targetId ? { ...item, description: inlineDescText.trim() } : item
+                          );
+                          onSaveGallery(updated);
+                          setIsEditingInlineDesc(false);
+                        }}
+                        className="px-4 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-lg cursor-pointer flex items-center gap-1"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>साठवा (Save Description)</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    {activeItem.description ? (
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        {activeItem.description}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-500 italic">
+                        (या फोटोचे वर्णन जोडलेले नाही. ॲडमिन हे वर्णन बदलू शकतात.)
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-4 text-[11px] text-slate-400 pt-1 border-t border-slate-900">
+                  {activeItem.dateStr && (
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                      तारीख: {activeItem.dateStr}
+                    </span>
+                  )}
+                  <span>स्थान: गोंधळनगर, हडपसर, पुणे</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Add / Edit Photo Modal */}
       {isModalOpen && (
@@ -622,7 +695,13 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
                   </label>
                   <select
                     value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value)}
+                    onChange={(e) => {
+                      const newCat = e.target.value;
+                      setFormCategory(newCat);
+                      if (!editingId) {
+                        setFormDriveUrl(DEFAULT_CATEGORY_DRIVE_LINKS[newCat] || '');
+                      }
+                    }}
                     className="w-full p-2.5 border border-slate-300 rounded-lg font-bold"
                   >
                     {CATEGORY_OPTIONS.map((c) => (
@@ -644,6 +723,24 @@ export const EventGallerySection: React.FC<EventGallerySectionProps> = ({
                     className="w-full p-2.5 border border-slate-300 rounded-lg"
                   />
                 </div>
+              </div>
+
+              {/* Google Drive Folder Link Input */}
+              <div>
+                <label className="block font-bold text-slate-700 uppercase mb-1 flex items-center gap-1">
+                  <Folder className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Google Drive फोल्डर लिंक (अधिक फोटोसाठी)</span>
+                </label>
+                <input
+                  type="url"
+                  value={formDriveUrl}
+                  onChange={(e) => setFormDriveUrl(e.target.value)}
+                  placeholder="उदा. https://drive.google.com/drive/folders/..."
+                  className="w-full p-2.5 border border-slate-300 rounded-lg font-medium text-slate-800"
+                />
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  या कार्यक्रमाच्या सर्व फोटोंचे Google Drive फोल्डर लिंक येथे प्रविष्ट करा.
+                </p>
               </div>
 
               {/* Image Input Selection: Upload vs URL */}
