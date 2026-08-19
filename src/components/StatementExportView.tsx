@@ -376,10 +376,10 @@ export const StatementExportView: React.FC<StatementExportViewProps> = ({
                 onChange={(e) => setSelectedYear(e.target.value)}
                 className="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 outline-none"
               >
-                <option value="२०२६">२०२६ (चालू वर्ष)</option>
+                <option value="२०२६">२०२६</option>
+                <option value="२०२७">२०२७</option>
                 <option value="२०२५">२०२५</option>
                 <option value="२०२४">२०२४</option>
-                <option value="२०२७">२०२७</option>
               </select>
             </div>
           ) : (

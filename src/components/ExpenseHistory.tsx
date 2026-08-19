@@ -413,13 +413,11 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                   onChange={(e) => setSelectedYear(e.target.value)}
                   className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
                 >
-                  <option value="ALL">सर्व वर्षे (All Years)</option>
-                  <option value="२०२६">२०२६ (१ जाने - ३१ डिसे)</option>
-                  <option value="२०२५">२०२५ (१ जाने - ३१ डिसे)</option>
-                  <option value="२०२४">२०२४ (१ जाने - ३१ डिसे)</option>
-                  <option value="२०२७">२०२७ (१ जाने - ३१ डिसे)</option>
-                  <option value="२०२६-२७">२०२६-२७ (आर्थिक वर्ष)</option>
-                  <option value="२०२५-२६">२०२५-२६ (आर्थिक वर्ष)</option>
+                  <option value="ALL">सर्व वर्षे</option>
+                  <option value="२०२६">२०२६</option>
+                  <option value="२०२७">२०२७</option>
+                  <option value="२०२५">२०२५</option>
+                  <option value="२०२४">२०२४</option>
                 </select>
               </div>
 
@@ -955,11 +953,9 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                     className="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 outline-none"
                   >
                     <option value="२०२६">२०२६</option>
+                    <option value="२०२७">२०२७</option>
                     <option value="२०२५">२०२५</option>
                     <option value="२०२४">२०२४</option>
-                    <option value="२०२७">२०२७</option>
-                    <option value="२०२६-२७">२०२६-२७</option>
-                    <option value="२०२५-२६">२०२५-२६</option>
                   </select>
                 </div>
               </div>

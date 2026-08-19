@@ -591,13 +591,11 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
               }}
               className="bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-600 font-black text-emerald-950 dark:text-emerald-300 text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer"
             >
-              <option value="२०२६">२०२६ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२५">२०२५ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२४">२०२४ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२७">२०२७ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२६-२७">२०२६-२७ (आर्थिक वर्ष)</option>
-              <option value="२०२५-२६">२०२५-२६ (आर्थिक वर्ष)</option>
-              <option value="ALL">सर्व वर्षे (All Years)</option>
+              <option value="२०२६">२०२६</option>
+              <option value="२०२७">२०२७</option>
+              <option value="२०२५">२०२५</option>
+              <option value="२०२४">२०२४</option>
+              <option value="ALL">सर्व वर्षे</option>
             </select>
           </div>
 
@@ -778,7 +776,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                       <XCircle className="w-4 h-4" />
                       <span>रद्द</span>
                     </button>
-                    {onDeleteCashSettlement && (
+                    {isAdmin && onDeleteCashSettlement && (
                       <button
                         type="button"
                         onClick={() => {
@@ -1105,7 +1103,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                     <th className="p-3">बँक संदर्भ / स्लिप क्र.</th>
                     <th className="p-3">मंजुरी दर्जा</th>
                     <th className="p-3">पुरावा</th>
-                    {(isAdmin || isTreasurerOrVice) && <th className="p-3 text-right">कृती</th>}
+                    {isAdmin && <th className="p-3 text-right">कृती</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -1151,7 +1149,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                           <span className="text-slate-400 text-[10px]">---</span>
                         )}
                       </td>
-                      {(isAdmin || isTreasurerOrVice) && (
+                      {isAdmin && (
                         <td className="p-3 text-right">
                           {onDeleteCashSettlement && (
                             <button
@@ -1162,7 +1160,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                                 }
                               }}
                               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
-                              title="नोंद कायमची हटवा (Delete)"
+                              title="नोंद कायमची हटवा (Admin Only Delete)"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>

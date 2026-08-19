@@ -137,10 +137,10 @@ export const CoreSummaryView: React.FC<CoreSummaryViewProps> = ({
             onChange={(e) => setSelectedYear(e.target.value)}
             className="bg-slate-800 text-emerald-300 font-bold text-xs rounded-xl border border-slate-700 p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer"
           >
-            <option value="२०२६">२०२६ (चालू वर्ष)</option>
+            <option value="२०२६">२०२६</option>
+            <option value="२०२७">२०२७</option>
             <option value="२०२५">२०२५</option>
             <option value="२०२४">२०२४</option>
-            <option value="२०२७">२०२७</option>
           </select>
         </div>
       </div>

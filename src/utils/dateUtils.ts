@@ -4,8 +4,23 @@
  * and Financial Year (Apr 1 - Mar 31) conversions.
  */
 
-export const CALENDAR_YEAR_OPTIONS = ['२०२६', '२०२५', '२०२४', '२०२७'];
-export const FINANCIAL_YEAR_OPTIONS = ['२०२६-२७', '२०२५-२६', '२०२४-२५'];
+export const CALENDAR_YEAR_OPTIONS = ['२०२६', '२०२७', '२०२५', '२०२४'];
+export const FINANCIAL_YEAR_OPTIONS = ['२०२६-२७', '२०२५-२६', '२०२४-२५', '२०२७-२८'];
+
+export const MARATHI_MONTH_NAMES = [
+  'जानेवारी',
+  'फेब्रुवारी',
+  'मार्च',
+  'एप्रिल',
+  'मे',
+  'जून',
+  'जुलै',
+  'ऑगस्ट',
+  'सप्टेंबर',
+  'ऑक्टोबर',
+  'नोव्हेंबर',
+  'डिसेंबर',
+];
 
 const MARATHI_TO_ENGLISH_DIGITS: Record<string, string> = {
   '०': '0',
@@ -355,5 +370,89 @@ export function formatExpenseTransactionsNo<
     transactionNo: assignedMap.get(item.id) || item.transactionNo || `${PREFIX}-1`,
   }));
 }
+
+export interface YearMonthItem {
+  key: string; // e.g. '2026-04'
+  monthNumber: number; // 1 to 12
+  monthIndex: number; // 0 to 11
+  monthName: string; // e.g. 'एप्रिल २०२६'
+  calendarYear: number;
+  financialYear: string;
+  marathiMonthOnly: string; // e.g. 'एप्रिल'
+}
+
+/**
+ * Returns 12 months for a Financial Year (April Year 1 to March Year 2)
+ * e.g. '२०२६-२७' -> [April 2026, May 2026, ... March 2027]
+ */
+export function getFinancialYearMonthList(fyStr: string = '२०२६-२७'): YearMonthItem[] {
+  const startYear = parseYearNumber(fyStr);
+  const endYear = startYear + 1;
+  const shortEnd = String(endYear).slice(-2);
+  const formattedFY = `${convertEnglishToMarathiDigits(startYear)}-${convertEnglishToMarathiDigits(shortEnd)}`;
+
+  const months: YearMonthItem[] = [];
+
+  // Apr to Dec of startYear (months 4 to 12)
+  for (let m = 4; m <= 12; m++) {
+    const monthIndex = m - 1;
+    const marathiName = MARATHI_MONTH_NAMES[monthIndex];
+    const monthPad = String(m).padStart(2, '0');
+    months.push({
+      key: `${startYear}-${monthPad}`,
+      monthNumber: m,
+      monthIndex: monthIndex,
+      monthName: `${marathiName} ${convertEnglishToMarathiDigits(startYear)}`,
+      calendarYear: startYear,
+      financialYear: formattedFY,
+      marathiMonthOnly: marathiName,
+    });
+  }
+
+  // Jan to Mar of endYear (months 1 to 3)
+  for (let m = 1; m <= 3; m++) {
+    const monthIndex = m - 1;
+    const marathiName = MARATHI_MONTH_NAMES[monthIndex];
+    const monthPad = String(m).padStart(2, '0');
+    months.push({
+      key: `${endYear}-${monthPad}`,
+      monthNumber: m,
+      monthIndex: monthIndex,
+      monthName: `${marathiName} ${convertEnglishToMarathiDigits(endYear)}`,
+      calendarYear: endYear,
+      financialYear: formattedFY,
+      marathiMonthOnly: marathiName,
+    });
+  }
+
+  return months;
+}
+
+/**
+ * Returns 12 months for a Calendar Year (Jan to Dec)
+ * e.g. '२०२६' -> [Jan 2026, Feb 2026, ... Dec 2026]
+ */
+export function getCalendarYearMonthList(calYearStr: string = '२०२६'): YearMonthItem[] {
+  const year = parseYearNumber(calYearStr);
+  const months: YearMonthItem[] = [];
+
+  for (let m = 1; m <= 12; m++) {
+    const monthIndex = m - 1;
+    const marathiName = MARATHI_MONTH_NAMES[monthIndex];
+    const monthPad = String(m).padStart(2, '0');
+    months.push({
+      key: `${year}-${monthPad}`,
+      monthNumber: m,
+      monthIndex: monthIndex,
+      monthName: `${marathiName} ${convertEnglishToMarathiDigits(year)}`,
+      calendarYear: year,
+      financialYear: getFinancialYearFromDate(`${year}-${monthPad}-01`),
+      marathiMonthOnly: marathiName,
+    });
+  }
+
+  return months;
+}
+
 
 

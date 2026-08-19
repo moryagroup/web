@@ -729,13 +729,11 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
               onChange={(e) => setSelectedYear(e.target.value)}
               className="bg-white dark:bg-slate-700 border border-amber-300 dark:border-amber-600 font-black text-amber-950 dark:text-amber-300 text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
             >
-              <option value="२०२६">२०२६ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२५">२०२५ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२४">२०२४ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२७">२०२७ (१ जाने - ३१ डिसे)</option>
-              <option value="२०२६-२७">२०२६-२७ (आर्थिक वर्ष: १ एप्रिल - ३१ मार्च)</option>
-              <option value="२०२५-२६">२०२५-२६ (आर्थिक वर्ष: १ एप्रिल - ३१ मार्च)</option>
-              <option value="ALL">सर्व वर्षे (All Years)</option>
+              <option value="२०२६">२०२६</option>
+              <option value="२०२७">२०२७</option>
+              <option value="२०२५">२०२५</option>
+              <option value="२०२४">२०२४</option>
+              <option value="ALL">सर्व वर्षे</option>
             </select>
           </div>
 
