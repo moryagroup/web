@@ -362,7 +362,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }
 
   return (
-    <div className="space-y-6 my-2">
+    <div className="space-y-4 my-1">
+      {/* Compact User Greeting Header (Only Attached Image Data - Mobile-Optimized Small Box) */}
+      <div className="bg-gradient-to-r from-amber-950 via-[#3a0a0f] to-orange-950 text-white px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl shadow-md border border-amber-500/30 flex items-center gap-3 sm:gap-4">
+        {/* Logged-in Member Profile Photo Badge */}
+        {isLoggedIn && (
+          <div
+            className="relative group cursor-pointer shrink-0"
+            onClick={() => setIsMemberPhotoModalOpen(true)}
+            title="मोठा प्रोफाईल फोटो पहा"
+          >
+            {memberPhoto ? (
+              <img
+                src={memberPhoto}
+                alt={currentUser.name}
+                className="w-11 h-11 sm:w-13 sm:h-13 object-cover rounded-full border-2 border-amber-400 p-0.5 bg-slate-950 shadow-md group-hover:scale-105 transition-transform"
+              />
+            ) : (
+              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full border-2 border-amber-400/90 bg-amber-500/20 flex flex-col items-center justify-center text-amber-300 font-bold shadow-md group-hover:scale-105 transition-transform">
+                <User className="w-5 h-5 text-amber-400" />
+                <span className="text-[7px] font-bold text-amber-200">फोटो जोडा</span>
+              </div>
+            )}
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigate('profile');
+              }}
+              className="absolute -bottom-0.5 -right-0.5 bg-amber-500 hover:bg-amber-400 text-slate-950 p-0.5 sm:p-1 rounded-full border border-amber-300 shadow-xs group-hover:scale-110 transition-transform"
+              title="फोटो बदला"
+            >
+              <Camera className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+            </div>
+          </div>
+        )}
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
+              {currentUser.role} लॉगइन
+            </span>
+          </div>
+          <h2 className="text-sm sm:text-base md:text-lg font-black text-white flex items-center gap-1.5 truncate mt-0.5">
+            नमस्कार, {currentUser.name}! 🙏
+          </h2>
+          <p className="text-[10px] sm:text-xs text-slate-300 mt-0.5 leading-snug">
+            <strong className="text-amber-300">हडपसर गोंधळनगर</strong> — सर्व उत्पन्न, वर्गणी, प्रायोजकत्व व खर्चाची अधिकृत डिजिटल हिशोब नोंदणी प्रणाली.
+          </p>
+        </div>
+      </div>
+
       {/* Income, Expense & Net Balance Summary Cards */}
       <HeaderStats
         summary={summary}
@@ -371,92 +420,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         currentUser={currentUser}
         onLogout={onLogout}
       />
-      {/* Quick Action Cards & Greeting */}
-      <div className="bg-gradient-to-r from-amber-950 via-rose-950 to-orange-950 text-white p-6 rounded-3xl shadow-xl border border-amber-500/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-          {/* Logged-in Member Profile Photo Badge */}
-          {isLoggedIn && (
-            <div
-              className="relative group cursor-pointer shrink-0"
-              onClick={() => setIsMemberPhotoModalOpen(true)}
-              title="मोठा प्रोफाईल फोटो पहा (Click for Full Screen View)"
-            >
-              {memberPhoto ? (
-                <img
-                  src={memberPhoto}
-                  alt={currentUser.name}
-                  className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-amber-400 p-0.5 bg-slate-950 shadow-xl group-hover:scale-105 transition-transform"
-                />
-              ) : (
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-amber-400/90 bg-amber-500/20 flex flex-col items-center justify-center text-amber-300 font-black shadow-xl group-hover:scale-105 transition-transform">
-                  <User className="w-7 h-7 text-amber-400" />
-                  <span className="text-[8px] font-bold text-amber-200">फोटो जोडा</span>
-                </div>
-              )}
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNavigate('profile');
-                }}
-                className="absolute -bottom-1 -right-1 bg-amber-500 hover:bg-amber-400 text-slate-950 p-1 rounded-full border border-amber-300 shadow-md group-hover:scale-110 transition-transform"
-                title="फोटो बदला"
-              >
-                <Camera className="w-3.5 h-3.5" />
-              </div>
-            </div>
-          )}
-
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-md text-[11px] font-bold uppercase tracking-wider">
-                {currentUser.role} लॉगइन
-              </span>
-            </div>
-            <h2 className="text-xl md:text-2xl font-black mt-1 text-white flex items-center gap-2">
-              नमस्कार, {currentUser.name}! 🙏
-            </h2>
-            <p className="text-xs text-slate-300 mt-1 max-w-xl">
-              <strong className="text-amber-300">हडपसर गोंधळनगर</strong> — सर्व उत्पन्न, वर्गणी, प्रायोजकत्व व खर्चाची अधिकृत डिजिटल हिशोब नोंदणी प्रणाली.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2.5 items-center">
-          <button
-            onClick={() => onNavigate('income-form')}
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>+ नवीन जमा नोंद</span>
-          </button>
-          <button
-            onClick={() => onNavigate('expense-form')}
-            className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>+ नवीन खर्च नोंद</span>
-          </button>
-
-          {isLoggedIn ? (
-            <button
-              onClick={onLogout}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-rose-700 text-white border border-slate-700 font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
-              title="लॉगआउट करा"
-            >
-              <LogOut className="w-4 h-4 text-rose-400" />
-              <span>लॉगआउट</span>
-            </button>
-          ) : (
-            <button
-              onClick={onOpenLogin}
-              className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>लॉगइन</span>
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* User's Personal Total Deposit & Total Expense Cards (Side by Side) */}
       {isLoggedIn && (
