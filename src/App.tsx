@@ -29,6 +29,7 @@ import {
   saveEventGallery,
   saveCustomIncomeType,
   getCustomIncomeTypes,
+  purgeLegacyLocalStorage,
   DEFAULT_USER,
   calculateFinancialSummary,
   clearAllTransactionsFromStorage,

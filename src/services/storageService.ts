@@ -160,7 +160,7 @@ export const calculateFinancialSummary = (
 export const getMemberSubscriptionPaid = (
   memberId: string,
   incomes: IncomeTransaction[],
-  _financialYear: string
+  _financialYear?: string
 ): number => {
   return incomes
     .filter((item) => item.linkedMemberId === memberId && item.incomeType === 'वर्गणी')
@@ -170,7 +170,7 @@ export const getMemberSubscriptionPaid = (
 export const getMemberExtraDonationPaid = (
   memberId: string,
   incomes: IncomeTransaction[],
-  _financialYear: string
+  _financialYear?: string
 ): number => {
   return incomes
     .filter(
