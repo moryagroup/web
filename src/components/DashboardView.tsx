@@ -23,6 +23,7 @@ import {
   ArrowUpRight,
   Clock,
   CheckCircle,
+  XCircle,
   PlusCircle,
   Users,
   ShieldAlert,
@@ -621,15 +622,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <button
                         onClick={() => onApproveIncome && onApproveIncome(inc.id, currentUser.name, currentUser.role)}
                         className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+                        title="पावती मंजूर करा"
                       >
                         <CheckCircle className="w-3.5 h-3.5" />
-                        <span>मंजूर करा</span>
+                        <span>मंजूर</span>
                       </button>
                       <button
-                        onClick={() => onRejectIncome && onRejectIncome(inc.id, currentUser.name, currentUser.role)}
-                        className="px-2.5 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95"
+                        onClick={() => {
+                          if (window.confirm(`पावती क्र. ${inc.transactionNo || ''} (₹${inc.amount}) नाकारायची / रद्द करायची आहे का?`)) {
+                            onRejectIncome && onRejectIncome(inc.id, currentUser.name, currentUser.role);
+                          }
+                        }}
+                        className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+                        title="पावती नाकारा / रद्द करा (Decline)"
                       >
-                        रद्द
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>नाकारा</span>
                       </button>
                     </div>
                   )}
@@ -698,16 +706,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <button
                         onClick={() => onApproveExpense(exp.id, currentUser.name, currentUser.role)}
                         className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+                        title="खर्च मंजूर करा"
                       >
                         <CheckCircle className="w-3.5 h-3.5" />
-                        <span>मंजूर करा</span>
+                        <span>मंजूर</span>
                       </button>
                       {onRejectExpense && (
                         <button
-                          onClick={() => onRejectExpense(exp.id, currentUser.name, currentUser.role)}
-                          className="px-2.5 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95"
+                          onClick={() => {
+                            if (window.confirm(`खर्च क्र. ${exp.transactionNo || ''} (₹${exp.amount}) नाकारायचा / रद्द करायचा आहे का?`)) {
+                              onRejectExpense(exp.id, currentUser.name, currentUser.role);
+                            }
+                          }}
+                          className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+                          title="खर्च नाकारा / रद्द करा (Decline)"
                         >
-                          रद्द
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>नाकारा</span>
                         </button>
                       )}
                     </div>

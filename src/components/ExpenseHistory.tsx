@@ -13,6 +13,7 @@ import {
   RotateCcw,
   ArrowUpRight,
   CheckCircle,
+  XCircle,
   Clock,
   ShieldCheck,
   Eye,
@@ -454,6 +455,7 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                   <option value="ALL">सर्व मंजुरी स्थिती</option>
                   <option value="मंजूर">मंजूर (Approved)</option>
                   <option value="प्रलंबित">प्रलंबित (Pending)</option>
+                  <option value="रद्द">नाकारलेले / रद्द (Declined)</option>
                 </select>
               </div>
 
@@ -554,6 +556,10 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                         <span className="px-2.5 py-0.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black flex items-center gap-1 w-fit shadow-2xs border border-emerald-500">
                           <CheckCircle className="w-3 h-3 text-white" /> मंजूर
                         </span>
+                      ) : item.approvalStatus === 'रद्द' ? (
+                        <span className="px-2.5 py-0.5 bg-rose-600 text-white rounded-lg text-[10px] font-black flex items-center gap-1 w-fit shadow-2xs border border-rose-500">
+                          <XCircle className="w-3 h-3 text-white" /> नाकारलेले
+                        </span>
                       ) : (
                         <span className="px-2.5 py-0.5 bg-amber-500 text-slate-950 rounded-lg text-[10px] font-black flex items-center gap-1 w-fit shadow-2xs border border-amber-400">
                           <Clock className="w-3 h-3 text-slate-950" /> प्रलंबित
@@ -563,7 +569,11 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                     <td className="p-3.5 text-[11px] text-slate-600">
                       {item.approvalStatus === 'मंजूर' ? (
                         <div>
-                          <span className="font-semibold text-slate-800">{item.approvedBy}</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{item.approvedBy}</span>
+                        </div>
+                      ) : item.approvalStatus === 'रद्द' ? (
+                        <div>
+                          <span className="font-semibold text-rose-700 dark:text-rose-400">{item.approvedBy || 'नाकारले'}</span>
                         </div>
                       ) : (
                         <span className="text-slate-400 italic">मंजुरीची वाट पाहत आहे</span>
@@ -573,7 +583,7 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                       <div className="flex items-center justify-center gap-1">
                         <button
                           onClick={() => setSelectedExpenseDetail(item)}
-                          className="p-1.5 hover:bg-slate-100 text-slate-600 hover:text-rose-700 rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-700 rounded-lg transition-colors cursor-pointer"
                           title="तपशील पहा"
                         >
                           <Eye className="w-4 h-4" />
@@ -582,8 +592,8 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => handleApproveClick(item.id)}
-                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg transition-all flex items-center gap-1 shadow-xs cursor-pointer"
-                              title="मंजूर करा"
+                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
+                              title="खर्च मंजूर करा (Approve)"
                             >
                               <Check className="w-3 h-3" />
                               <span>मंजूर</span>
@@ -591,14 +601,15 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                             {onRejectExpense && (
                               <button
                                 onClick={() => {
-                                  if (window.confirm(`खर्च क्र. ${item.transactionNo} (₹${item.amount}) रद्द करायचा आहे का?`)) {
+                                  if (window.confirm(`खर्च क्र. ${item.transactionNo} (₹${item.amount}) नाकारायचा / रद्द करायचा आहे का?`)) {
                                     handleRejectClick(item.id);
                                   }
                                 }}
-                                className="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] rounded-lg transition-all shadow-xs cursor-pointer"
-                                title="खर्च रद्द करा"
+                                className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] rounded-lg transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
+                                title="खर्च नाकारा / रद्द करा (Decline)"
                               >
-                                ✕ रद्द
+                                <XCircle className="w-3 h-3" />
+                                <span>नाकारा</span>
                               </button>
                             )}
                           </div>
@@ -703,10 +714,12 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                   className={`font-bold ${
                     selectedExpenseDetail.approvalStatus === 'मंजूर'
                       ? 'text-emerald-600'
+                      : selectedExpenseDetail.approvalStatus === 'रद्द'
+                      ? 'text-rose-600'
                       : 'text-amber-600'
                   }`}
                 >
-                  {selectedExpenseDetail.approvalStatus}
+                  {selectedExpenseDetail.approvalStatus === 'रद्द' ? 'रद्द / नाकारलेले' : selectedExpenseDetail.approvalStatus}
                 </span>
               </div>
               <div>
@@ -745,6 +758,12 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                 <p className="p-2 bg-emerald-50 rounded text-emerald-800 border border-emerald-200">
                   <ShieldCheck className="w-3.5 h-3.5 inline mr-1 text-emerald-600" />
                   <strong>मंजूर करणारे:</strong> {selectedExpenseDetail.approvedBy}
+                </p>
+              )}
+              {selectedExpenseDetail.approvalStatus === 'रद्द' && (
+                <p className="p-2 bg-rose-50 rounded text-rose-800 border border-rose-200">
+                  <XCircle className="w-3.5 h-3.5 inline mr-1 text-rose-600" />
+                  <strong>नाकारल्याची नोंद:</strong> {selectedExpenseDetail.approvedBy || 'अधिकारी'}
                 </p>
               )}
             </div>
@@ -833,32 +852,34 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
             )}
 
             {selectedExpenseDetail.approvalStatus === 'प्रलंबित' && canApprove && (
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold text-amber-900">
                     खर्च मंजुरी अधिकार ({currentUser.role})
                   </p>
                   <p className="text-[10px] text-amber-700">
-                    या खर्चाची प्रत्यक्ष पाहणी करून त्वरित मंजुरी किंवा नकार द्या.
+                    या खर्चाची प्रत्यक्ष पाहणी करून त्वरित मंजुरी किंवा नकार (Decline) द्या.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleApproveClick(selectedExpenseDetail.id)}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                   >
-                    ✓ मंजूर करा
+                    <Check className="w-3.5 h-3.5" />
+                    <span>✓ मंजूर करा</span>
                   </button>
                   {onRejectExpense && (
                     <button
                       onClick={() => {
-                        if (window.confirm(`खर्च क्र. ${selectedExpenseDetail.transactionNo} (₹${selectedExpenseDetail.amount}) रद्द करायचा आहे का?`)) {
+                        if (window.confirm(`खर्च क्र. ${selectedExpenseDetail.transactionNo} (₹${selectedExpenseDetail.amount}) नाकारायचा / रद्द करायचा आहे का?`)) {
                           handleRejectClick(selectedExpenseDetail.id);
                         }
                       }}
-                      className="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95"
+                      className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                     >
-                      ✕ नोंद रद्द करा
+                      <XCircle className="w-3.5 h-3.5" />
+                      <span>✕ नाकारा (Decline)</span>
                     </button>
                   )}
                 </div>
