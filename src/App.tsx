@@ -374,9 +374,17 @@ export default function App() {
         }
       }),
       subscribeToCashSettlements((data) => {
-        if (Array.isArray(data)) {
-          setCashSettlements(data);
-          saveCashSettlementsToCache(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setCashSettlements((prev) => {
+            const map = new Map<string, CashSettlement>();
+            data.forEach((s) => map.set(s.id, s));
+            prev.forEach((s) => {
+              if (!map.has(s.id)) map.set(s.id, s);
+            });
+            const list = Array.from(map.values());
+            saveCashSettlementsToCache(list);
+            return list;
+          });
         }
       }),
     ];
@@ -416,7 +424,7 @@ export default function App() {
             setGroupLogo(logo);
             saveGroupLogo(logo);
           }
-          if (Array.isArray(settlements)) {
+          if (Array.isArray(settlements) && settlements.length > 0) {
             setCashSettlements(settlements);
             saveCashSettlementsToCache(settlements);
           }
@@ -457,7 +465,7 @@ export default function App() {
           setGroupLogo(logo);
           saveGroupLogo(logo);
         }
-        if (Array.isArray(settlements)) {
+        if (Array.isArray(settlements) && settlements.length > 0) {
           setCashSettlements(settlements);
           saveCashSettlementsToCache(settlements);
         }
