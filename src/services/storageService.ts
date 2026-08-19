@@ -86,6 +86,23 @@ export const saveOccasions = (_occasions: OccasionEvent[]) => {};
 export const getCustomIncomeTypes = (): string[] => [];
 export const saveCustomIncomeType = (_newType: string) => [];
 
+export const getStoredCashSettlements = (): CashSettlement[] => {
+  try {
+    const data = localStorage.getItem('morya_settlements_cache');
+    if (!data) return [];
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+export const saveCashSettlementsToCache = (settlements: CashSettlement[]) => {
+  try {
+    localStorage.setItem('morya_settlements_cache', JSON.stringify(settlements));
+  } catch {}
+};
+
 // ONLY store current login session in device storage
 export const getStoredUser = (): CurrentUser => {
   try {

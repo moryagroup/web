@@ -29,6 +29,8 @@ import {
   saveEventGallery,
   saveCustomIncomeType,
   getCustomIncomeTypes,
+  getStoredCashSettlements,
+  saveCashSettlementsToCache,
   purgeLegacyLocalStorage,
   DEFAULT_USER,
   calculateFinancialSummary,
@@ -202,7 +204,12 @@ export default function App() {
   const [gallery, setGalleryState] = useState<EventGalleryImage[]>([]);
   const [groupLogo, setGroupLogo] = useState<string>('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [cashSettlements, setCashSettlements] = useState<CashSettlement[]>([]);
+  const [cashSettlements, setCashSettlements] = useState<CashSettlement[]>(getStoredCashSettlements);
+
+  useEffect(() => {
+    saveCashSettlementsToCache(cashSettlements);
+  }, [cashSettlements]);
+
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
       return (localStorage.getItem('morya_theme') as 'light' | 'dark') || 'light';
