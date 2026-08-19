@@ -657,7 +657,14 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
     let totalDonationCollected = 0;
     let completedMembersCount = 0;
 
-    members.forEach((m) => {
+    const regularMembers = members.filter(
+      (m) =>
+        m.id !== 'm-admin' &&
+        m.designation !== 'ॲडमिन' &&
+        !(m.fullName || '').toLowerCase().includes('ॲडमिन')
+    );
+
+    regularMembers.forEach((m) => {
       const target = m.annualTargetAmount || 6000;
       totalTarget += target;
       const sub = getMemberSubscriptionPaid(m.id, filteredIncomesByYear, undefined, m.fullName);
@@ -677,7 +684,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       totalRemaining,
       totalDonationCollected,
       completedMembersCount,
-      totalMembers: members.length,
+      totalMembers: regularMembers.length,
     };
   }, [members, filteredIncomesByYear]);
 
@@ -970,31 +977,42 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                   </div>
                 )}
 
-                {/* Member Deposits & Receipts Button */}
-                <button
-                  type="button"
-                  onClick={() => setSelectedMemberForReceipts(member)}
-                  className="w-full mt-3 py-2 px-3 bg-amber-50/80 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-300 rounded-xl border border-amber-200 dark:border-amber-700/60 font-bold text-xs flex items-center justify-between transition-all cursor-pointer shadow-2xs"
-                  title="या सभासदाच्या सर्व जमा पावत्या व तपशील पहा"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <ReceiptIndianRupee className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                    <span>जमा पावत्या व तपशील</span>
-                  </div>
-                  <span className="px-2 py-0.5 bg-amber-200/80 dark:bg-amber-800 text-amber-950 dark:text-amber-100 rounded-md font-mono text-[10px] font-black">
-                    {memberIncomes.length} {memberIncomes.length === 1 ? 'पावती' : 'पावत्या'}
-                  </span>
-                </button>
+                {/* Member Deposits & Receipts Button (Hidden for System Admin) */}
+                {member.id !== 'm-admin' && member.designation !== 'ॲडमिन' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMemberForReceipts(member)}
+                    className="w-full mt-3 py-2 px-3 bg-amber-50/80 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-300 rounded-xl border border-amber-200 dark:border-amber-700/60 font-bold text-xs flex items-center justify-between transition-all cursor-pointer shadow-2xs"
+                    title="या सभासदाच्या सर्व जमा पावत्या व तपशील पहा"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <ReceiptIndianRupee className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      <span>जमा पावत्या व तपशील</span>
+                    </div>
+                    <span className="px-2 py-0.5 bg-amber-200/80 dark:bg-amber-800 text-amber-950 dark:text-amber-100 rounded-md font-mono text-[10px] font-black">
+                      {memberIncomes.length} {memberIncomes.length === 1 ? 'पावती' : 'पावत्या'}
+                    </span>
+                  </button>
+                )}
               </div>
 
               {/* Card Footer Actions */}
               <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs">
-                <div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 block">एकूण जमा जमाव:</span>
-                  <span className="font-black text-slate-800 dark:text-slate-100 text-xs">
-                    ₹{(subscriptionPaid + extraDonationPaid).toLocaleString('en-IN')}
-                  </span>
-                </div>
+                {member.id === 'm-admin' || member.designation === 'ॲडमिन' ? (
+                  <div>
+                    <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold block">प्रणाली नियंत्रण:</span>
+                    <span className="font-bold text-slate-600 dark:text-slate-300 text-[11px]">
+                      सिस्टिम ॲडमिन खाते (केवळ नियंत्रण)
+                    </span>
+                  </div>
+                ) : (
+                  <div>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 block">एकूण जमा जमाव:</span>
+                    <span className="font-black text-slate-800 dark:text-slate-100 text-xs">
+                      ₹{(subscriptionPaid + extraDonationPaid).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                )}
 
                 {isAdmin && (
                   <div className="flex items-center gap-1.5">
