@@ -76,6 +76,42 @@ function mergeOccasionsPreservingTasks(
 
   return Array.from(mergedMap.values());
 }
+
+function mergeCashSettlementsPreservingApprovals(
+  incoming: CashSettlement[],
+  existing: CashSettlement[]
+): CashSettlement[] {
+  const map = new Map<string, CashSettlement>();
+
+  // 1. Load incoming from online DB first
+  incoming.forEach((item) => {
+    if (item && item.id) map.set(item.id, item);
+  });
+
+  // 2. Merge existing local state, ensuring approved/rejected statuses take precedence over stale pending
+  existing.forEach((prev) => {
+    if (!prev || !prev.id) return;
+    const fromOnline = map.get(prev.id);
+    if (!fromOnline) {
+      map.set(prev.id, prev);
+    } else {
+      // If local state is already approved or rejected, preserve it unless online is also finalized
+      if (prev.approvalStatus === 'मंजूर' || prev.approvalStatus === 'रद्द') {
+        if (fromOnline.approvalStatus === 'प्रलंबित') {
+          map.set(prev.id, {
+            ...fromOnline,
+            approvalStatus: prev.approvalStatus,
+            approvedBy: prev.approvedBy,
+            approvedByRole: prev.approvedByRole,
+            approvedAt: prev.approvedAt,
+          });
+        }
+      }
+    }
+  });
+
+  return Array.from(map.values());
+}
 import {
   seedAllCollections,
   subscribeToIncomes,
@@ -376,12 +412,7 @@ export default function App() {
       subscribeToCashSettlements((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setCashSettlements((prev) => {
-            const map = new Map<string, CashSettlement>();
-            data.forEach((s) => map.set(s.id, s));
-            prev.forEach((s) => {
-              if (!map.has(s.id)) map.set(s.id, s);
-            });
-            const list = Array.from(map.values());
+            const list = mergeCashSettlementsPreservingApprovals(data, prev);
             saveCashSettlementsToCache(list);
             return list;
           });
@@ -425,8 +456,11 @@ export default function App() {
             saveGroupLogo(logo);
           }
           if (Array.isArray(settlements) && settlements.length > 0) {
-            setCashSettlements(settlements);
-            saveCashSettlementsToCache(settlements);
+            setCashSettlements((prev) => {
+              const list = mergeCashSettlementsPreservingApprovals(settlements, prev);
+              saveCashSettlementsToCache(list);
+              return list;
+            });
           }
         } catch (err) {
           console.warn('[Supabase] Initial load error:', err);
@@ -466,8 +500,11 @@ export default function App() {
           saveGroupLogo(logo);
         }
         if (Array.isArray(settlements) && settlements.length > 0) {
-          setCashSettlements(settlements);
-          saveCashSettlementsToCache(settlements);
+          setCashSettlements((prev) => {
+            const list = mergeCashSettlementsPreservingApprovals(settlements, prev);
+            saveCashSettlementsToCache(list);
+            return list;
+          });
         }
       }
     });
@@ -507,14 +544,7 @@ export default function App() {
       }
       if (Array.isArray(cloudDb.cashSettlements)) {
         setCashSettlements((prev) => {
-          const map = new Map<string, CashSettlement>();
-          cloudDb.cashSettlements!.forEach((s) => map.set(s.id, s));
-          prev.forEach((s) => {
-            if (!map.has(s.id)) {
-              map.set(s.id, s);
-            }
-          });
-          const list = Array.from(map.values());
+          const list = mergeCashSettlementsPreservingApprovals(cloudDb.cashSettlements!, prev);
           saveCashSettlementsToCache(list);
           return list;
         });
@@ -1034,7 +1064,7 @@ export default function App() {
   ) => {
     let approvedItem: CashSettlement | undefined;
     setCashSettlements((prev) => {
-      return prev.map((s) => {
+      const updatedList = prev.map((s) => {
         if (s.id === settlementId) {
           approvedItem = {
             ...s,
@@ -1042,11 +1072,14 @@ export default function App() {
             approvedBy: approverName,
             approvedByRole: approverRole,
             approvedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           };
           return approvedItem;
         }
         return s;
       });
+      saveCashSettlementsToCache(updatedList);
+      return updatedList;
     });
     if (approvedItem) {
       saveCashSettlement(approvedItem).catch(console.error);
@@ -1062,7 +1095,7 @@ export default function App() {
   ) => {
     let rejectedItem: CashSettlement | undefined;
     setCashSettlements((prev) => {
-      return prev.map((s) => {
+      const updatedList = prev.map((s) => {
         if (s.id === settlementId) {
           rejectedItem = {
             ...s,
@@ -1070,11 +1103,14 @@ export default function App() {
             approvedBy: rejecterName,
             approvedByRole: rejecterRole,
             approvedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           };
           return rejectedItem;
         }
         return s;
       });
+      saveCashSettlementsToCache(updatedList);
+      return updatedList;
     });
     if (rejectedItem) {
       saveCashSettlement(rejectedItem).catch(console.error);

@@ -538,44 +538,44 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
   return (
     <div className="space-y-6 my-4">
       {/* Top Banner & Control Bar */}
-      <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3.5">
+      <div className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
           {onNavigate && (
             <button
               type="button"
               onClick={() => onNavigate('dashboard')}
-              className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl border border-slate-700 font-bold text-xs shadow-xs transition-all cursor-pointer shrink-0 active:scale-95 flex items-center gap-1"
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl border border-slate-700 font-bold text-xs shadow-xs transition-all cursor-pointer shrink-0 active:scale-95 flex items-center gap-1 mt-0.5"
               title="मुख्य डॅशबोर्डवर परत जा"
             >
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">← मुख्य पान</span>
             </button>
           )}
-          <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded-2xl flex items-center justify-center font-bold shrink-0">
-            <Wallet className="w-7 h-7" />
+          <div className="w-11 h-11 sm:w-12 sm:h-12 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 rounded-2xl flex items-center justify-center font-bold shrink-0 mt-0.5">
+            <Wallet className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-100 leading-tight">
                 रोख संकलन, भरणा व ऑडिट डेबिट हिशोब
               </h2>
-              <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-md text-xs font-black">
+              <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-md text-xs font-black shrink-0">
                 Trust Cash Audit System
               </span>
               {memberCashStats.pendingApprovalsList.length > 0 && (
-                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-md text-[11px] font-black animate-pulse flex items-center gap-1">
+                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-md text-[11px] font-black animate-pulse flex items-center gap-1 shrink-0">
                   <Clock className="w-3 h-3 text-amber-400" />
                   {memberCashStats.pendingApprovalsList.length} प्रलंबित मंजुऱ्या
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
               सभासदांनी जमा केलेली रोख रक्कम, बँकेत भरणा आणि संकलनातून थेट केलेला अधिकृत खर्च (ऑडिट व्हाउचर).
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap sm:flex-nowrap justify-end">
+        <div className="flex items-center gap-2 flex-wrap w-full xl:w-auto justify-start xl:justify-end shrink-0 pt-3 xl:pt-0 border-t xl:border-t-0 border-slate-100 dark:border-slate-700">
           {/* Year selector */}
           <div className="flex items-center gap-1.5 bg-emerald-50/90 dark:bg-slate-700/60 border border-emerald-300 dark:border-emerald-700 p-1.5 px-3 rounded-xl shrink-0">
             <Calendar className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
