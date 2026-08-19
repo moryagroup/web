@@ -142,11 +142,15 @@ export function subscribeToCloudDatabase(callback: (db: MoryaCloudDatabase) => v
   listeners.add(callback);
 
   let lastKnownUpdated = inMemoryCache?.lastUpdated || '';
+  let isFirstFetch = true;
 
   const checkUpdates = async () => {
     try {
       const latest = await fetchCloudDatabase();
-      if (latest && latest.lastUpdated !== lastKnownUpdated) {
+      // Always fire on first fetch so each subscriber gets fresh data on mount,
+      // then only fire when Gist actually changes (different timestamp).
+      if (latest && (isFirstFetch || latest.lastUpdated !== lastKnownUpdated)) {
+        isFirstFetch = false;
         lastKnownUpdated = latest.lastUpdated;
         callback(latest);
       }
@@ -431,4 +435,5 @@ export async function cloudDeleteCashSettlement(id: string): Promise<void> {
     console.warn('[CloudDB] Delete Cash Settlement error:', err);
   }
 }
+
 

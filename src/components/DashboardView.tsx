@@ -192,6 +192,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     canApproveFinancialTransactions(currentUser.role) ||
     currentUser.role === 'खजिनदार' ||
     currentUser.role === 'उपखजिनदार' ||
+    // Also check the live members list designation (in case stored session role is stale)
+    canApproveFinancialTransactions(currentMember?.designation) ||
+    currentMember?.designation === 'खजिनदार' ||
+    currentMember?.designation === 'उपखजिनदार' ||
     (currentUser.name && (
       currentUser.name.includes('उदय') ||
       currentUser.name.includes('हेरवाडे') ||
