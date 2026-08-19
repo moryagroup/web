@@ -98,6 +98,10 @@ export async function saveCloudDatabase(dbData: MoryaCloudDatabase): Promise<voi
       lastUpdated: timestamp,
     };
 
+    // Optimistically update memory cache and subscribers immediately
+    inMemoryCache = payloadDb;
+    listeners.forEach((listener) => listener(payloadDb));
+
     const cleanPayload = cleanObjectForCloud(payloadDb);
     const requestBody = {
       description: 'Morya Group ERP Central Production Database Store',
@@ -122,10 +126,6 @@ export async function saveCloudDatabase(dbData: MoryaCloudDatabase): Promise<voi
       throw new Error(`Cloud DB Save HTTP error: ${res.status}`);
     }
 
-    inMemoryCache = payloadDb;
-
-    // Notify local subscribers immediately
-    listeners.forEach((listener) => listener(payloadDb));
     console.log('[CloudDB] Successfully committed change to central cloud database.');
   } catch (err) {
     console.error('[CloudDB] Save error:', err);

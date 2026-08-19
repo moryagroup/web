@@ -498,8 +498,18 @@ export default function App() {
         setCustomIncomeTypes(cloudDb.settings.customIncomeTypes);
       }
       if (Array.isArray(cloudDb.cashSettlements)) {
-        setCashSettlements(cloudDb.cashSettlements);
-        saveCashSettlementsToCache(cloudDb.cashSettlements);
+        setCashSettlements((prev) => {
+          const map = new Map<string, CashSettlement>();
+          cloudDb.cashSettlements!.forEach((s) => map.set(s.id, s));
+          prev.forEach((s) => {
+            if (!map.has(s.id)) {
+              map.set(s.id, s);
+            }
+          });
+          const list = Array.from(map.values());
+          saveCashSettlementsToCache(list);
+          return list;
+        });
       }
       setIsLoading(false);
     });
