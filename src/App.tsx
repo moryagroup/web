@@ -771,6 +771,23 @@ export default function App() {
     dispatchApprovedTransaction(updated, 'INCOME').catch(console.error);
   };
 
+  // Reject Income
+  const handleRejectIncome = (incId: string, rejecterName: string, rejecterRole: any) => {
+    const income = incomes.find((i) => i.id === incId);
+    if (!income) return;
+    const updated = {
+      ...income,
+      approvalStatus: 'रद्द' as const,
+      approvedBy: `${rejecterName} (${rejecterRole})`,
+      approvedByRole: rejecterRole,
+      approvedAt: new Date().toISOString(),
+    };
+    setIncomes((prev) => prev.map((i) => (i.id === incId ? updated : i)));
+    saveIncome(updated).catch(console.error);
+    cloudSaveIncome(updated).catch(console.error);
+    saveIncomeToSupabase(updated).catch(console.error);
+  };
+
   // Add Member
   const handleAddMember = async (newMember: Member) => {
     let finalMember = newMember;
@@ -1038,6 +1055,7 @@ export default function App() {
                 onNavigate={(tab) => setActiveTab(tab)}
                 onApproveExpense={handleApproveExpense}
                 onApproveIncome={handleApproveIncome}
+                onRejectIncome={handleRejectIncome}
                 onLogout={handleLogout}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
                 onUpdateOccasion={handleUpdateOccasion}
@@ -1153,6 +1171,8 @@ export default function App() {
                   onSaveGallery={handleSaveGallery}
                   onNavigate={(tab) => setActiveTab(tab)}
                   onApproveExpense={handleApproveExpense}
+                  onApproveIncome={handleApproveIncome}
+                  onRejectIncome={handleRejectIncome}
                   onLogout={handleLogout}
                   onOpenLogin={() => setIsLoginModalOpen(true)}
                 />
