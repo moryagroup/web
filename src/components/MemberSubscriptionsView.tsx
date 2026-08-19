@@ -1847,9 +1847,14 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                         setSettleError(null);
                       }
                     }}
-                    max={memberCashStats.memberMap[settleMemberId]?.netCashInHand || 0}
+                    max={
+                      memberCashStats.memberMap[settleMemberId]?.netCashInHand &&
+                      memberCashStats.memberMap[settleMemberId].netCashInHand > 0
+                        ? memberCashStats.memberMap[settleMemberId].netCashInHand
+                        : undefined
+                    }
                     placeholder={
-                      settleMemberId
+                      settleMemberId && (memberCashStats.memberMap[settleMemberId]?.netCashInHand || 0) > 0
                         ? `कमाल ₹${(memberCashStats.memberMap[settleMemberId]?.netCashInHand || 0).toLocaleString('en-IN')}`
                         : 'उदा. ५०००'
                     }

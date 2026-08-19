@@ -1197,9 +1197,14 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                         setSettleError(null);
                       }
                     }}
-                    max={memberCashStats.memberMap[settleMemberId]?.netCashInHand || 0}
+                    max={
+                      memberCashStats.memberMap[settleMemberId]?.netCashInHand &&
+                      memberCashStats.memberMap[settleMemberId].netCashInHand > 0
+                        ? memberCashStats.memberMap[settleMemberId].netCashInHand
+                        : undefined
+                    }
                     placeholder={
-                      settleMemberId
+                      settleMemberId && (memberCashStats.memberMap[settleMemberId]?.netCashInHand || 0) > 0
                         ? `कमाल ₹${(memberCashStats.memberMap[settleMemberId]?.netCashInHand || 0).toLocaleString('en-IN')}`
                         : 'उदा. ५०००'
                     }
@@ -1426,9 +1431,14 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                         setDebitError(null);
                       }
                     }}
-                    max={memberCashStats.memberMap[debitMemberId]?.netCashInHand || 0}
+                    max={
+                      memberCashStats.memberMap[debitMemberId]?.netCashInHand &&
+                      memberCashStats.memberMap[debitMemberId].netCashInHand > 0
+                        ? memberCashStats.memberMap[debitMemberId].netCashInHand
+                        : undefined
+                    }
                     placeholder={
-                      debitMemberId
+                      debitMemberId && (memberCashStats.memberMap[debitMemberId]?.netCashInHand || 0) > 0
                         ? `कमाल ₹${(memberCashStats.memberMap[debitMemberId]?.netCashInHand || 0).toLocaleString('en-IN')}`
                         : 'उदा. १५००'
                     }
