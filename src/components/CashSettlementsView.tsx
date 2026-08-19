@@ -14,6 +14,7 @@ import {
 import { isDateInSelectedYear, getFinancialYearFromDate, generateNextExpenseTransactionNo, generateNextCashSettlementNo } from '../utils/dateUtils';
 import { ProofLightboxModal } from './ProofLightboxModal';
 import { uploadFileToGoogleDrive } from '../services/googleDriveService';
+import { fetchCloudDatabase } from '../services/cloudDatabaseService';
 import {
   Wallet,
   Landmark,
@@ -39,6 +40,7 @@ import {
   ReceiptIndianRupee,
   Upload,
   Trash2,
+  RefreshCw,
 } from 'lucide-react';
 
 interface CashSettlementsViewProps {
@@ -136,6 +138,18 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
   const [isUploadingDebitProof, setIsUploadingDebitProof] = useState(false);
   const [debitError, setDebitError] = useState<string | null>(null);
   const [debitSuccessMsg, setDebitSuccessMsg] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    try {
+      await fetchCloudDatabase();
+    } catch (e) {
+      console.warn('Manual sync error:', e);
+    } finally {
+      setTimeout(() => setIsSyncing(false), 800);
+    }
+  };
 
   // Treasurer / Vice-Treasurer role permission check
   const loggedMember = members.find(
@@ -586,6 +600,18 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
               <option value="ALL">सर्व वर्षे (All Years)</option>
             </select>
           </div>
+
+          {/* Quick Refresh / Cloud Sync Button */}
+          <button
+            type="button"
+            onClick={handleManualSync}
+            disabled={isSyncing}
+            title="क्लाउड डेटाबेसमधून ताजी माहिती मिळवा"
+            className="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 hover:bg-emerald-200 dark:hover:bg-emerald-800/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 font-black text-xs rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer transition-all shrink-0 active:scale-95 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 text-emerald-700 dark:text-emerald-400 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">सिंक</span>
+          </button>
 
           {/* Action 1: Bank Deposit */}
           <button

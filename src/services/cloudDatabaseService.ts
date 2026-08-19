@@ -160,8 +160,8 @@ export function subscribeToCloudDatabase(callback: (db: MoryaCloudDatabase) => v
   // Initial fetch
   checkUpdates();
 
-  // Poll every 10 seconds
-  const intervalId = setInterval(checkUpdates, 10000);
+  // Poll every 4 seconds for lightning-fast cross-device updates
+  const intervalId = setInterval(checkUpdates, 4000);
 
   // Check immediately on tab focus/visibility
   const handleVisibilityChange = () => {
