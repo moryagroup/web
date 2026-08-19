@@ -2,8 +2,22 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Attractive Marathi & English Typography System */
+:root {
+  font-family: 'Baloo 2', 'Anek Devanagari', 'Mukta', 'Noto Sans Devanagari', 'Poppins', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, .font-marathi-heading {
+  font-family: 'Baloo 2', 'Anek Devanagari', 'Mukta', sans-serif;
+  letter-spacing: -0.01em;
+}
+
 /* Theme Mode Smooth Transitions & Custom Root Rules */
 html, body {
+  font-family: 'Baloo 2', 'Anek Devanagari', 'Mukta', 'Noto Sans Devanagari', 'Poppins', sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
   background-color: #f8fafc;
   color: #0f172a;

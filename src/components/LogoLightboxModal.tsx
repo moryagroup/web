@@ -48,10 +48,6 @@ export const LogoLightboxModal: React.FC<LogoLightboxModalProps> = ({
             <h2 className="text-sm sm:text-base font-black text-amber-400 leading-tight">
               मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
             </h2>
-            <p className="text-[11px] text-slate-400 flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>अधिकृत मंडळ बोधचिन्ह (Official Logo)</span>
-            </p>
           </div>
         </div>
 
