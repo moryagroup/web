@@ -63,7 +63,7 @@ function mergeOccasionsPreservingTasks(
       responsiblePerson: inc.responsiblePerson || prev?.responsiblePerson || '',
       startDate: inc.startDate || prev?.startDate,
       endDate: inc.endDate || prev?.endDate,
-      year: inc.year || prev?.year || '२०२६-२७',
+      year: inc.year || prev?.year || '२०२६',
     });
   });
 

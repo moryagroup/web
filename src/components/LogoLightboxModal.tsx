@@ -124,17 +124,9 @@ export const LogoLightboxModal: React.FC<LogoLightboxModalProps> = ({
           </p>
         </div>
 
-        {/* Action Buttons to Enter Portal or Login */}
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            <span>पोर्टलवर जा (Enter Portal)</span>
-          </button>
-
-          {onOpenLogin && (
+        {/* Action Buttons to Login */}
+        {onOpenLogin && (
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <button
               onClick={() => {
                 onClose();
@@ -145,8 +137,8 @@ export const LogoLightboxModal: React.FC<LogoLightboxModalProps> = ({
               <LogIn className="w-4 h-4 text-amber-400" />
               <span>लॉगिन करा (Member Login)</span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Footer Info */}

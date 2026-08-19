@@ -377,16 +377,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             </div>
 
-            <div
-              className="relative mb-2 group cursor-pointer"
-              onClick={() => setIsLightboxOpen(true)}
-              onMouseEnter={() => setIsLightboxOpen(true)}
-              title="मोठा लोगो व संपूर्ण नाव पहा (Hover / Click)"
-            >
+            <div className="relative mb-2 group">
               <img
                 src={groupLogo || moryaLogo}
                 alt="मोरया ग्रुप मित्र मंडळ (ट्रस्ट) लोगो"
-                className="w-20 h-20 sm:w-22 sm:h-22 object-contain rounded-full border-2 border-amber-500/90 shadow-lg shadow-orange-900/50 p-0.5 bg-slate-950 transition-transform group-hover:scale-105 cursor-pointer"
+                className="w-20 h-20 sm:w-22 sm:h-22 object-contain rounded-full border-2 border-amber-500/90 shadow-lg shadow-orange-900/50 p-0.5 bg-slate-950"
               />
               {isAdmin && (
                 <button

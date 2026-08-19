@@ -473,7 +473,7 @@ export async function fetchOccasionsFromSupabase(): Promise<OccasionEvent[]> {
     return {
       id: row.id,
       name: row.title || row.name || parsedDetails.name || 'कार्यक्रम',
-      year: row.year || parsedDetails.year || '२०२६-२७',
+      year: row.year || parsedDetails.year || '२०२६',
       startDate: row.start_date || row.event_date || parsedDetails.startDate,
       endDate: row.end_date || parsedDetails.endDate,
       description: cleanDescription || parsedDetails.description,

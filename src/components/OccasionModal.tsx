@@ -29,7 +29,7 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
   const [name, setName] = useState<string>('');
-  const [year, setYear] = useState<string>('२०२६-२७');
+  const [year, setYear] = useState<string>('२०२६');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [description, setDescription] = useState<string>('');
@@ -83,7 +83,7 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
   const resetForm = () => {
     setEditingId(null);
     setName('');
-    setYear('२०२६-२७');
+    setYear('२०२६');
     setStartDate('');
     setEndDate('');
     setDescription('');
@@ -111,7 +111,7 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
     }
     setEditingId(occ.id);
     setName(occ.name);
-    setYear(occ.year || '२०२६-२७');
+    setYear(occ.year || '२०२६');
     setStartDate(occ.startDate || '');
     setEndDate(occ.endDate || '');
     setDescription(occ.description || '');

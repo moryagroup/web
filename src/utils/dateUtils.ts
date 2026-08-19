@@ -99,7 +99,7 @@ export function getFinancialYearFromDate(dateStr?: string): string {
 
   const dateObj = new Date(dateStr);
   if (isNaN(dateObj.getTime())) {
-    return '२०२६-२७';
+    return '२०२६';
   }
 
   const year = dateObj.getFullYear();
