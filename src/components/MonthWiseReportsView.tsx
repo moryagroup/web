@@ -22,6 +22,8 @@ import {
   Printer,
   Building2,
   CalendarDays,
+  Star,
+  Sparkles,
 } from 'lucide-react';
 
 interface MonthWiseReportsViewProps {
@@ -47,7 +49,7 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
   const [selectedYear, setSelectedYear] = useState<string>(
     financialYear.includes('-') ? financialYear : '२०२६-२७'
   );
-  const [selectedMonth, setSelectedMonth] = useState<string>('ALL');
+  const [selectedMonth, setSelectedMonth] = useState<string>('CURRENT');
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
   const isCoreMember = isLoggedIn && isCoreMemberRole(currentUser.role);
@@ -67,12 +69,18 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
     return '₹' + amount.toLocaleString('en-IN');
   };
 
+  // Real-world month key (e.g., '2026-08')
+  const realWorldMonthKey = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }, []);
+
   // Switch between Financial Year (Apr - Mar) and Calendar Year (Jan - Dec)
   const availableYears = viewMode === 'FINANCIAL' ? FINANCIAL_YEAR_OPTIONS : CALENDAR_YEAR_OPTIONS;
 
   const handleModeChange = (mode: ViewMode) => {
     setViewMode(mode);
-    setSelectedMonth('ALL');
+    setSelectedMonth('CURRENT');
     if (mode === 'FINANCIAL') {
       setSelectedYear('२०२६-२७');
     } else {
@@ -98,7 +106,7 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
       : getCalendarYearMonthList(selectedYear); // Jan -> Dec
   }, [viewMode, selectedYear]);
 
-  // Aggregate data per month in exact April -> March sequence
+  // Aggregate data per month in exact sequence
   const monthlyDataList = useMemo(() => {
     return orderedMonths.map((m, index) => {
       const mIncomes = yearIncomes.filter((i) => i.transactionDate && i.transactionDate.startsWith(m.key));
@@ -121,9 +129,25 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
     });
   }, [orderedMonths, yearIncomes, yearExpenses]);
 
-  // Filter by selected month if not ALL
+  // Determine active featured month data
+  const featuredMonthData = useMemo(() => {
+    if (selectedMonth === 'CURRENT') {
+      const currentInYear = monthlyDataList.find((m) => m.key === realWorldMonthKey);
+      if (currentInYear) return currentInYear;
+      // Fallback: pick month with highest transactions or first month
+      const activeWithData = monthlyDataList.find((m) => m.income > 0 || m.expense > 0);
+      return activeWithData || monthlyDataList[0];
+    }
+    if (selectedMonth === 'ALL') {
+      const currentInYear = monthlyDataList.find((m) => m.key === realWorldMonthKey);
+      return currentInYear || monthlyDataList[0];
+    }
+    return monthlyDataList.find((m) => m.key === selectedMonth) || monthlyDataList[0];
+  }, [selectedMonth, monthlyDataList, realWorldMonthKey]);
+
+  // Filtered monthly list for grid
   const filteredMonthlyData = useMemo(() => {
-    if (selectedMonth === 'ALL') return monthlyDataList;
+    if (selectedMonth === 'ALL' || selectedMonth === 'CURRENT') return monthlyDataList;
     return monthlyDataList.filter((m) => m.key === selectedMonth);
   }, [monthlyDataList, selectedMonth]);
 
@@ -266,22 +290,25 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
             </select>
           </div>
 
-          {/* Month Filter */}
+          {/* Month Filter Dropdown */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-700 dark:text-slate-300 font-bold flex items-center gap-1">
-              <Filter className="w-4 h-4 text-indigo-500" /> महिना:
+              <Filter className="w-4 h-4 text-indigo-500" /> महिना निवडा:
             </span>
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-black text-xs rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+              className="bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-black text-xs rounded-xl border-2 border-indigo-400 dark:border-indigo-500 px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer shadow-xs"
             >
-              <option value="ALL">सर्व १२ महिने (All Months)</option>
-              {orderedMonths.map((m, idx) => (
-                <option key={m.key} value={m.key}>
-                  {idx + 1}. {m.monthName}
-                </option>
-              ))}
+              <option value="CURRENT">⭐ चालू महिना (Current Month)</option>
+              <option value="ALL">📋 सर्व १२ महिने (All 12 Months)</option>
+              <optgroup label="विशिष्ट महिना निवडा (Select Specific Month)">
+                {orderedMonths.map((m, idx) => (
+                  <option key={m.key} value={m.key}>
+                    {idx + 1}. {m.monthName} {m.key === realWorldMonthKey ? '⭐ (चालू महिना)' : ''}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
         </div>
@@ -304,6 +331,168 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* 🌟 FEATURED BIG CARD FOR SELECTED/CURRENT MONTH */}
+      {featuredMonthData && (
+        <div className="bg-gradient-to-br from-amber-500/10 via-slate-50 to-indigo-500/10 dark:from-amber-950/40 dark:via-slate-900 dark:to-indigo-950/40 rounded-3xl p-6 md:p-8 border-2 border-amber-400 dark:border-amber-500/60 shadow-xl space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-amber-200 dark:border-amber-900/60 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xl shadow-md shrink-0">
+                <Sparkles className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  {featuredMonthData.key === realWorldMonthKey ? (
+                    <span className="px-2.5 py-0.5 bg-amber-500 text-slate-950 font-black rounded-full text-[11px] flex items-center gap-1 shadow-xs">
+                      <Star className="w-3.5 h-3.5 fill-slate-950 text-slate-950" /> चालू महिना (Current Month)
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 bg-indigo-600 text-white font-bold rounded-full text-[11px]">
+                      निवडलेला महिना (Selected Month)
+                    </span>
+                  )}
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                    • महिना क्रमांक {featuredMonthData.index}/१२
+                  </span>
+                </div>
+                <h3 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-amber-300 mt-1">
+                  {featuredMonthData.monthName}
+                </h3>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-sm font-black px-4 py-1.5 rounded-full border-2 shadow-xs ${
+                  featuredMonthData.net >= 0
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                    : 'bg-rose-500 text-white border-rose-400'
+                }`}
+              >
+                {featuredMonthData.net >= 0 ? '+शिल्लक (बचत)' : '-तोटा (Deficit)'}
+              </span>
+            </div>
+          </div>
+
+          {/* 3 Extra Large KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Income Card */}
+            <div className="bg-white/90 dark:bg-slate-800/90 p-5 rounded-2xl border-2 border-emerald-300 dark:border-emerald-700/60 shadow-md space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
+                  <ArrowDownCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  एकूण जमा (Total Income)
+                </span>
+                <span className="text-xs font-bold px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-md">
+                  {featuredMonthData.countInc} नोंदी
+                </span>
+              </div>
+              <p className="text-3xl md:text-4xl font-black text-emerald-700 dark:text-emerald-300">
+                {formatCurrency(featuredMonthData.income)}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                {featuredMonthData.monthName} मधील वर्गणी व देणगी जमा
+              </p>
+            </div>
+
+            {/* Expense Card */}
+            <div className="bg-white/90 dark:bg-slate-800/90 p-5 rounded-2xl border-2 border-rose-300 dark:border-rose-700/60 shadow-md space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-rose-800 dark:text-rose-300 uppercase tracking-wide flex items-center gap-1.5">
+                  <ArrowUpCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                  मंजूर खर्च (Approved Expenses)
+                </span>
+                <span className="text-xs font-bold px-2 py-0.5 bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 rounded-md">
+                  {featuredMonthData.countExp} नोंदी
+                </span>
+              </div>
+              <p className="text-3xl md:text-4xl font-black text-rose-700 dark:text-rose-300">
+                {formatCurrency(featuredMonthData.expense)}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                {featuredMonthData.monthName} मधील मंजूर झालेले खर्च
+              </p>
+            </div>
+
+            {/* Net Balance Card */}
+            <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-5 rounded-2xl border-2 border-amber-400/80 shadow-md space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-amber-300 uppercase tracking-wide flex items-center gap-1.5">
+                  <Wallet className="w-5 h-5 text-amber-400" />
+                  निव्वळ शिल्लक बचत (Net Balance)
+                </span>
+                <span className="text-xs font-bold px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-md">
+                  जमा - खर्च
+                </span>
+              </div>
+              <p className={`text-3xl md:text-4xl font-black ${featuredMonthData.net >= 0 ? 'text-amber-300' : 'text-rose-400'}`}>
+                {formatCurrency(featuredMonthData.net)}
+              </p>
+              <p className="text-xs text-slate-300 font-medium">
+                {featuredMonthData.monthName} अखेर शिल्लक बचत
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Month Switcher Tabs/Pills */}
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-amber-500" /> त्वरित महिना बदला (Quick Switch Month):
+              </span>
+              <span className="text-[11px] text-slate-500">
+                क्लिक करून दुसरा महिना निवडा
+              </span>
+            </div>
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
+              <button
+                type="button"
+                onClick={() => setSelectedMonth('CURRENT')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 shrink-0 ${
+                  selectedMonth === 'CURRENT'
+                    ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <Star className="w-3.5 h-3.5 fill-current text-amber-950 dark:text-amber-400" /> चालू महिना
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedMonth('ALL')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                  selectedMonth === 'ALL'
+                    ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-400'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                📋 सर्व १२ महिने
+              </button>
+
+              {orderedMonths.map((m) => {
+                const isSelected = selectedMonth === m.key;
+                const isRealCurrent = m.key === realWorldMonthKey;
+                return (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => setSelectedMonth(m.key)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      isSelected
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md ring-2 ring-amber-400'
+                        : isRealCurrent
+                        ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-950 dark:text-amber-200 border border-amber-300 dark:border-amber-700'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {isRealCurrent && '⭐ '}{m.monthName}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 3 Overview Cards for Selected Year */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -341,26 +530,50 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
 
       {/* Month-wise Cards Breakdown in Strict Order */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
-        <h3 className="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
-          <FileSpreadsheet className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-          {viewMode === 'FINANCIAL'
-            ? `महिनानिहाय जमा-खर्च तक्ता (${selectedYear} - १ एप्रिल ते ३१ मार्च क्रम)`
-            : `महिनानिहाय जमा-खर्च तक्ता (${selectedYear} - १ जानेवारी ते ३१ डिसेंबर क्रम)`}
-        </h3>
+        <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3 flex-wrap gap-2">
+          <h3 className="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <FileSpreadsheet className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            {selectedMonth === 'ALL' || selectedMonth === 'CURRENT'
+              ? `सर्व १२ महिन्यांचा जमा-खर्च तक्ता (${selectedYear})`
+              : `${featuredMonthData?.monthName} जमा-खर्च अहवाल`}
+          </h3>
+
+          {(selectedMonth !== 'ALL' && selectedMonth !== 'CURRENT') && (
+            <button
+              type="button"
+              onClick={() => setSelectedMonth('ALL')}
+              className="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
+            >
+              ← सर्व १२ महिने दाखवा
+            </button>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredMonthlyData.length > 0 ? (
             filteredMonthlyData.map((data) => {
               const netMonthBalance = data.net;
+              const isCurrentRealMonth = data.key === realWorldMonthKey;
               return (
                 <div
                   key={data.key}
-                  className="bg-slate-50 dark:bg-slate-900/80 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 space-y-3 hover:shadow-md transition-shadow"
+                  className={`rounded-2xl p-4 border space-y-3 transition-all ${
+                    isCurrentRealMonth
+                      ? 'bg-amber-50/80 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-600 shadow-md ring-1 ring-amber-300/50'
+                      : 'bg-slate-50 dark:bg-slate-900/80 border-slate-200 dark:border-slate-700 hover:shadow-md'
+                  }`}
                 >
                   <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
-                    <span className="font-black text-slate-900 dark:text-slate-100 text-sm">
-                      {data.index}. {data.monthName}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-black text-slate-900 dark:text-slate-100 text-sm">
+                        {data.index}. {data.monthName}
+                      </span>
+                      {isCurrentRealMonth && (
+                        <span className="px-1.5 py-0.2 text-[9px] font-black bg-amber-400 text-slate-950 rounded">
+                          चालू
+                        </span>
+                      )}
+                    </div>
                     <span
                       className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
                         netMonthBalance >= 0
@@ -401,4 +614,5 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
     </div>
   );
 };
+
 
