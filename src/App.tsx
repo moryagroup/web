@@ -1241,19 +1241,14 @@ export default function App() {
               <span className="text-xs font-bold text-amber-200">मेन्यू</span>
             </button>
 
-            <div
-              className="flex items-center gap-2 cursor-pointer group"
-              onClick={() => setIsLogoLightboxOpen(true)}
-              onMouseEnter={() => setIsLogoLightboxOpen(true)}
-              title="मोठा लोगो व मंडळ नाव पहा (Hover / Click)"
-            >
+            <div className="flex items-center gap-2">
               <img
                 src={groupLogo || moryaLogo}
                 alt="मोरया ग्रुप मित्र मंडळ (ट्रस्ट) लोगो"
-                className="w-8 h-8 object-contain rounded-full border border-amber-400 p-0.5 bg-slate-950 shrink-0 shadow-sm transition-transform group-hover:scale-110"
+                className="w-8 h-8 object-contain rounded-full border border-amber-400 p-0.5 bg-slate-950 shrink-0 shadow-sm"
               />
               <div>
-                <h1 className="text-xs font-black text-amber-400 truncate max-w-[180px] sm:max-w-none group-hover:text-amber-300 transition-colors">
+                <h1 className="text-xs font-black text-amber-400 truncate max-w-[180px] sm:max-w-none">
                   मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
                 </h1>
               </div>
