@@ -130,6 +130,7 @@ export interface EventGalleryImage {
   imageUrl: string;
   dateStr?: string;
   description?: string;
+  googleDriveUrl?: string; // Link to Google Drive folder containing more photos
   year?: string;
   createdAt?: string;
   updatedAt?: string;
