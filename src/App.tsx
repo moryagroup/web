@@ -191,24 +191,17 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Application states — populated by initial storage + Firestore real-time listeners
-  const [incomes, setIncomes] = useState<IncomeTransaction[]>(getStoredIncomes);
-  const [expenses, setExpenses] = useState<ExpenseTransaction[]>(getStoredExpenses);
-  const [members, setMembers] = useState<Member[]>(getStoredMembers);
-  const [occasions, setOccasions] = useState<OccasionEvent[]>(getStoredOccasions);
-  const [customIncomeTypes, setCustomIncomeTypes] = useState<string[]>(getCustomIncomeTypes);
+  // Application states — populated strictly by online databases (Firestore, Cloud Gist, Supabase)
+  const [incomes, setIncomes] = useState<IncomeTransaction[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseTransaction[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [occasions, setOccasions] = useState<OccasionEvent[]>([]);
+  const [customIncomeTypes, setCustomIncomeTypes] = useState<string[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser>(getStoredUser);
-  const [gallery, setGalleryState] = useState<EventGalleryImage[]>(getStoredEventGallery);
-  const [groupLogo, setGroupLogo] = useState<string>(getStoredGroupLogo);
-  const [suggestions, setSuggestions] = useState<any[]>(getStoredSuggestions);
-  const [cashSettlements, setCashSettlements] = useState<CashSettlement[]>(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.CASH_SETTLEMENTS);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [gallery, setGalleryState] = useState<EventGalleryImage[]>([]);
+  const [groupLogo, setGroupLogo] = useState<string>('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [cashSettlements, setCashSettlements] = useState<CashSettlement[]>([]);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
       return (localStorage.getItem('morya_theme') as 'light' | 'dark') || 'light';
@@ -236,12 +229,14 @@ export default function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // Subscribe to Firestore collections & trigger seed in background
+  // Subscribe to Firestore collections & Central Cloud DB strictly
   useEffect(() => {
-    // Hide loading screen after max 1 second safety window
+    purgeLegacyLocalStorage();
+
+    // Hide loading screen after max 1.5 second safety window
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1000);
+    }, 1500);
 
     const unsubscribers = [
       subscribeToIncomes((data) => {
@@ -299,9 +294,6 @@ export default function App() {
       subscribeToCashSettlements((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setCashSettlements(data);
-          try {
-            localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(data));
-          } catch {}
         }
       }),
     ];
@@ -343,9 +335,6 @@ export default function App() {
           }
           if (settlements && settlements.length > 0) {
             setCashSettlements(settlements);
-            try {
-              localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(settlements));
-            } catch {}
           }
         } catch (err) {
           console.warn('[Supabase] Initial load error:', err);
@@ -386,9 +375,6 @@ export default function App() {
         }
         if (settlements) {
           setCashSettlements(settlements);
-          try {
-            localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(settlements));
-          } catch {}
         }
       }
     });
@@ -428,9 +414,6 @@ export default function App() {
       }
       if (Array.isArray(cloudDb.cashSettlements)) {
         setCashSettlements(cloudDb.cashSettlements);
-        try {
-          localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(cloudDb.cashSettlements));
-        } catch {}
       }
       setIsLoading(false);
     });
@@ -837,13 +820,7 @@ export default function App() {
 
   // Cash Settlement Handlers (Member Cash Handover to Trust/Bank)
   const handleAddCashSettlement = (newSettlement: CashSettlement) => {
-    setCashSettlements((prev) => {
-      const updated = [newSettlement, ...prev.filter((s) => s.id !== newSettlement.id)];
-      try {
-        localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+    setCashSettlements((prev) => [newSettlement, ...prev.filter((s) => s.id !== newSettlement.id)]);
     saveCashSettlement(newSettlement).catch(console.error);
     cloudSaveCashSettlement(newSettlement).catch(console.error);
     saveCashSettlementToSupabase(newSettlement).catch(console.error);
@@ -856,7 +833,7 @@ export default function App() {
   ) => {
     let approvedItem: CashSettlement | undefined;
     setCashSettlements((prev) => {
-      const updated = prev.map((s) => {
+      return prev.map((s) => {
         if (s.id === settlementId) {
           approvedItem = {
             ...s,
@@ -869,10 +846,6 @@ export default function App() {
         }
         return s;
       });
-      try {
-        localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(updated));
-      } catch {}
-      return updated;
     });
     if (approvedItem) {
       saveCashSettlement(approvedItem).catch(console.error);
@@ -888,7 +861,7 @@ export default function App() {
   ) => {
     let rejectedItem: CashSettlement | undefined;
     setCashSettlements((prev) => {
-      const updated = prev.map((s) => {
+      return prev.map((s) => {
         if (s.id === settlementId) {
           rejectedItem = {
             ...s,
@@ -901,10 +874,6 @@ export default function App() {
         }
         return s;
       });
-      try {
-        localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(updated));
-      } catch {}
-      return updated;
     });
     if (rejectedItem) {
       saveCashSettlement(rejectedItem).catch(console.error);
@@ -914,13 +883,7 @@ export default function App() {
   };
 
   const handleDeleteCashSettlement = (settlementId: string) => {
-    setCashSettlements((prev) => {
-      const updated = prev.filter((s) => s.id !== settlementId);
-      try {
-        localStorage.setItem(STORAGE_KEYS.CASH_SETTLEMENTS, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+    setCashSettlements((prev) => prev.filter((s) => s.id !== settlementId));
     deleteCashSettlement(settlementId).catch(console.error);
     cloudDeleteCashSettlement(settlementId).catch(console.error);
     deleteCashSettlementFromSupabase(settlementId).catch(console.error);
