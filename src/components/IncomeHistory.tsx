@@ -10,7 +10,7 @@ import {
   RotateCcw,
   ArrowDownLeft,
   Calendar,
-  Receipt,
+  ReceiptIndianRupee,
   Eye,
   FileSpreadsheet,
   X,
@@ -835,7 +835,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
 
             <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-700 pb-3">
               <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 flex items-center justify-center font-bold">
-                <Receipt className="w-5 h-5" />
+                <ReceiptIndianRupee className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">जमा व्यवहार पावती तपशील</h3>

@@ -8,7 +8,7 @@ import {
   LayoutDashboard,
   ArrowDownLeft,
   ArrowUpRight,
-  Receipt,
+  ReceiptIndianRupee,
   FileSpreadsheet,
   Users,
   RotateCcw,
@@ -129,7 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       id: 'income-history',
       label: 'जमा इतिहास',
-      icon: Receipt,
+      icon: ReceiptIndianRupee,
     },
     {
       id: 'expense-history',

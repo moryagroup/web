@@ -36,7 +36,7 @@ import {
   Check,
   Building2,
   FileText,
-  Receipt,
+  ReceiptIndianRupee,
   Upload,
   Trash2,
 } from 'lucide-react';
@@ -603,7 +603,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
             onClick={() => handleOpenAddDebit()}
             className="px-3.5 py-2.5 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-black text-xs rounded-xl shadow flex items-center gap-1.5 cursor-pointer transition-all shrink-0 active:scale-95"
           >
-            <Receipt className="w-4 h-4" />
+            <ReceiptIndianRupee className="w-4 h-4" />
             <span>➕ रोखीतून खर्च (Audit Debit)</span>
           </button>
         </div>
@@ -641,7 +641,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
 
         <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-rose-200 dark:border-rose-700 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 rounded-2xl flex items-center justify-center shrink-0">
-            <Receipt className="w-6 h-6" />
+            <ReceiptIndianRupee className="w-6 h-6" />
           </div>
           <div>
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -804,7 +804,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
               : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
           }`}
         >
-          <Receipt className="w-4 h-4" />
+          <ReceiptIndianRupee className="w-4 h-4" />
           <span>रोखीतून केलेल्या खर्चाच्या नोंदी / Audit Debits ({directCashDebitsList.length})</span>
         </button>
 
@@ -936,7 +936,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                       onClick={() => handleOpenAddDebit(item.member.id)}
                       className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
                     >
-                      <Receipt className="w-3.5 h-3.5" />
+                      <ReceiptIndianRupee className="w-3.5 h-3.5" />
                       <span>रोखीतून खर्च</span>
                     </button>
                   </div>
@@ -964,7 +964,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
               onClick={() => handleOpenAddDebit()}
               className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shrink-0"
             >
-              <Receipt className="w-4 h-4" />
+              <ReceiptIndianRupee className="w-4 h-4" />
               <span>➕ नवीन रोख खर्च नोंद</span>
             </button>
           </div>
@@ -1400,7 +1400,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
             <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 bg-rose-100 text-rose-700 rounded-xl flex items-center justify-center">
-                  <Receipt className="w-5 h-5" />
+                  <ReceiptIndianRupee className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-800 dark:text-slate-100">

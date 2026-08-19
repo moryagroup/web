@@ -12,7 +12,7 @@ import {
   Calendar,
   Filter,
   FileSpreadsheet,
-  Receipt,
+  ReceiptIndianRupee,
   ArrowLeft,
   Printer,
 } from 'lucide-react';

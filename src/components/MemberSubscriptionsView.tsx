@@ -50,7 +50,7 @@ import {
   Image as ImageIcon,
   Clock,
   X,
-  Receipt,
+  ReceiptIndianRupee,
 } from 'lucide-react';
 
 interface MemberSubscriptionsViewProps {
@@ -980,7 +980,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
                   title="या सभासदाच्या सर्व जमा पावत्या व तपशील पहा"
                 >
                   <div className="flex items-center gap-1.5">
-                    <Receipt className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <ReceiptIndianRupee className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                     <span>जमा पावत्या व तपशील</span>
                   </div>
                   <span className="px-2 py-0.5 bg-amber-200/80 dark:bg-amber-800 text-amber-950 dark:text-amber-100 rounded-md font-mono text-[10px] font-black">
@@ -1957,7 +1957,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
               <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 max-h-[50vh]">
                 {memberIncomes.length === 0 ? (
                   <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
-                    <Receipt className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                    <ReceiptIndianRupee className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
                     <p className="text-xs font-bold text-slate-600 dark:text-slate-400">
                       या सभासदाची {selectedYear === 'ALL' ? '' : selectedYear + ' वर्षातील '}कोणतीही जमा नोंद आढळली नाही.
                     </p>
