@@ -752,13 +752,22 @@ export async function deleteGalleryItemFromSupabase(id: string): Promise<void> {
 export async function fetchCashSettlementsFromSupabase(): Promise<CashSettlement[]> {
   if (!isSupabaseConfigured) return [];
   try {
+    const { data: settingsData } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'cash_settlements_list')
+      .maybeSingle();
+
+    if (settingsData?.value?.list && Array.isArray(settingsData.value.list)) {
+      return settingsData.value.list;
+    }
+
     const { data, error } = await supabase
       .from('cash_settlements')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.warn('[Supabase] fetchCashSettlements error:', error.message);
+    if (error || !data) {
       return [];
     }
 
@@ -791,6 +800,18 @@ export async function fetchCashSettlementsFromSupabase(): Promise<CashSettlement
 export async function saveCashSettlementToSupabase(settlement: CashSettlement): Promise<void> {
   if (!isSupabaseConfigured) return;
   try {
+    // 1. Primary: Save into Supabase settings table
+    const current = await fetchCashSettlementsFromSupabase();
+    const filtered = current.filter((s) => s.id !== settlement.id);
+    const updated = [settlement, ...filtered];
+
+    await supabase.from('settings').upsert({
+      key: 'cash_settlements_list',
+      value: { list: updated },
+      updated_at: new Date().toISOString(),
+    });
+
+    // 2. Secondary: Attempt individual table if exists
     const row = {
       id: settlement.id,
       settlement_no: settlement.settlementNo || null,
@@ -810,8 +831,7 @@ export async function saveCashSettlementToSupabase(settlement: CashSettlement): 
       recorded_by: settlement.createdBy,
       updated_at: new Date().toISOString(),
     };
-    const { error } = await supabase.from('cash_settlements').upsert(row);
-    if (error) console.error('[Supabase] saveCashSettlement error:', error.message);
+    await supabase.from('cash_settlements').upsert(row);
   } catch (err) {
     console.warn('[Supabase] saveCashSettlement catch:', err);
   }
@@ -820,8 +840,16 @@ export async function saveCashSettlementToSupabase(settlement: CashSettlement): 
 export async function deleteCashSettlementFromSupabase(id: string): Promise<void> {
   if (!isSupabaseConfigured) return;
   try {
-    const { error } = await supabase.from('cash_settlements').delete().eq('id', id);
-    if (error) console.error('[Supabase] deleteCashSettlement error:', error);
+    const current = await fetchCashSettlementsFromSupabase();
+    const updated = current.filter((s) => s.id !== id);
+
+    await supabase.from('settings').upsert({
+      key: 'cash_settlements_list',
+      value: { list: updated },
+      updated_at: new Date().toISOString(),
+    });
+
+    await supabase.from('cash_settlements').delete().eq('id', id);
   } catch (err) {
     console.warn('[Supabase] deleteCashSettlement catch:', err);
   }
