@@ -1,7 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { IncomeTransaction, ExpenseTransaction, CurrentUser } from '../types';
 import { isCoreMemberRole } from '../utils/rbac';
-import { isDateInSelectedYear } from '../utils/dateUtils';
+import {
+  CALENDAR_YEAR_OPTIONS,
+  FINANCIAL_YEAR_OPTIONS,
+  getFinancialYearMonthList,
+  getCalendarYearMonthList,
+  isDateInSelectedYear,
+} from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { exportToCSV, triggerPDFPrint } from '../utils/exportUtils';
 import {
@@ -12,9 +18,10 @@ import {
   Calendar,
   Filter,
   FileSpreadsheet,
-  ReceiptIndianRupee,
   ArrowLeft,
   Printer,
+  Building2,
+  CalendarDays,
 } from 'lucide-react';
 
 interface MonthWiseReportsViewProps {
@@ -26,21 +33,7 @@ interface MonthWiseReportsViewProps {
   onOpenLogin?: () => void;
 }
 
-const MARATHI_MONTHS = [
-  'सर्व महिने (All Months)',
-  'ऑगस्ट २०२६',
-  'जुलै २०२६',
-  'जून २०२६',
-  'मे २०२६',
-  'एप्रिल २०२६',
-  'मार्च २०२६',
-  'फेब्रुवारी २०२६',
-  'जानेवारी २०२६',
-  'डिसेंबर २०२५',
-  'नोव्हेंबर २०२५',
-  'ऑक्टोबर २०२५',
-  'सप्टेंबर २०२५',
-];
+type ViewMode = 'FINANCIAL' | 'CALENDAR';
 
 export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
   incomes,
@@ -50,8 +43,11 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
   onNavigate,
   onOpenLogin,
 }) => {
-  const [selectedYear, setSelectedYear] = useState<string>(financialYear);
-  const [selectedMonth, setSelectedMonth] = useState<string>('सर्व महिने (All Months)');
+  const [viewMode, setViewMode] = useState<ViewMode>('FINANCIAL');
+  const [selectedYear, setSelectedYear] = useState<string>(
+    financialYear.includes('-') ? financialYear : '२०२६-२७'
+  );
+  const [selectedMonth, setSelectedMonth] = useState<string>('ALL');
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
   const isCoreMember = isLoggedIn && isCoreMemberRole(currentUser.role);
@@ -71,49 +67,69 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
     return '₹' + amount.toLocaleString('en-IN');
   };
 
-  // Filter dataset by calendar year (Jan - Dec)
+  // Switch between Financial Year (Apr - Mar) and Calendar Year (Jan - Dec)
+  const availableYears = viewMode === 'FINANCIAL' ? FINANCIAL_YEAR_OPTIONS : CALENDAR_YEAR_OPTIONS;
+
+  const handleModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    setSelectedMonth('ALL');
+    if (mode === 'FINANCIAL') {
+      setSelectedYear('२०२६-२७');
+    } else {
+      setSelectedYear('२०२६');
+    }
+  };
+
+  // Filter dataset by selected year
   const yearIncomes = useMemo(() => {
     return incomes.filter((i) => isDateInSelectedYear(i.transactionDate, selectedYear, i.financialYear));
   }, [incomes, selectedYear]);
 
   const yearExpenses = useMemo(() => {
-    return expenses.filter((e) => isDateInSelectedYear(e.expenseDate, selectedYear, e.financialYear));
+    return expenses.filter(
+      (e) => isDateInSelectedYear(e.expenseDate, selectedYear, e.financialYear) && e.approvalStatus === 'मंजूर'
+    );
   }, [expenses, selectedYear]);
 
-  // Monthly Grouping
-  const monthlyData = useMemo(() => {
-    const monthsMap: Record<string, { income: number; expense: number; countInc: number; countExp: number }> = {};
+  // Generate 12 months ordered strictly according to mode
+  const orderedMonths = useMemo(() => {
+    return viewMode === 'FINANCIAL'
+      ? getFinancialYearMonthList(selectedYear) // April -> March
+      : getCalendarYearMonthList(selectedYear); // Jan -> Dec
+  }, [viewMode, selectedYear]);
 
-    yearIncomes.forEach((i) => {
-      const date = new Date(i.transactionDate);
-      const key = date.toLocaleString('mr-IN', { month: 'long', year: 'numeric' });
-      if (!monthsMap[key]) {
-        monthsMap[key] = { income: 0, expense: 0, countInc: 0, countExp: 0 };
-      }
-      monthsMap[key].income += i.amount;
-      monthsMap[key].countInc += 1;
+  // Aggregate data per month in exact April -> March sequence
+  const monthlyDataList = useMemo(() => {
+    return orderedMonths.map((m, index) => {
+      const mIncomes = yearIncomes.filter((i) => i.transactionDate && i.transactionDate.startsWith(m.key));
+      const mExpenses = yearExpenses.filter((e) => e.expenseDate && e.expenseDate.startsWith(m.key));
+
+      const incomeSum = mIncomes.reduce((sum, i) => sum + i.amount, 0);
+      const expenseSum = mExpenses.reduce((sum, e) => sum + e.amount, 0);
+      const netBalance = incomeSum - expenseSum;
+
+      return {
+        index: index + 1,
+        key: m.key,
+        monthName: m.monthName,
+        income: incomeSum,
+        countInc: mIncomes.length,
+        expense: expenseSum,
+        countExp: mExpenses.length,
+        net: netBalance,
+      };
     });
+  }, [orderedMonths, yearIncomes, yearExpenses]);
 
-    yearExpenses.forEach((e) => {
-      if (e.approvalStatus === 'मंजूर') {
-        const date = new Date(e.expenseDate);
-        const key = date.toLocaleString('mr-IN', { month: 'long', year: 'numeric' });
-        if (!monthsMap[key]) {
-          monthsMap[key] = { income: 0, expense: 0, countInc: 0, countExp: 0 };
-        }
-        monthsMap[key].expense += e.amount;
-        monthsMap[key].countExp += 1;
-      }
-    });
-
-    return monthsMap;
-  }, [yearIncomes, yearExpenses]);
+  // Filter by selected month if not ALL
+  const filteredMonthlyData = useMemo(() => {
+    if (selectedMonth === 'ALL') return monthlyDataList;
+    return monthlyDataList.filter((m) => m.key === selectedMonth);
+  }, [monthlyDataList, selectedMonth]);
 
   // Overall Year Totals
   const totalYearIncome = yearIncomes.reduce((sum, i) => sum + i.amount, 0);
-  const totalYearExpense = yearExpenses
-    .filter((e) => e.approvalStatus === 'मंजूर')
-    .reduce((sum, e) => sum + e.amount, 0);
+  const totalYearExpense = yearExpenses.reduce((sum, e) => sum + e.amount, 0);
   const totalYearBalance = totalYearIncome - totalYearExpense;
 
   const handleExportCSV = () => {
@@ -126,20 +142,18 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
       'मंजूर खर्च रक्कम (₹)',
       'खर्च नोंदी संख्या',
       'निव्वळ शिल्लक बचत (₹)',
-      'आर्थिक वर्ष',
+      'वर्ष',
     ];
 
-    const entries = Object.entries(monthlyData);
-    const rows: (string | number | boolean)[][] = entries.map(([monthName, data], index) => {
-      const net = data.income - data.expense;
+    const rows: (string | number | boolean)[][] = monthlyDataList.map((data) => {
       return [
-        index + 1,
-        monthName,
+        data.index,
+        data.monthName,
         data.income,
         data.countInc,
         data.expense,
         data.countExp,
-        net,
+        data.net,
         selectedYear,
       ];
     });
@@ -151,7 +165,7 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
       totalYearIncome,
       yearIncomes.length,
       totalYearExpense,
-      yearExpenses.filter((e) => e.approvalStatus === 'मंजूर').length,
+      yearExpenses.length,
       totalYearBalance,
       selectedYear,
     ]);
@@ -160,13 +174,17 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
   };
 
   const handlePrintPDF = () => {
-    triggerPDFPrint(`मोरया ग्रुप महिनावारी जमा-खर्च अहवाल (${selectedYear})`);
+    const title =
+      viewMode === 'FINANCIAL'
+        ? `मोरया ग्रुप आर्थिक वर्ष महिनानिहाय हिशोब अहवाल (${selectedYear} - १ एप्रिल ते ३१ मार्च)`
+        : `मोरया ग्रुप कॅलेंडर वर्ष महिनानिहाय हिशोब अहवाल (${selectedYear} - १ जानेवारी ते ३१ डिसेंबर)`;
+    triggerPDFPrint(title);
   };
 
   return (
     <div className="space-y-6 my-2">
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-amber-950 via-rose-950 to-orange-950 text-white p-6 rounded-3xl shadow-xl border border-amber-500/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-3xl shadow-xl border border-indigo-500/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           {onNavigate && (
             <button
@@ -198,77 +216,151 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
           </div>
         </div>
 
-        {/* Year Filter */}
-        <div className="flex items-center gap-2 self-stretch md:self-auto shrink-0">
-          <span className="text-xs text-slate-300 font-bold flex items-center gap-1">
-            <Calendar className="w-4 h-4 text-amber-400" /> वर्ष:
-          </span>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="bg-slate-800 text-amber-300 font-bold text-xs rounded-xl border border-slate-700 p-2.5 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
+        {/* View Mode Toggle */}
+        <div className="flex items-center bg-slate-800/90 p-1.5 rounded-2xl border border-slate-700 shadow-inner gap-1">
+          <button
+            type="button"
+            onClick={() => handleModeChange('FINANCIAL')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              viewMode === 'FINANCIAL'
+                ? 'bg-amber-500 text-slate-950 shadow-md scale-[1.02]'
+                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
+            }`}
           >
-            <option value="२०२६">२०२६ (चालू वर्ष)</option>
-            <option value="२०२५">२०२५</option>
-            <option value="२०२४">२०२४</option>
-            <option value="२०२७">२०२७</option>
-          </select>
+            <Building2 className="w-4 h-4" />
+            <span>आर्थिक वर्ष (१ एप्रिल - ३१ मार्च)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange('CALENDAR')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              viewMode === 'CALENDAR'
+                ? 'bg-amber-500 text-slate-950 shadow-md scale-[1.02]'
+                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
+            }`}
+          >
+            <CalendarDays className="w-4 h-4" />
+            <span>कॅलेंडर वर्ष (१ जाने - ३१ डिसे)</span>
+          </button>
         </div>
       </div>
 
-      {/* 3 Overview Cards for Selected Financial Year */}
+      {/* Filter Row: Year & Month */}
+      <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex-wrap gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Year Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-700 dark:text-slate-300 font-bold flex items-center gap-1">
+              <Calendar className="w-4 h-4 text-amber-500" /> वर्ष:
+            </span>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-black text-xs rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
+            >
+              {availableYears.map((yr) => (
+                <option key={yr} value={yr}>
+                  {yr}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Month Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-700 dark:text-slate-300 font-bold flex items-center gap-1">
+              <Filter className="w-4 h-4 text-indigo-500" /> महिना:
+            </span>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 font-black text-xs rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+            >
+              <option value="ALL">सर्व १२ महिने (All Months)</option>
+              {orderedMonths.map((m, idx) => (
+                <option key={m.key} value={m.key}>
+                  {idx + 1}. {m.monthName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" /> CSV अहवाल
+          </button>
+          <button
+            type="button"
+            onClick={handlePrintPDF}
+            className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <Printer className="w-3.5 h-3.5" /> प्रिंट / PDF
+          </button>
+        </div>
+      </div>
+
+      {/* 3 Overview Cards for Selected Year */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-emerald-50/90 p-5 rounded-2xl border border-emerald-200 shadow-sm space-y-1">
-          <div className="flex items-center gap-1.5 text-xs text-emerald-800 font-bold uppercase">
-            <ArrowDownCircle className="w-4 h-4 text-emerald-600" />
+        <div className="bg-emerald-50/90 dark:bg-emerald-950/40 p-5 rounded-2xl border border-emerald-200 dark:border-emerald-800 shadow-sm space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-emerald-800 dark:text-emerald-300 font-bold uppercase">
+            <ArrowDownCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>वार्षिक एकूण जमा</span>
           </div>
-          <p className="text-2xl font-black text-emerald-900">{formatCurrency(totalYearIncome)}</p>
-          <p className="text-[11px] text-emerald-700 font-medium">
+          <p className="text-2xl font-black text-emerald-900 dark:text-emerald-200">{formatCurrency(totalYearIncome)}</p>
+          <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
             एकूण जमा व्यवहारांची संख्या: {yearIncomes.length}
           </p>
         </div>
 
-        <div className="bg-rose-50/90 p-5 rounded-2xl border border-rose-200 shadow-sm space-y-1">
-          <div className="flex items-center gap-1.5 text-xs text-rose-800 font-bold uppercase">
-            <ArrowUpCircle className="w-4 h-4 text-rose-600" />
+        <div className="bg-rose-50/90 dark:bg-rose-950/40 p-5 rounded-2xl border border-rose-200 dark:border-rose-800 shadow-sm space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-rose-800 dark:text-rose-300 font-bold uppercase">
+            <ArrowUpCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
             <span>वार्षिक एकूण मंजूर खर्च</span>
           </div>
-          <p className="text-2xl font-black text-rose-900">{formatCurrency(totalYearExpense)}</p>
-          <p className="text-[11px] text-rose-700 font-medium">
-            एकूण मंजूर खर्चाची संख्या: {yearExpenses.filter((e) => e.approvalStatus === 'मंजूर').length}
+          <p className="text-2xl font-black text-rose-900 dark:text-rose-200">{formatCurrency(totalYearExpense)}</p>
+          <p className="text-[11px] text-rose-700 dark:text-rose-400 font-medium">
+            एकूण मंजूर खर्चाची संख्या: {yearExpenses.length}
           </p>
         </div>
 
-        <div className="bg-blue-50/90 p-5 rounded-2xl border border-blue-200 shadow-sm space-y-1">
-          <div className="flex items-center gap-1.5 text-xs text-blue-800 font-bold uppercase">
-            <Wallet className="w-4 h-4 text-blue-600" />
+        <div className="bg-blue-50/90 dark:bg-blue-950/40 p-5 rounded-2xl border border-blue-200 dark:border-blue-800 shadow-sm space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-blue-800 dark:text-blue-300 font-bold uppercase">
+            <Wallet className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <span>वार्षिक शिल्लक (Net Balance)</span>
           </div>
-          <p className="text-2xl font-black text-blue-950">{formatCurrency(totalYearBalance)}</p>
-          <p className="text-[11px] text-blue-700 font-medium">एकूण जमा - मंजूर खर्च</p>
+          <p className="text-2xl font-black text-blue-950 dark:text-blue-200">{formatCurrency(totalYearBalance)}</p>
+          <p className="text-[11px] text-blue-700 dark:text-blue-400 font-medium">एकूण जमा - मंजूर खर्च</p>
         </div>
       </div>
 
-      {/* Month-wise Cards Breakdown */}
+      {/* Month-wise Cards Breakdown in Strict Order */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
         <h3 className="text-base font-black text-slate-800 dark:text-slate-100 flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
           <FileSpreadsheet className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-          महिनानिहाय जमा-खर्च तक्ता ({selectedYear})
+          {viewMode === 'FINANCIAL'
+            ? `महिनानिहाय जमा-खर्च तक्ता (${selectedYear} - १ एप्रिल ते ३१ मार्च क्रम)`
+            : `महिनानिहाय जमा-खर्च तक्ता (${selectedYear} - १ जानेवारी ते ३१ डिसेंबर क्रम)`}
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Object.keys(monthlyData).length > 0 ? (
-            Object.entries(monthlyData).map(([monthName, rawData]) => {
-              const data = rawData as { income: number; expense: number };
-              const netMonthBalance = data.income - data.expense;
+          {filteredMonthlyData.length > 0 ? (
+            filteredMonthlyData.map((data) => {
+              const netMonthBalance = data.net;
               return (
                 <div
-                  key={monthName}
+                  key={data.key}
                   className="bg-slate-50 dark:bg-slate-900/80 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 space-y-3 hover:shadow-md transition-shadow"
                 >
                   <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
-                    <span className="font-black text-slate-900 dark:text-slate-100 text-sm">{monthName}</span>
+                    <span className="font-black text-slate-900 dark:text-slate-100 text-sm">
+                      {data.index}. {data.monthName}
+                    </span>
                     <span
                       className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
                         netMonthBalance >= 0
@@ -276,17 +368,17 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
                           : 'bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-700'
                       }`}
                     >
-                      {netMonthBalance >= 0 ? 'शिल्लक फायद्यात' : 'तोटा'}
+                      {netMonthBalance >= 0 ? '+शिल्लक' : '-तोटा'}
                     </span>
                   </div>
 
                   <div className="space-y-1.5 text-xs">
                     <div className="flex justify-between font-bold">
-                      <span className="text-slate-600 dark:text-slate-400">जमा (Income):</span>
+                      <span className="text-slate-600 dark:text-slate-400">जमा ({data.countInc} नोंदी):</span>
                       <span className="text-emerald-700 dark:text-emerald-400">{formatCurrency(data.income)}</span>
                     </div>
                     <div className="flex justify-between font-bold">
-                      <span className="text-slate-600 dark:text-slate-400">खर्च (Expense):</span>
+                      <span className="text-slate-600 dark:text-slate-400">मंजूर खर्च ({data.countExp} नोंदी):</span>
                       <span className="text-rose-700 dark:text-rose-400">{formatCurrency(data.expense)}</span>
                     </div>
                     <div className="flex justify-between font-black pt-1.5 border-t border-slate-200 dark:border-slate-700 text-sm">
@@ -301,7 +393,7 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
             })
           ) : (
             <div className="col-span-full text-center py-8 text-slate-500 font-bold text-xs">
-              या वर्षासाठी महिन्यानिहाय नोंदी उपलब्ध नाहीत.
+              या कालावधीसाठी महिन्यानिहाय नोंदी उपलब्ध नाहीत.
             </div>
           )}
         </div>
@@ -309,3 +401,4 @@ export const MonthWiseReportsView: React.FC<MonthWiseReportsViewProps> = ({
     </div>
   );
 };
+
