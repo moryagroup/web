@@ -49,7 +49,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     members[0]?.id || ''
   );
 
-  // Sync initial props on open
+  const adminPasswordInputRef = React.useRef<HTMLInputElement>(null);
+  const memberPasswordInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Password reset link view mode
+  const [showResetView, setShowResetView] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [resetSuccessMessage, setResetSuccessMessage] = useState(false);
+
+  // Sync initial props on open & auto-focus password field
   React.useEffect(() => {
     if (isOpen) {
       if (initialLoginType) {
@@ -64,11 +73,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     }
   }, [isOpen, initialSelectedMemberId, initialLoginType]);
 
-  // Password reset link view mode
-  const [showResetView, setShowResetView] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [resetSuccessMessage, setResetSuccessMessage] = useState(false);
+  // Auto focus password input whenever modal opens, tab changes, or user is selected
+  React.useEffect(() => {
+    if (isOpen && !showResetView) {
+      const timer = setTimeout(() => {
+        if (loginType === 'admin') {
+          adminPasswordInputRef.current?.focus();
+        } else {
+          memberPasswordInputRef.current?.focus();
+          memberPasswordInputRef.current?.select?.();
+        }
+      }, 80);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, loginType, selectedMemberId, showResetView]);
 
   if (!isOpen) return null;
 
@@ -334,6 +352,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     <div className="relative">
                       <Key className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
+                        ref={adminPasswordInputRef}
                         type="password"
                         value={adminPassword}
                         onChange={(e) => {
@@ -405,6 +424,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     <div className="relative">
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
+                        ref={memberPasswordInputRef}
                         type="password"
                         value={memberPassword}
                         onChange={(e) => {
