@@ -182,9 +182,48 @@ import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransact
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { Menu, Sun, Moon } from 'lucide-react';
 
+const VALID_TABS = new Set([
+  'dashboard',
+  'income-form',
+  'expense-form',
+  'income-history',
+  'expense-history',
+  'cash-settlements',
+  'member-subscriptions',
+  'month-wise-reports',
+  'all-years-data',
+  'core-summary',
+  'suggestions',
+  'profile',
+]);
+
+const getInitialTab = (): string => {
+  try {
+    const hash = window.location.hash.replace(/^#\/?/, '').trim();
+    if (hash && VALID_TABS.has(hash)) {
+      return hash;
+    }
+    const saved = localStorage.getItem('morya_active_tab');
+    if (saved && VALID_TABS.has(saved)) {
+      return saved;
+    }
+  } catch (e) {
+    console.warn('Failed to read initial tab:', e);
+  }
+  return 'dashboard';
+};
+
+const getInitialYear = (): string => {
+  try {
+    return localStorage.getItem('morya_selected_year') || '२०२६';
+  } catch {
+    return '२०२६';
+  }
+};
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [selectedYear, setSelectedYear] = useState<string>('२०२६');
+  const [activeTab, setActiveTab] = useState<string>(getInitialTab);
+  const [selectedYear, setSelectedYear] = useState<string>(getInitialYear);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
   const [isOccasionModalOpen, setIsOccasionModalOpen] = useState<boolean>(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
@@ -236,6 +275,37 @@ export default function App() {
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('morya_active_tab', activeTab);
+      const currentHash = window.location.hash.replace(/^#\/?/, '').trim();
+      if (currentHash !== activeTab) {
+        window.history.replaceState(null, '', `#${activeTab}`);
+      }
+    } catch (err) {
+      console.warn('Failed to save active tab setting:', err);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('morya_selected_year', selectedYear);
+    } catch (err) {
+      console.warn('Failed to save selected year setting:', err);
+    }
+  }, [selectedYear]);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '').trim();
+      if (hash && VALID_TABS.has(hash)) {
+        setActiveTab(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Subscribe to Firestore collections & Central Cloud DB strictly
   useEffect(() => {
@@ -550,6 +620,9 @@ export default function App() {
   const handleLogout = () => {
     setCurrentUser(DEFAULT_USER);
     saveUser(DEFAULT_USER);
+    try {
+      localStorage.removeItem('morya_active_tab');
+    } catch {}
     setActiveTab('dashboard');
   };
 

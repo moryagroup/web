@@ -88,7 +88,22 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
   // Local filter states
   const [localYear, setLocalYear] = useState<string>(selectedYear || '२०२६');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'summary' | 'debits' | 'history'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'debits' | 'history'>(() => {
+    try {
+      const saved = sessionStorage.getItem('morya_cash_settlement_subtab');
+      if (saved === 'summary' || saved === 'debits' || saved === 'history') {
+        return saved;
+      }
+    } catch {}
+    return 'summary';
+  });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('morya_cash_settlement_subtab', activeTab);
+    } catch {}
+  }, [activeTab]);
+
   const [historyFilter, setHistoryFilter] = useState<'ALL' | 'मंजूर' | 'प्रलंबित' | 'रद्द'>('ALL');
 
   // Bank Deposit Modal states
