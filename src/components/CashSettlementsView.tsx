@@ -341,6 +341,19 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
     const mem = members.find((m) => m.id === settleMemberId);
     if (!mem) return;
 
+    const stats = memberCashStats.memberMap[settleMemberId];
+    const availableInHand = stats ? stats.netCashInHand : 0;
+    if (availableInHand <= 0) {
+      setSettleError(`या सभासदाकडे कोणतीही रोख शिल्लक उपलब्ध नाही (₹०). भरणा नोंद करता येणार नाही.`);
+      return;
+    }
+    if (numAmount > availableInHand) {
+      setSettleError(
+        `भरणा रक्कम मर्यादेपेक्षा जास्त आहे! या सभासदाकडे केवळ ₹${availableInHand.toLocaleString('en-IN')} शिल्लक रोख उपलब्ध आहे.`
+      );
+      return;
+    }
+
     const newSettlement: CashSettlement = {
       id: `cset-${Date.now()}`,
       settlementNo: `CST-${Date.now().toString().slice(-4)}`,
@@ -387,6 +400,19 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
     }
     const mem = members.find((m) => m.id === debitMemberId);
     if (!mem) return;
+
+    const stats = memberCashStats.memberMap[debitMemberId];
+    const availableInHand = stats ? stats.netCashInHand : 0;
+    if (availableInHand <= 0) {
+      setDebitError(`या सभासदाकडे कोणतीही रोख शिल्लक उपलब्ध नाही (₹०). रोखीतून खर्च नोंद करता येणार नाही.`);
+      return;
+    }
+    if (numAmount > availableInHand) {
+      setDebitError(
+        `खर्च रक्कम मर्यादेपेक्षा जास्त आहे! या सभासदाकडे केवळ ₹${availableInHand.toLocaleString('en-IN')} शिल्लक रोख उपलब्ध आहे.`
+      );
+      return;
+    }
 
     const isTreasurer = isTreasurerOrVice;
     const transactionNo = generateNextExpenseTransactionNo(debitDate, expenses);
@@ -1149,14 +1175,42 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
               {/* Amount & Destination */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    भरणा रक्कम (₹) <span className="text-rose-500">*</span>:
-                  </label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block font-bold text-slate-700 dark:text-slate-300">
+                      भरणा रक्कम (₹) <span className="text-rose-500">*</span>:
+                    </label>
+                    {settleMemberId && memberCashStats.memberMap[settleMemberId]?.netCashInHand > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const maxInHand = memberCashStats.memberMap[settleMemberId].netCashInHand;
+                          setSettleAmount(String(maxInHand));
+                          setSettleError(null);
+                        }}
+                        className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer"
+                      >
+                        ⚡ संपूर्ण शिल्लक (₹{memberCashStats.memberMap[settleMemberId].netCashInHand.toLocaleString('en-IN')})
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="number"
                     value={settleAmount}
-                    onChange={(e) => setSettleAmount(e.target.value)}
-                    placeholder="उदा. ५०००"
+                    onChange={(e) => {
+                      setSettleAmount(e.target.value);
+                      const maxVal = memberCashStats.memberMap[settleMemberId]?.netCashInHand || 0;
+                      if (parseFloat(e.target.value) > maxVal) {
+                        setSettleError(`कमाल शिल्लक मर्यादा: ₹${maxVal.toLocaleString('en-IN')}`);
+                      } else {
+                        setSettleError(null);
+                      }
+                    }}
+                    max={memberCashStats.memberMap[settleMemberId]?.netCashInHand || 0}
+                    placeholder={
+                      settleMemberId
+                        ? `कमाल ₹${(memberCashStats.memberMap[settleMemberId]?.netCashInHand || 0).toLocaleString('en-IN')}`
+                        : 'उदा. ५०००'
+                    }
                     min="1"
                     className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl font-black text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none"
                     required
@@ -1350,14 +1404,42 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
               {/* Amount & Category */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    खर्च रक्कम (₹) <span className="text-rose-500">*</span>:
-                  </label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block font-bold text-slate-700 dark:text-slate-300">
+                      खर्च रक्कम (₹) <span className="text-rose-500">*</span>:
+                    </label>
+                    {debitMemberId && memberCashStats.memberMap[debitMemberId]?.netCashInHand > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const maxInHand = memberCashStats.memberMap[debitMemberId].netCashInHand;
+                          setDebitAmount(String(maxInHand));
+                          setDebitError(null);
+                        }}
+                        className="text-[10px] text-rose-600 dark:text-rose-400 font-bold hover:underline cursor-pointer"
+                      >
+                        ⚡ संपूर्ण शिल्लक (₹{memberCashStats.memberMap[debitMemberId].netCashInHand.toLocaleString('en-IN')})
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="number"
                     value={debitAmount}
-                    onChange={(e) => setDebitAmount(e.target.value)}
-                    placeholder="उदा. १५००"
+                    onChange={(e) => {
+                      setDebitAmount(e.target.value);
+                      const maxVal = memberCashStats.memberMap[debitMemberId]?.netCashInHand || 0;
+                      if (parseFloat(e.target.value) > maxVal) {
+                        setDebitError(`कमाल शिल्लक मर्यादा: ₹${maxVal.toLocaleString('en-IN')}`);
+                      } else {
+                        setDebitError(null);
+                      }
+                    }}
+                    max={memberCashStats.memberMap[debitMemberId]?.netCashInHand || 0}
+                    placeholder={
+                      debitMemberId
+                        ? `कमाल ₹${(memberCashStats.memberMap[debitMemberId]?.netCashInHand || 0).toLocaleString('en-IN')}`
+                        : 'उदा. १५००'
+                    }
                     min="1"
                     className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl font-black text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 outline-none"
                     required
