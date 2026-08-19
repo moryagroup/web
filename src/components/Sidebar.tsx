@@ -377,20 +377,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             </div>
 
-            <div className="relative mb-2 group">
+            <div
+              className="relative mb-2 group cursor-pointer"
+              onClick={() => setIsLightboxOpen(true)}
+              onMouseEnter={() => setIsLightboxOpen(true)}
+              title="मोठा लोगो व संपूर्ण नाव पहा (Hover / Click)"
+            >
               <img
                 src={groupLogo || moryaLogo}
                 alt="मोरया ग्रुप मित्र मंडळ (ट्रस्ट) लोगो"
-                onClick={() => setIsLightboxOpen(true)}
-                title="मोठा लोगो पहा (WhatsApp Style)"
                 className="w-20 h-20 sm:w-22 sm:h-22 object-contain rounded-full border-2 border-amber-500/90 shadow-lg shadow-orange-900/50 p-0.5 bg-slate-950 transition-transform group-hover:scale-105 cursor-pointer"
               />
               {isAdmin && (
                 <button
                   type="button"
-                  onClick={() => logoInputRef.current?.click()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    logoInputRef.current?.click();
+                  }}
                   title="मंडळ लोगो बदला"
-                  className="absolute bottom-0 right-0 bg-amber-500 hover:bg-amber-400 text-slate-950 p-1.5 rounded-full border border-slate-900 shadow-md cursor-pointer transition-transform hover:scale-110 flex items-center justify-center"
+                  className="absolute bottom-0 right-0 bg-amber-500 hover:bg-amber-400 text-slate-950 p-1.5 rounded-full border border-slate-900 shadow-md cursor-pointer transition-transform hover:scale-110 flex items-center justify-center z-10"
                 >
                   <Camera className="w-3.5 h-3.5" />
                 </button>
@@ -405,7 +411,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onChange={handleLogoFileChange}
             />
 
-            <h1 className="text-sm sm:text-base font-black text-amber-400 leading-tight tracking-wide px-1">
+            <h1
+              onClick={() => setIsLightboxOpen(true)}
+              onMouseEnter={() => setIsLightboxOpen(true)}
+              className="text-sm sm:text-base font-black text-amber-400 leading-tight tracking-wide px-1 cursor-pointer hover:text-amber-300 transition-colors"
+              title="मोठा लोगो व संपूर्ण नाव पहा"
+            >
               मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
             </h1>
             <span className="text-xs text-amber-200/90 font-bold block mt-1">

@@ -90,15 +90,25 @@ export const LogoLightboxModal: React.FC<LogoLightboxModalProps> = ({
 
       {/* Main Big Logo Display Area */}
       <div
-        className="flex-1 flex items-center justify-center p-4 sm:p-8 select-none"
+        className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 select-none space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative max-w-lg w-full aspect-square flex items-center justify-center p-2 rounded-full border-4 border-amber-400/60 shadow-2xl bg-slate-900/90 backdrop-blur-md overflow-hidden group">
+        <div className="relative max-w-xs sm:max-w-md w-full aspect-square flex items-center justify-center p-2 rounded-full border-4 border-amber-400/90 shadow-2xl shadow-amber-900/60 bg-slate-900/90 backdrop-blur-md overflow-hidden group">
           <img
             src={currentLogo}
             alt="मोरया ग्रुप मित्र मंडळ अधिकृत लोगो (Full Size)"
             className="w-full h-full object-contain rounded-full drop-shadow-2xl transition-transform duration-300 group-hover:scale-105"
           />
+        </div>
+
+        {/* Group Name & Subtitle displayed below full screen logo */}
+        <div className="text-center space-y-1">
+          <h1 className="text-lg sm:text-2xl font-black text-amber-400 tracking-wide drop-shadow-md">
+            मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
+          </h1>
+          <p className="text-xs sm:text-sm font-bold text-amber-200/90">
+            हडपसर गोंधळनगर, पुणे
+          </p>
         </div>
       </div>
 

@@ -213,6 +213,7 @@ import { SuggestionsView } from './components/SuggestionsView';
 import { LoginModal } from './components/LoginModal';
 import { OccasionModal } from './components/OccasionModal';
 import { SettingsModal } from './components/SettingsModal';
+import { LogoLightboxModal } from './components/LogoLightboxModal';
 import { isBadgedMember, hasAdminPermissions, canApproveFinancialTransactions } from './utils/rbac';
 import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo, getCalendarYearFromDate } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
@@ -642,6 +643,7 @@ export default function App() {
   };
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isLogoLightboxOpen, setIsLogoLightboxOpen] = useState(false);
 
   const selectedRoleValue = useMemo(() => {
     if (currentUser.role === 'ॲडमिन') return 'ADMIN_ACCOUNT';
@@ -1281,14 +1283,19 @@ export default function App() {
               <span className="text-xs font-bold text-amber-200">मेन्यू</span>
             </button>
 
-            <div className="flex items-center gap-2">
+            <div
+              className="flex items-center gap-2 cursor-pointer group"
+              onClick={() => setIsLogoLightboxOpen(true)}
+              onMouseEnter={() => setIsLogoLightboxOpen(true)}
+              title="मोठा लोगो व मंडळ नाव पहा (Hover / Click)"
+            >
               <img
                 src={groupLogo || moryaLogo}
                 alt="मोरया ग्रुप मित्र मंडळ (ट्रस्ट) लोगो"
-                className="w-8 h-8 object-contain rounded-full border border-amber-400 p-0.5 bg-slate-950 shrink-0 shadow-sm"
+                className="w-8 h-8 object-contain rounded-full border border-amber-400 p-0.5 bg-slate-950 shrink-0 shadow-sm transition-transform group-hover:scale-110"
               />
               <div>
-                <h1 className="text-xs font-black text-amber-400 truncate max-w-[180px] sm:max-w-none">
+                <h1 className="text-xs font-black text-amber-400 truncate max-w-[180px] sm:max-w-none group-hover:text-amber-300 transition-colors">
                   मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
                 </h1>
               </div>
@@ -1738,6 +1745,14 @@ export default function App() {
 
       {/* Mobile Network Status Notifier */}
       <NetworkStatusNotifier />
+
+      {/* WhatsApp-Style Full Screen Logo Lightbox */}
+      <LogoLightboxModal
+        isOpen={isLogoLightboxOpen}
+        logoSrc={groupLogo}
+        onClose={() => setIsLogoLightboxOpen(false)}
+        isAdmin={currentUser.role === 'ॲडमिन' && currentUser.isLoggedIn !== false}
+      />
 
       {/* Agentation Visual Feedback Toolbar - Local Development & Admin User Only */}
       {import.meta.env.DEV && currentUser?.isLoggedIn && hasAdminPermissions(currentUser?.role) && (
