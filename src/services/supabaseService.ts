@@ -273,11 +273,26 @@ export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]>
   return (data || []).map((row) => {
     let attachmentUrl = row.attachment_url || row.bill_photo_url || row.photo_url || undefined;
     let cleanReason = row.reason || '';
+    let parsedPaidById = row.paid_by_member_id || row.paidByMemberId;
+    let parsedPaidByName = row.paid_by_member_name || row.paidByMemberName;
+    let isPaidFromCash = row.is_paid_from_cash_in_hand ?? Boolean(parsedPaidById);
+
     if (!attachmentUrl && cleanReason.includes('__ATTACHMENT__:')) {
       const parts = cleanReason.split('__ATTACHMENT__:');
       cleanReason = parts[0].trim();
       attachmentUrl = parts[1].trim();
     }
+
+    if (!parsedPaidById && cleanReason.includes('[PAID_BY_MEMBER:')) {
+      const match = cleanReason.match(/\[PAID_BY_MEMBER:([^:]+):([^\]]*)\]/);
+      if (match) {
+        parsedPaidById = match[1].trim();
+        parsedPaidByName = match[2].trim() || undefined;
+        isPaidFromCash = true;
+        cleanReason = cleanReason.replace(/\[PAID_BY_MEMBER:[^\]]+\]/g, '').trim();
+      }
+    }
+
     return {
       id: row.id,
       transactionNo: row.transaction_no,
@@ -289,6 +304,9 @@ export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]>
       amount: Number(row.amount),
       expenseDate: row.expense_date,
       paymentMethod: row.payment_method,
+      paidByMemberId: parsedPaidById,
+      paidByMemberName: parsedPaidByName,
+      isPaidFromCashInHand: isPaidFromCash,
       billNumber: row.bill_number,
       reason: cleanReason,
       approvalStatus: row.approval_status || 'प्रलंबित',
@@ -306,6 +324,15 @@ export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]>
 export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promise<void> {
   if (!isSupabaseConfigured) return;
   const dbAttachmentUrl = expense.attachmentUrl || null;
+  const paidByTag = expense.paidByMemberId
+    ? ` [PAID_BY_MEMBER:${expense.paidByMemberId}:${expense.paidByMemberName || ''}]`
+    : '';
+
+  let finalReason = expense.reason + paidByTag;
+  if (dbAttachmentUrl) {
+    finalReason = `${finalReason}\n__ATTACHMENT__:${dbAttachmentUrl}`;
+  }
+
   const row: any = {
     id: expense.id,
     transaction_no: expense.transactionNo,
@@ -316,8 +343,11 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
     amount: expense.amount,
     expense_date: expense.expenseDate,
     payment_method: expense.paymentMethod,
+    paid_by_member_id: expense.paidByMemberId || null,
+    paid_by_member_name: expense.paidByMemberName || null,
+    is_paid_from_cash_in_hand: expense.isPaidFromCashInHand || false,
     bill_number: expense.billNumber || null,
-    reason: expense.reason,
+    reason: finalReason,
     approval_status: expense.approvalStatus,
     approved_by: expense.approvedBy || null,
     approved_by_role: expense.approvedByRole || null,
@@ -341,7 +371,7 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
       expense_date: expense.expenseDate,
       payment_method: expense.paymentMethod,
       bill_number: expense.billNumber || null,
-      reason: dbAttachmentUrl ? `${expense.reason}\n__ATTACHMENT__:${dbAttachmentUrl}` : expense.reason,
+      reason: finalReason,
       approval_status: expense.approvalStatus,
       approved_by: expense.approvedBy || null,
       approved_by_role: expense.approvedByRole || null,

@@ -182,6 +182,9 @@ export interface ExpenseTransaction {
   reason: string;
   description?: string;
   paymentMethod: PaymentMethod;
+  paidByMemberId?: string; // ID of member who paid from their cash-in-hand
+  paidByMemberName?: string; // Name of member who paid from cash-in-hand
+  isPaidFromCashInHand?: boolean; // Flag indicating expense was paid directly from collected cash
   paymentReference?: string;
   billNumber?: string;
   attachmentUrl?: string;

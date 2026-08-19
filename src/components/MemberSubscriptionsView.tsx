@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
   Member,
   IncomeTransaction,
+  ExpenseTransaction,
   CurrentUser,
   CashSettlement,
   CashSettlementDestination,
@@ -45,11 +46,13 @@ import {
   Image as ImageIcon,
   Clock,
   X,
+  Receipt,
 } from 'lucide-react';
 
 interface MemberSubscriptionsViewProps {
   members: Member[];
   incomes: IncomeTransaction[];
+  expenses?: ExpenseTransaction[];
   cashSettlements?: CashSettlement[];
   financialYear?: string;
   currentUser: CurrentUser;
@@ -82,6 +85,7 @@ const STANDARD_DESIGNATIONS = [
 export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = ({
   members,
   incomes,
+  expenses = [],
   cashSettlements = [],
   financialYear,
   currentUser,
@@ -244,24 +248,40 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       }
     > = {};
 
+    const filteredExpenses = (expenses || []).filter((e) =>
+      selectedYear === 'ALL'
+        ? true
+        : isDateInSelectedYear(e.expenseDate, selectedYear, e.financialYear)
+    );
+
     members.forEach((m) => {
       const received = filteredIncomesByYear
-        .filter((i) => i.paymentMethod === 'रोख' && i.cashReceiverMemberId === m.id)
-        .reduce((sum, i) => sum + i.amount, 0);
+        .filter((i) => i.paymentMethod === 'रोख' && (i.cashReceiverMemberId === m.id || (i.cashReceiverName && i.cashReceiverName.trim().toLowerCase() === m.fullName.trim().toLowerCase())))
+        .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
 
       const approvedSettled = yearSettlements
         .filter((s) => s.memberId === m.id && s.approvalStatus === 'मंजूर')
-        .reduce((sum, s) => sum + s.amount, 0);
+        .reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+
+      const debited = filteredExpenses
+        .filter(
+          (e) =>
+            e.paymentMethod === 'रोख' &&
+            e.approvalStatus !== 'रद्द' &&
+            (e.paidByMemberId === m.id ||
+              (e.paidByMemberName && e.paidByMemberName.trim().toLowerCase() === m.fullName.trim().toLowerCase()))
+        )
+        .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
       const pendingSettled = settlementsList
         .filter((s) => s.memberId === m.id && s.approvalStatus === 'प्रलंबित')
-        .reduce((sum, s) => sum + s.amount, 0);
+        .reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
 
       const pendingCount = settlementsList.filter(
         (s) => s.memberId === m.id && s.approvalStatus === 'प्रलंबित'
       ).length;
 
-      const netInHand = Math.max(0, received - approvedSettled);
+      const netInHand = Math.max(0, received - approvedSettled - debited);
 
       memberMap[m.id] = {
         member: m,

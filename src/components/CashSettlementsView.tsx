@@ -2,12 +2,16 @@ import React, { useState, useMemo } from 'react';
 import {
   Member,
   IncomeTransaction,
+  ExpenseTransaction,
   CurrentUser,
   CashSettlement,
   CashSettlementDestination,
   UserDesignation,
+  ExpenseCategory,
+  RecipientType,
+  PaymentMethod,
 } from '../types';
-import { isDateInSelectedYear } from '../utils/dateUtils';
+import { isDateInSelectedYear, getFinancialYearFromDate, generateNextExpenseTransactionNo } from '../utils/dateUtils';
 import { ProofLightboxModal } from './ProofLightboxModal';
 import { uploadFileToGoogleDrive } from '../services/googleDriveService';
 import {
@@ -32,11 +36,13 @@ import {
   Check,
   Building2,
   FileText,
-  Lock,
+  Receipt,
+  Upload,
 } from 'lucide-react';
 
 interface CashSettlementsViewProps {
   incomes: IncomeTransaction[];
+  expenses?: ExpenseTransaction[];
   cashSettlements: CashSettlement[];
   members: Member[];
   currentUser: CurrentUser;
@@ -54,12 +60,15 @@ interface CashSettlementsViewProps {
     rejecterRole: UserDesignation
   ) => void;
   onDeleteCashSettlement?: (settlementId: string) => void;
+  onAddExpense?: (expense: ExpenseTransaction) => void;
+  onApproveExpense?: (expenseId: string, approverName: string, approverRole: any) => void;
   onNavigate?: (tab: string) => void;
   onOpenLogin?: (memberId?: string, type?: 'admin' | 'member') => void;
 }
 
 export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
   incomes,
+  expenses = [],
   cashSettlements,
   members,
   currentUser,
@@ -69,6 +78,8 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
   onApproveCashSettlement,
   onRejectCashSettlement,
   onDeleteCashSettlement,
+  onAddExpense,
+  onApproveExpense,
   onNavigate,
   onOpenLogin,
 }) => {
@@ -77,10 +88,10 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
   // Local filter states
   const [localYear, setLocalYear] = useState<string>(selectedYear || '२०२६');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'summary' | 'pending' | 'history'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'debits' | 'history'>('summary');
   const [historyFilter, setHistoryFilter] = useState<'ALL' | 'मंजूर' | 'प्रलंबित' | 'रद्द'>('ALL');
 
-  // Modal states
+  // Bank Deposit Modal states
   const [showAddModal, setShowAddModal] = useState(false);
   const [settleMemberId, setSettleMemberId] = useState('');
   const [settleAmount, setSettleAmount] = useState('');
@@ -94,6 +105,21 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
   const [settleError, setSettleError] = useState<string | null>(null);
   const [settleSuccessMsg, setSettleSuccessMsg] = useState<string | null>(null);
   const [previewProofUrl, setPreviewProofUrl] = useState<string | null>(null);
+
+  // Direct Cash Debit (Expense Voucher) Modal states
+  const [showDebitModal, setShowDebitModal] = useState(false);
+  const [debitMemberId, setDebitMemberId] = useState('');
+  const [debitAmount, setDebitAmount] = useState('');
+  const [debitDate, setDebitDate] = useState(new Date().toISOString().split('T')[0]);
+  const [debitRecipientName, setDebitRecipientName] = useState('');
+  const [debitCategory, setDebitCategory] = useState<ExpenseCategory>('पूजा साहित्य व धार्मिक');
+  const [debitReason, setDebitReason] = useState('');
+  const [debitBillNo, setDebitBillNo] = useState('');
+  const [debitAttachmentUrl, setDebitAttachmentUrl] = useState('');
+  const [debitNotes, setDebitNotes] = useState('');
+  const [isUploadingDebitProof, setIsUploadingDebitProof] = useState(false);
+  const [debitError, setDebitError] = useState<string | null>(null);
+  const [debitSuccessMsg, setDebitSuccessMsg] = useState<string | null>(null);
 
   // Treasurer / Vice-Treasurer role permission check
   const loggedMember = members.find(
@@ -120,7 +146,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
     currentUser.role === 'Admin' ||
     (currentUser.name && (currentUser.name.includes('उदय') || currentUser.name.includes('हेरवाडे')));
 
-  // Filter incomes by selected year
+  // Filter incomes and expenses by selected year
   const activeYear = setSelectedYear ? selectedYear : localYear;
   const filteredIncomesByYear = useMemo(() => {
     if (activeYear === 'ALL') return incomes;
@@ -128,6 +154,13 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
       isDateInSelectedYear(i.transactionDate, activeYear, i.financialYear)
     );
   }, [incomes, activeYear]);
+
+  const filteredExpensesByYear = useMemo(() => {
+    if (activeYear === 'ALL') return expenses;
+    return expenses.filter((e) =>
+      isDateInSelectedYear(e.expenseDate, activeYear, e.financialYear)
+    );
+  }, [expenses, activeYear]);
 
   // Compute Member Cash Statistics
   const memberCashStats = useMemo(() => {
@@ -141,6 +174,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
 
     let totalCashReceivedAll = 0;
     let totalCashSettledAll = 0;
+    let totalCashDebitedAll = 0;
     let totalNetCashAll = 0;
 
     const memberMap: Record<
@@ -149,6 +183,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
         member: Member;
         cashReceived: number;
         cashSettled: number;
+        cashDebited: number;
         netCashInHand: number;
         pendingSettlement: number;
         pendingCount: number;
@@ -156,7 +191,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
     > = {};
 
     members.forEach((m) => {
-      // Check cash receipts where member accepted cash (either by ID or name matching)
+      // 1. Cash Inflows: cash receipts accepted by this member
       const received = filteredIncomesByYear
         .filter(
           (i) =>
@@ -166,9 +201,21 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
         )
         .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
 
+      // 2. Cash Outflows - Bank/Trust Handover Settlements (Approved)
       const approvedSettled = yearSettlements
         .filter((s) => s.memberId === m.id && s.approvalStatus === 'मंजूर')
         .reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+
+      // 3. Cash Outflows - Direct Expense Debits made from cash in hand (Approved or Recorded)
+      const approvedDebited = filteredExpensesByYear
+        .filter(
+          (e) =>
+            e.paymentMethod === 'रोख' &&
+            e.approvalStatus !== 'रद्द' &&
+            (e.paidByMemberId === m.id ||
+              (e.paidByMemberName && e.paidByMemberName.trim().toLowerCase() === m.fullName.trim().toLowerCase()))
+        )
+        .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
       const pendingSettled = settlementsList
         .filter((s) => s.memberId === m.id && s.approvalStatus === 'प्रलंबित')
@@ -178,12 +225,13 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
         (s) => s.memberId === m.id && s.approvalStatus === 'प्रलंबित'
       ).length;
 
-      const netInHand = Math.max(0, received - approvedSettled);
+      const netInHand = Math.max(0, received - approvedSettled - approvedDebited);
 
       memberMap[m.id] = {
         member: m,
         cashReceived: received,
         cashSettled: approvedSettled,
+        cashDebited: approvedDebited,
         netCashInHand: netInHand,
         pendingSettlement: pendingSettled,
         pendingCount,
@@ -191,6 +239,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
 
       totalCashReceivedAll += received;
       totalCashSettledAll += approvedSettled;
+      totalCashDebitedAll += approvedDebited;
       totalNetCashAll += netInHand;
     });
 
@@ -200,7 +249,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
     const activeCashMembers = Object.values(memberMap)
       .filter((item) => {
         if (!searchQuery.trim()) {
-          return item.cashReceived > 0 || item.cashSettled > 0 || item.netCashInHand > 0 || item.pendingCount > 0;
+          return item.cashReceived > 0 || item.cashSettled > 0 || item.cashDebited > 0 || item.netCashInHand > 0 || item.pendingCount > 0;
         }
         const q = searchQuery.toLowerCase();
         return (
@@ -216,10 +265,11 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
       activeCashMembers,
       totalCashReceivedAll,
       totalCashSettledAll,
+      totalCashDebitedAll,
       totalNetCashAll,
       pendingApprovalsList,
     };
-  }, [members, filteredIncomesByYear, cashSettlements, activeYear, searchQuery]);
+  }, [members, filteredIncomesByYear, filteredExpensesByYear, cashSettlements, activeYear, searchQuery]);
 
   // Open Deposit Modal
   const handleOpenAddSettlement = (memberId?: string) => {
@@ -247,7 +297,30 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
     setShowAddModal(true);
   };
 
-  // Submit Settlement Form
+  // Open Direct Cash Debit Modal
+  const handleOpenAddDebit = (memberId?: string) => {
+    setDebitError(null);
+    setDebitSuccessMsg(null);
+    const selfMember = members.find(
+      (m) => m.fullName.trim().toLowerCase() === (currentUser?.name || '').trim().toLowerCase()
+    );
+    const targetId =
+      memberId ||
+      (selfMember?.id ||
+        (memberCashStats.activeCashMembers[0]?.member.id || members[0]?.id || ''));
+    setDebitMemberId(targetId);
+    setDebitAmount('');
+    setDebitDate(new Date().toISOString().split('T')[0]);
+    setDebitRecipientName('');
+    setDebitCategory('पूजा साहित्य व धार्मिक');
+    setDebitReason('');
+    setDebitBillNo('');
+    setDebitAttachmentUrl('');
+    setDebitNotes('');
+    setShowDebitModal(true);
+  };
+
+  // Submit Bank Deposit Form
   const handleSettlementSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSettleError(null);
@@ -290,6 +363,67 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
     }, 1800);
   };
 
+  // Submit Direct Cash Debit Form
+  const handleDebitSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setDebitError(null);
+    const numAmount = parseFloat(debitAmount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      setDebitError('कृपया वैध खर्चाची रक्कम प्रविष्ट करा.');
+      return;
+    }
+    if (!debitMemberId) {
+      setDebitError('कृपया संकलनातून खर्च करणारा सभासद निवडा.');
+      return;
+    }
+    if (!debitRecipientName.trim()) {
+      setDebitError('कृपया रक्कम कोणाला दिली / दुकान किंवा व्यक्तीचे नाव प्रविष्ट करा.');
+      return;
+    }
+    const mem = members.find((m) => m.id === debitMemberId);
+    if (!mem) return;
+
+    const isTreasurer = isTreasurerOrVice;
+    const transactionNo = generateNextExpenseTransactionNo(debitDate, expenses);
+
+    const newExpense: ExpenseTransaction = {
+      id: `exp-${Date.now()}`,
+      transactionNo,
+      amount: numAmount,
+      expenseDate: debitDate,
+      recipientType: 'दुकान / Vendor',
+      recipientName: debitRecipientName.trim(),
+      expenseCategory: debitCategory,
+      reason: debitReason.trim() || `${debitCategory} (रोखीतून थेट खर्च)`,
+      description: `संकलित रोखीतून थेट खर्च - अदाकर्ता: ${mem.fullName}`,
+      paymentMethod: 'रोख',
+      paidByMemberId: mem.id,
+      paidByMemberName: mem.fullName,
+      isPaidFromCashInHand: true,
+      billNumber: debitBillNo.trim() || undefined,
+      attachmentUrl: debitAttachmentUrl.trim() || undefined,
+      notes: debitNotes.trim() || undefined,
+      financialYear: getFinancialYearFromDate(debitDate),
+      approvalStatus: isTreasurer ? 'मंजूर' : 'प्रलंबित',
+      approvedBy: isTreasurer ? `${currentUser.name} (${currentUser.role})` : undefined,
+      approvedByRole: isTreasurer ? currentUser.role : undefined,
+      approvedAt: isTreasurer ? new Date().toISOString() : undefined,
+      createdBy: `${currentUser.name} (${currentUser.role})`,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (onAddExpense) {
+      onAddExpense(newExpense);
+    }
+    setDebitSuccessMsg(
+      'रोखीतून केलेला खर्च / व्हाऊचर नोंद यशस्वीरीत्या सेव्ह झाली! हे ऑडिट अहवालात खर्च म्हणून नोंदले गेले आहे आणि शिल्लक रोखीतून वजा झाले आहे.'
+    );
+    setTimeout(() => {
+      setShowDebitModal(false);
+      setDebitSuccessMsg(null);
+    }, 1800);
+  };
+
   // Handle Bank Slip file upload
   const handleSlipFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -304,6 +438,28 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
       setIsUploadingSlip(false);
     }
   };
+
+  // Handle Debit Bill file upload
+  const handleDebitBillUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingDebitProof(true);
+    try {
+      const driveUrl = await uploadFileToGoogleDrive(file, `debit-bill-${file.name}`);
+      setDebitAttachmentUrl(driveUrl);
+    } catch (err) {
+      console.warn('Debit bill upload error:', err);
+    } finally {
+      setIsUploadingDebitProof(false);
+    }
+  };
+
+  // Filtered Direct Cash Debits List
+  const directCashDebitsList = useMemo(() => {
+    return filteredExpensesByYear.filter(
+      (e) => e.paymentMethod === 'रोख' && (e.isPaidFromCashInHand || Boolean(e.paidByMemberId))
+    );
+  }, [filteredExpensesByYear]);
 
   // Filtered History Settlements
   const filteredHistory = useMemo(() => {
@@ -345,10 +501,10 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                रोख संकलन व भरणा हिशोब
+                रोख संकलन, भरणा व ऑडिट डेबिट हिशोब
               </h2>
               <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-md text-xs font-black">
-                Cash in Hand Management
+                Trust Cash Audit System
               </span>
               {memberCashStats.pendingApprovalsList.length > 0 && (
                 <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-md text-[11px] font-black animate-pulse flex items-center gap-1">
@@ -358,12 +514,12 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
               )}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              सभासदांनी जमा केलेली रोख रक्कम, ट्रस्ट बँक खात्यात थेट भरणा आणि खजिनदार मंजुरीनंतर वजा झालेली शिल्लक रोख.
+              सभासदांनी जमा केलेली रोख रक्कम, बँकेत भरणा आणि संकलनातून थेट केलेला अधिकृत खर्च (ऑडिट व्हाउचर).
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap sm:flex-nowrap justify-end">
           {/* Year selector */}
           <div className="flex items-center gap-1.5 bg-emerald-50/90 dark:bg-slate-700/60 border border-emerald-300 dark:border-emerald-700 p-1.5 px-3 rounded-xl shrink-0">
             <Calendar className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
@@ -389,30 +545,29 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
             </select>
           </div>
 
-          {/* Search bar */}
-          <div className="relative flex-1 md:w-64">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="सभासद / पावती शोधा..."
-              className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none bg-slate-50/50 dark:bg-slate-700 dark:text-slate-200 dark:placeholder-slate-400"
-            />
-          </div>
-
+          {/* Action 1: Bank Deposit */}
           <button
             type="button"
             onClick={() => handleOpenAddSettlement()}
-            className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow-lg flex items-center gap-2 cursor-pointer transition-all shrink-0 active:scale-95"
+            className="px-3.5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow flex items-center gap-1.5 cursor-pointer transition-all shrink-0 active:scale-95"
           >
             <Landmark className="w-4 h-4" />
-            <span>➕ रोख भरणा नोंद</span>
+            <span>➕ बँक भरणा नोंद</span>
+          </button>
+
+          {/* Action 2: Direct Cash Expense Debit */}
+          <button
+            type="button"
+            onClick={() => handleOpenAddDebit()}
+            className="px-3.5 py-2.5 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-black text-xs rounded-xl shadow flex items-center gap-1.5 cursor-pointer transition-all shrink-0 active:scale-95"
+          >
+            <Receipt className="w-4 h-4" />
+            <span>➕ रोखीतून खर्च (Audit Debit)</span>
           </button>
         </div>
       </div>
 
-      {/* ─── 4 Summary KPI Cards ─── */}
+      {/* ─── 4 Summary KPI Cards for Audit ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 rounded-2xl flex items-center justify-center shrink-0">
@@ -420,7 +575,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
           </div>
           <div>
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              एकूण रोख संकलन (Received)
+              १. एकूण रोख संकलन (Received)
             </p>
             <p className="text-xl font-black text-amber-600 dark:text-amber-400 mt-0.5">
               ₹{memberCashStats.totalCashReceivedAll.toLocaleString('en-IN')}
@@ -434,10 +589,24 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
           </div>
           <div>
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              बँकेत/ट्रस्टकडे जमा (Settled)
+              २. बँकेत/ट्रस्टकडे जमा (Settled)
             </p>
             <p className="text-xl font-black text-blue-600 dark:text-blue-400 mt-0.5">
               ₹{memberCashStats.totalCashSettledAll.toLocaleString('en-IN')}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-rose-200 dark:border-rose-700 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 rounded-2xl flex items-center justify-center shrink-0">
+            <Receipt className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              ३. रोखीतून खर्च (Direct Debits)
+            </p>
+            <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-0.5">
+              ₹{memberCashStats.totalCashDebitedAll.toLocaleString('en-IN')}
             </p>
           </div>
         </div>
@@ -448,24 +617,10 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
           </div>
           <div>
             <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
-              एकूण शिल्लक रोख (Net Cash in Hand)
+              ४. निव्वळ शिल्लक रोख (Net in Hand)
             </p>
             <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
               ₹{memberCashStats.totalNetCashAll.toLocaleString('en-IN')}
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-amber-200 dark:border-amber-700 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 rounded-2xl flex items-center justify-center shrink-0">
-            <Clock className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              प्रलंबित भरणा विनंत्या
-            </p>
-            <p className="text-xl font-black text-amber-600 dark:text-amber-400 mt-0.5">
-              {memberCashStats.pendingApprovalsList.length} विनंत्या
             </p>
           </div>
         </div>
@@ -585,6 +740,19 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
 
         <button
           type="button"
+          onClick={() => setActiveTab('debits')}
+          className={`py-3 px-5 text-xs font-black flex items-center gap-2 border-b-2 cursor-pointer transition-colors ${
+            activeTab === 'debits'
+              ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
+          }`}
+        >
+          <Receipt className="w-4 h-4" />
+          <span>रोखीतून केलेल्या खर्चाच्या नोंदी / Audit Debits ({directCashDebitsList.length})</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab('history')}
           className={`py-3 px-5 text-xs font-black flex items-center gap-2 border-b-2 cursor-pointer transition-colors ${
             activeTab === 'history'
@@ -593,7 +761,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
           }`}
         >
           <FileText className="w-4 h-4" />
-          <span>गेल्या भरणा नोंदींचा हिशोब इतिहास ({cashSettlements.length})</span>
+          <span>गेल्या बँक भरणा नोंदींचा हिशोब इतिहास ({cashSettlements.length})</span>
         </button>
       </div>
 
@@ -672,9 +840,15 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500 dark:text-slate-400">ट्रस्टकडे जमा (भरणा):</span>
+                        <span className="text-slate-500 dark:text-slate-400">बँकेत/ट्रस्टकडे जमा (भरणा):</span>
                         <span className="font-bold text-blue-600 dark:text-blue-400">
                           - ₹{item.cashSettled.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500 dark:text-slate-400">रोखीतून केलेला खर्च (Audit Debit):</span>
+                        <span className="font-bold text-rose-600 dark:text-rose-400">
+                          - ₹{item.cashDebited.toLocaleString('en-IN')}
                         </span>
                       </div>
                       <div className="pt-1.5 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-sm font-black">
@@ -685,20 +859,28 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                       </div>
                       {item.pendingSettlement > 0 && (
                         <p className="text-[10px] text-amber-500 font-bold text-right pt-0.5">
-                          (₹{item.pendingSettlement.toLocaleString('en-IN')} मंजुरीसाठी प्रलंबित)
+                          (₹{item.pendingSettlement.toLocaleString('en-IN')} भरणा मंजुरी प्रलंबित)
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex justify-end">
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex gap-2">
                     <button
                       type="button"
                       onClick={() => handleOpenAddSettlement(item.member.id)}
-                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                      className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
                     >
                       <Landmark className="w-3.5 h-3.5" />
-                      <span>ट्रस्टकडे / बँकेत भरणा नोंद करा</span>
+                      <span>बँक भरणा</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAddDebit(item.member.id)}
+                      className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
+                    >
+                      <Receipt className="w-3.5 h-3.5" />
+                      <span>रोखीतून खर्च</span>
                     </button>
                   </div>
                 </div>
@@ -708,7 +890,98 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
         </div>
       )}
 
-      {/* ─── TAB 2: Complete Settlement History Log ─── */}
+      {/* ─── TAB 2: Direct Cash Debits / Expense Vouchers List ─── */}
+      {activeTab === 'debits' && (
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                संकलित रोखीतून केलेले थेट खर्च (Trust Audit Expense Vouchers)
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                सभासदांनी रोखीतून ट्रस्टच्या कामांसाठी थेट दिलेली बिले व व्हाऊचर्स.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleOpenAddDebit()}
+              className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shrink-0"
+            >
+              <Receipt className="w-4 h-4" />
+              <span>➕ नवीन रोख खर्च नोंद</span>
+            </button>
+          </div>
+
+          {directCashDebitsList.length === 0 ? (
+            <p className="text-xs text-slate-400 italic text-center py-8">
+              सध्या संकलित रोखीतून थेट केलेल्या खर्चाची कोणतीही नोंद नाही.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-50 dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700 uppercase tracking-wider">
+                  <tr>
+                    <th className="p-3">दिनांक</th>
+                    <th className="p-3">खर्च करणारा सभासद</th>
+                    <th className="p-3">प्राप्तकर्ता / Vendor</th>
+                    <th className="p-3">खर्च प्रकार / कारण</th>
+                    <th className="p-3">रक्कम</th>
+                    <th className="p-3">बिल क्र.</th>
+                    <th className="p-3">दर्जा</th>
+                    <th className="p-3">बिल पुरावा</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                  {directCashDebitsList.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-700/30">
+                      <td className="p-3 font-bold">{item.expenseDate}</td>
+                      <td className="p-3 font-bold text-slate-800 dark:text-slate-100">
+                        {item.paidByMemberName || 'सभासद'}
+                      </td>
+                      <td className="p-3 font-medium">{item.recipientName}</td>
+                      <td className="p-3">
+                        <span className="font-bold">{item.expenseCategory}</span>
+                        {item.reason && <p className="text-[10px] text-slate-400 italic">{item.reason}</p>}
+                      </td>
+                      <td className="p-3 font-black text-rose-600 dark:text-rose-400">
+                        ₹{item.amount.toLocaleString('en-IN')}/-
+                      </td>
+                      <td className="p-3 font-mono text-slate-500">{item.billNumber || '---'}</td>
+                      <td className="p-3">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            item.approvalStatus === 'मंजूर'
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                              : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                          }`}
+                        >
+                          {item.approvalStatus}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        {item.attachmentUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewProofUrl(item.attachmentUrl || null)}
+                            className="px-2 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <ImageIcon className="w-3 h-3 text-rose-600" />
+                            <span>बिल पहा</span>
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 text-[10px]">---</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── TAB 3: Complete Bank Deposit History Log ─── */}
       {activeTab === 'history' && (
         <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -803,7 +1076,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
         </div>
       )}
 
-      {/* ─── Add Cash Settlement Modal ─── */}
+      {/* ─── Modal 1: Add Cash Settlement (Bank Deposit) ─── */}
       {showAddModal && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-700 my-8">
@@ -969,7 +1242,6 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                 />
               </div>
 
-              {/* Alert notice about Treasurer Approval */}
               <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-900 dark:text-amber-300 text-[11px] leading-relaxed flex items-start gap-2">
                 <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <span>
@@ -1012,13 +1284,236 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
         </div>
       )}
 
+      {/* ─── Modal 2: Add Direct Cash Debit (Expense Voucher for Audit) ─── */}
+      {showDebitModal && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-700 my-8">
+            <div className="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 bg-rose-100 text-rose-700 rounded-xl flex items-center justify-center">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-800 dark:text-slate-100">
+                    रोखीतून थेट खर्च नोंद (Audit Debit Voucher)
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    संकलित रोखीतून ट्रस्टच्या कामांसाठी थेट केलेला खर्च व बिल नोंद
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDebitModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg font-bold text-sm cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleDebitSubmit} className="space-y-4 text-xs">
+              {/* Member Selection */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  कोणाच्या संकलित रोखीतून (Cash in Hand) खर्च केला? <span className="text-rose-500">*</span>:
+                </label>
+                <select
+                  value={debitMemberId}
+                  onChange={(e) => setDebitMemberId(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 outline-none"
+                  required
+                >
+                  <option value="">-- सभासद निवडा --</option>
+                  {members.map((m) => {
+                    const stats = memberCashStats.memberMap[m.id];
+                    const inHand = stats?.netCashInHand || 0;
+                    return (
+                      <option key={m.id} value={m.id}>
+                        {m.fullName} ({m.designation || 'सभासद'}) {inHand > 0 ? `— शिल्लक रोख: ₹${inHand.toLocaleString('en-IN')}` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+                {debitMemberId && memberCashStats.memberMap[debitMemberId] && (
+                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
+                    💵 या सभासदाकडील सध्याची शिल्लक रोख रक्कम: ₹
+                    {memberCashStats.memberMap[debitMemberId].netCashInHand.toLocaleString('en-IN')}
+                  </p>
+                )}
+              </div>
+
+              {/* Amount & Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    खर्च रक्कम (₹) <span className="text-rose-500">*</span>:
+                  </label>
+                  <input
+                    type="number"
+                    value={debitAmount}
+                    onChange={(e) => setDebitAmount(e.target.value)}
+                    placeholder="उदा. १५००"
+                    min="1"
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl font-black text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    खर्च प्रकार (Category) <span className="text-rose-500">*</span>:
+                  </label>
+                  <select
+                    value={debitCategory}
+                    onChange={(e) => setDebitCategory(e.target.value as ExpenseCategory)}
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 outline-none"
+                  >
+                    <option value="पूजा साहित्य व धार्मिक">पूजा साहित्य व धार्मिक</option>
+                    <option value="मंडप व सजावट">मंडप व सजावट</option>
+                    <option value="ध्वनी व प्रकाश (Sound & Light)">ध्वनी व प्रकाश (Sound & Light)</option>
+                    <option value="महाप्रसाद व भोजन">महाप्रसाद व भोजन</option>
+                    <option value="वाहतूक खर्च">वाहतूक खर्च</option>
+                    <option value="जाहिरात व बॅनर">जाहिरात व बॅनर</option>
+                    <option value="वीज व पाणी">वीज व पाणी</option>
+                    <option value="इतर खर्च">इतर खर्च</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Recipient Vendor Name & Date */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    कोणाला दिले? (Vendor / व्यक्ती) <span className="text-rose-500">*</span>:
+                  </label>
+                  <input
+                    type="text"
+                    value={debitRecipientName}
+                    onChange={(e) => setDebitRecipientName(e.target.value)}
+                    placeholder="उदा. साई पूजा भांडार / राजू ड्रायव्हर"
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    खर्च दिनांक <span className="text-rose-500">*</span>:
+                  </label>
+                  <input
+                    type="date"
+                    value={debitDate}
+                    onChange={(e) => setDebitDate(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Reason & Bill No */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    खर्चाचे कारण (Reason):
+                  </label>
+                  <input
+                    type="text"
+                    value={debitReason}
+                    onChange={(e) => setDebitReason(e.target.value)}
+                    placeholder="उदा. नारळ, अगरबत्ती, फुले खरेदी"
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    बिल / व्हाऊचर क्र. (Bill / Voucher No):
+                  </label>
+                  <input
+                    type="text"
+                    value={debitBillNo}
+                    onChange={(e) => setDebitBillNo(e.target.value)}
+                    placeholder="उदा. BILL-8493"
+                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Bill Proof Upload */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                  <span>📷 बिल / व्हाऊचर फोटो पुरावा (Bill / Voucher Proof):</span>
+                  {isUploadingDebitProof && <span className="text-[10px] text-rose-500 font-bold animate-pulse">अपलोड होत आहे...</span>}
+                </label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleDebitBillUpload}
+                    className="flex-1 text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 cursor-pointer"
+                  />
+                  {debitAttachmentUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewProofUrl(debitAttachmentUrl)}
+                      className="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-xs flex items-center gap-1 shrink-0 cursor-pointer"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 text-rose-600" />
+                      <span>बिल पहा</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-blue-950 dark:text-blue-300 text-[11px] leading-relaxed flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <span>
+                  <strong>ऑडिट नोंद:</strong> हा खर्च सबमिट केल्यावर ट्रस्टच्या मुख्य खर्च वहीत (Expense Register) अधिकृत खर्च म्हणून नोंदवला जाईल आणि संबंधित सभासदाच्या शिल्लक रोख रकमेतून (Cash in Hand) वजा केला जाईल.
+                </span>
+              </div>
+
+              {debitError && (
+                <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl font-bold text-xs flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{debitError}</span>
+                </div>
+              )}
+
+              {debitSuccessMsg && (
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl font-bold text-xs flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{debitSuccessMsg}</span>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setShowDebitModal(false)}
+                  className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold rounded-xl cursor-pointer"
+                >
+                  रद्द करा
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-black rounded-xl shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>रोख खर्च सबमिट करा (Audit Voucher)</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Proof Lightbox Modal */}
       {previewProofUrl && (
         <ProofLightboxModal
           isOpen={!!previewProofUrl}
           onClose={() => setPreviewProofUrl(null)}
           imageUrl={previewProofUrl}
-          title="बँक भरणा पावती / स्लिप फोटो पुरावा"
+          title="बिल / पावती फोटो पुरावा"
         />
       )}
     </div>

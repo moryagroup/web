@@ -1140,6 +1140,7 @@ export default function App() {
             {activeTab === 'cash-settlements' && (
               <CashSettlementsView
                 incomes={formattedIncomes}
+                expenses={formattedExpenses}
                 cashSettlements={cashSettlements}
                 members={members}
                 currentUser={currentUser}
@@ -1149,6 +1150,8 @@ export default function App() {
                 onApproveCashSettlement={handleApproveCashSettlement}
                 onRejectCashSettlement={handleRejectCashSettlement}
                 onDeleteCashSettlement={handleDeleteCashSettlement}
+                onAddExpense={handleAddExpense}
+                onApproveExpense={handleApproveExpense}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={handleOpenLogin}
               />
@@ -1159,6 +1162,7 @@ export default function App() {
                 <MemberSubscriptionsView
                   members={members}
                   incomes={formattedIncomes}
+                  expenses={formattedExpenses}
                   cashSettlements={cashSettlements}
                   financialYear={selectedYear}
                   currentUser={currentUser}
