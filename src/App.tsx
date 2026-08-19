@@ -1309,11 +1309,10 @@ export default function App() {
             <button
               type="button"
               onClick={() => setActiveTab('dashboard')}
-              className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 active:scale-95 transition-all cursor-pointer flex items-center justify-center shadow-xs"
               title="मुख्य डॅशबोर्डवर परत जा (Home)"
             >
               <Home className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="text-xs font-black text-amber-200">मुख्य पान</span>
             </button>
 
             {/* Top Right Profile Logo & Popover Menu */}
