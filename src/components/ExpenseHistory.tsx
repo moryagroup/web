@@ -38,6 +38,7 @@ interface ExpenseHistoryProps {
   currentUser: CurrentUser;
   financialYear: string;
   onApproveExpense: (expenseId: string, approverName: string, approverRole: any) => void;
+  onRejectExpense?: (expenseId: string, rejecterName: string, rejecterRole: any) => void;
   onUpdateExpense?: (updatedExpense: ExpenseTransaction) => void;
   onDeleteExpense?: (expenseId: string) => void;
   onNavigate?: (tab: string) => void;
@@ -50,6 +51,7 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
   currentUser,
   financialYear,
   onApproveExpense,
+  onRejectExpense,
   onUpdateExpense,
   onDeleteExpense,
   onNavigate,
@@ -211,6 +213,21 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
         approvedByRole: currentUser.role,
         approvedAt: new Date().toISOString(),
       });
+    }
+  };
+
+  const handleRejectClick = (expId: string) => {
+    if (onRejectExpense) {
+      onRejectExpense(expId, currentUser.name, currentUser.role);
+      if (selectedExpenseDetail && selectedExpenseDetail.id === expId) {
+        setSelectedExpenseDetail({
+          ...selectedExpenseDetail,
+          approvalStatus: 'रद्द',
+          approvedBy: `${currentUser.name} (${currentUser.role})`,
+          approvedByRole: currentUser.role,
+          approvedAt: new Date().toISOString(),
+        });
+      }
     }
   };
 
@@ -562,14 +579,29 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
                           <Eye className="w-4 h-4" />
                         </button>
                         {item.approvalStatus === 'प्रलंबित' && canApprove && (
-                          <button
-                            onClick={() => handleApproveClick(item.id)}
-                            className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg transition-all flex items-center gap-1 shadow-xs cursor-pointer"
-                            title="मंजूर करा"
-                          >
-                            <Check className="w-3 h-3" />
-                            <span>मंजूर</span>
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleApproveClick(item.id)}
+                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                              title="मंजूर करा"
+                            >
+                              <Check className="w-3 h-3" />
+                              <span>मंजूर</span>
+                            </button>
+                            {onRejectExpense && (
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`खर्च क्र. ${item.transactionNo} (₹${item.amount}) रद्द करायचा आहे का?`)) {
+                                    handleRejectClick(item.id);
+                                  }
+                                }}
+                                className="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] rounded-lg transition-all shadow-xs cursor-pointer"
+                                title="खर्च रद्द करा"
+                              >
+                                ✕ रद्द
+                              </button>
+                            )}
+                          </div>
                         )}
                         {isAdmin && (
                           <>
@@ -801,21 +833,35 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
             )}
 
             {selectedExpenseDetail.approvalStatus === 'प्रलंबित' && canApprove && (
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between">
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold text-amber-900">
                     खर्च मंजुरी अधिकार ({currentUser.role})
                   </p>
                   <p className="text-[10px] text-amber-700">
-                    या खर्चाची प्रत्यक्ष पाहणी करून त्वरित मंजुरी द्या.
+                    या खर्चाची प्रत्यक्ष पाहणी करून त्वरित मंजुरी किंवा नकार द्या.
                   </p>
                 </div>
-                <button
-                  onClick={() => handleApproveClick(selectedExpenseDetail.id)}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer"
-                >
-                  मंजूर करा
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleApproveClick(selectedExpenseDetail.id)}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95"
+                  >
+                    ✓ मंजूर करा
+                  </button>
+                  {onRejectExpense && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`खर्च क्र. ${selectedExpenseDetail.transactionNo} (₹${selectedExpenseDetail.amount}) रद्द करायचा आहे का?`)) {
+                          handleRejectClick(selectedExpenseDetail.id);
+                        }
+                      }}
+                      className="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95"
+                    >
+                      ✕ नोंद रद्द करा
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 

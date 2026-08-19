@@ -1073,6 +1073,7 @@ export default function App() {
                 onSaveGallery={handleSaveGallery}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onApproveExpense={handleApproveExpense}
+                onRejectExpense={handleRejectExpense}
                 onApproveIncome={handleApproveIncome}
                 onRejectIncome={handleRejectIncome}
                 onLogout={handleLogout}
@@ -1133,6 +1134,7 @@ export default function App() {
                 currentUser={currentUser}
                 financialYear={selectedYear}
                 onApproveExpense={handleApproveExpense}
+                onRejectExpense={handleRejectExpense}
                 onUpdateExpense={handleUpdateExpense}
                 onDeleteExpense={handleDeleteExpense}
                 onNavigate={(tab) => setActiveTab(tab)}

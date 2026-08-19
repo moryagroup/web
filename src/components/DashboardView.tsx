@@ -53,6 +53,7 @@ interface DashboardViewProps {
   onSaveGallery: (gallery: EventGalleryImage[]) => void;
   onNavigate: (tab: string) => void;
   onApproveExpense: (expId: string, name: string, role: any) => void;
+  onRejectExpense?: (expId: string, name: string, role: any) => void;
   onApproveIncome?: (incId: string, name: string, role: any) => void;
   onRejectIncome?: (incId: string, name: string, role: any) => void;
   onLogout?: () => void;
@@ -74,6 +75,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSaveGallery,
   onNavigate,
   onApproveExpense,
+  onRejectExpense,
   onApproveIncome,
   onRejectIncome,
   onLogout,
@@ -692,12 +694,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     ₹{exp.amount.toLocaleString('en-IN')}
                   </span>
                   {canApprove && (
-                    <button
-                      onClick={() => onApproveExpense(exp.id, currentUser.name, currentUser.role)}
-                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs cursor-pointer"
-                    >
-                      मंजूर करा
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => onApproveExpense(exp.id, currentUser.name, currentUser.role)}
+                        className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>मंजूर करा</span>
+                      </button>
+                      {onRejectExpense && (
+                        <button
+                          onClick={() => onRejectExpense(exp.id, currentUser.name, currentUser.role)}
+                          className="px-2.5 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95"
+                        >
+                          रद्द
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
