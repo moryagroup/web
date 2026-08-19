@@ -123,20 +123,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     e.preventDefault();
     setPasswordError(null);
 
-    const isAdminLoggedIn = currentUser?.role === 'ॲडमिन' && currentUser?.isLoggedIn !== false;
-
     if (selectedMember) {
       const effectivePassword =
         selectedMember.password && selectedMember.password.trim() !== ''
           ? selectedMember.password.trim()
           : 'morya@123';
 
-      // If current user is NOT Admin
-      if (!isAdminLoggedIn) {
-        if (!memberPassword.trim() || memberPassword.trim() !== effectivePassword) {
-          setPasswordError('चुकीचा पासवर्ड! कृपया बरोबर पासवर्ड प्रविष्ट करा. (डिफॉल्ट पासवर्ड: morya@123)');
-          return;
-        }
+      // Password verification is ALWAYS required for every account login/switch
+      if (!memberPassword.trim() || memberPassword.trim() !== effectivePassword) {
+        setPasswordError('चुकीचा पासवर्ड! कृपया बरोबर पासवर्ड प्रविष्ट करा. (डिफॉल्ट पासवर्ड: morya@123)');
+        return;
       }
 
       onLoginSuccess({
@@ -440,17 +436,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       />
                     </div>
                     {selectedMember?.password && selectedMember.password.trim() !== '' ? (
-                      currentUser?.role === 'ॲडमिन' && currentUser?.isLoggedIn !== false ? (
-                        <p className="text-[10px] text-purple-700 font-bold mt-1 flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3 text-purple-600" />
-                          <span>👑 ॲडमिन मोड: आपण पासवर्ड शिवाय या खात्यावर स्विच करू शकता.</span>
-                        </p>
-                      ) : (
-                        <p className="text-[10px] text-amber-800 font-bold mt-1 flex items-center gap-1">
-                          <Lock className="w-3 h-3 text-amber-600" />
-                          <span>🔒 पासवर्ड सेट आहे: लॉगिन करण्यासाठी सेट केलेला पासवर्ड प्रविष्ट करा.</span>
-                        </p>
-                      )
+                      <p className="text-[10px] text-amber-800 font-bold mt-1 flex items-center gap-1">
+                        <Lock className="w-3 h-3 text-amber-600" />
+                        <span>🔒 पासवर्ड सेट आहे: लॉगिन करण्यासाठी सेट केलेला पासवर्ड प्रविष्ट करा.</span>
+                      </p>
                     ) : (
                       <p className="text-[10px] text-amber-800 font-bold mt-1 flex items-center gap-1">
                         <Lock className="w-3 h-3 text-amber-600" />

@@ -236,57 +236,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   });
 
   const handleUserSelect = (val: string) => {
-    const isAdmin = currentUser.role === 'ॲडमिन' && currentUser.isLoggedIn !== false;
-
-    if (isAdmin) {
-      if (val === 'ADMIN_ACCOUNT') {
-        setCurrentUser({
-          name: 'सिस्टम ॲडमिन',
-          role: 'ॲडमिन',
-          phone: '९८२२०१०१००',
-          isLoggedIn: true,
-        });
-        onClose?.();
-        return;
-      }
-
-      const foundMember = members.find((m) => m.id === val);
-      if (foundMember) {
-        setCurrentUser({
-          name: foundMember.fullName,
-          role: (foundMember.designation as any) || 'सभासद',
-          phone: foundMember.phone,
-          email: foundMember.email,
-          birthDate: foundMember.birthDate,
-          age: foundMember.age,
-          isLoggedIn: true,
-        });
-      }
-      onClose?.();
-      return;
-    }
-
     if (val === 'ADMIN_ACCOUNT') {
       onOpenLogin('ADMIN_ACCOUNT', 'admin');
-      onClose?.();
-      return;
-    }
-
-    const foundMember = members.find((m) => m.id === val);
-    if (foundMember) {
-      if (foundMember.password && foundMember.password.trim() !== '') {
-        onOpenLogin(foundMember.id, 'member');
-      } else {
-        setCurrentUser({
-          name: foundMember.fullName,
-          role: (foundMember.designation as any) || 'सभासद',
-          phone: foundMember.phone,
-          email: foundMember.email,
-          birthDate: foundMember.birthDate,
-          age: foundMember.age,
-          isLoggedIn: true,
-        });
-      }
+    } else {
+      onOpenLogin(val, 'member');
     }
     onClose?.();
   };
