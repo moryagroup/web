@@ -165,6 +165,7 @@ import { AdminClearConfirmModal } from './components/AdminClearConfirmModal';
 import { IncomeHistory } from './components/IncomeHistory';
 import { ExpenseHistory } from './components/ExpenseHistory';
 import { MemberSubscriptionsView } from './components/MemberSubscriptionsView';
+import { CashSettlementsView } from './components/CashSettlementsView';
 import { ProfileView } from './components/ProfileView';
 import { MonthWiseReportsView } from './components/MonthWiseReportsView';
 import { AllYearsDataView } from './components/AllYearsDataView';
@@ -934,6 +935,11 @@ export default function App() {
     }
   };
 
+  const pendingCashSettlementCount = useMemo(
+    () => (cashSettlements || []).filter((s) => s.approvalStatus === 'प्रलंबित').length,
+    [cashSettlements]
+  );
+
   return (
     <>
     {isLoading && (
@@ -958,6 +964,7 @@ export default function App() {
         setCurrentUser={setCurrentUser}
         members={members}
         pendingExpenseCount={summary.pendingExpensesCount}
+        pendingCashSettlementCount={pendingCashSettlementCount}
         groupLogo={groupLogo}
         onUpdateGroupLogo={handleUpdateGroupLogo}
         onResetData={handleResetData}
@@ -1127,6 +1134,23 @@ export default function App() {
                 onDeleteExpense={handleDeleteExpense}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
+              />
+            )}
+
+            {activeTab === 'cash-settlements' && (
+              <CashSettlementsView
+                incomes={formattedIncomes}
+                cashSettlements={cashSettlements}
+                members={members}
+                currentUser={currentUser}
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
+                onAddCashSettlement={handleAddCashSettlement}
+                onApproveCashSettlement={handleApproveCashSettlement}
+                onRejectCashSettlement={handleRejectCashSettlement}
+                onDeleteCashSettlement={handleDeleteCashSettlement}
+                onNavigate={(tab) => setActiveTab(tab)}
+                onOpenLogin={handleOpenLogin}
               />
             )}
 

@@ -30,6 +30,7 @@ import {
   Settings,
   Sun,
   Moon,
+  Wallet,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -39,6 +40,7 @@ interface SidebarProps {
   setCurrentUser: (user: CurrentUser) => void;
   members: Member[];
   pendingExpenseCount: number;
+  pendingCashSettlementCount?: number;
   groupLogo?: string;
   onUpdateGroupLogo?: (logoUrl: string) => void;
   onResetData: () => void;
@@ -59,6 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setCurrentUser,
   members,
   pendingExpenseCount,
+  pendingCashSettlementCount = 0,
   groupLogo,
   onUpdateGroupLogo,
   onResetData,
@@ -133,6 +136,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'खर्च इतिहास',
       icon: FileSpreadsheet,
       badge: pendingExpenseCount > 0 ? pendingExpenseCount : null,
+    },
+    {
+      id: 'cash-settlements',
+      label: 'रोख संकलन व भरणा हिशोब',
+      icon: Wallet,
+      color: 'text-emerald-400',
+      badge: pendingCashSettlementCount > 0 ? pendingCashSettlementCount : null,
     },
     {
       id: 'member-subscriptions',

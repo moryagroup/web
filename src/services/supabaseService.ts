@@ -142,11 +142,28 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
   return (data || []).map((row) => {
     let attachmentUrl = row.attachment_url || row.bill_photo_url || row.photo_url || undefined;
     let cleanReason = row.reason || '';
+    let cleanNotes = row.notes || '';
+    let parsedReceiverId = row.cash_receiver_id || row.cashReceiverMemberId;
+    let parsedReceiverName = row.cash_receiver_name || row.cashReceiverName;
+
     if (!attachmentUrl && cleanReason.includes('__ATTACHMENT__:')) {
       const parts = cleanReason.split('__ATTACHMENT__:');
       cleanReason = parts[0].trim();
       attachmentUrl = parts[1].trim();
     }
+
+    // Parse embedded cash receiver info if columns were not available in table schema
+    if (!parsedReceiverId && (cleanNotes.includes('[CASH_REC:') || cleanReason.includes('[CASH_REC:'))) {
+      const targetStr = cleanNotes.includes('[CASH_REC:') ? cleanNotes : cleanReason;
+      const match = targetStr.match(/\[CASH_REC:([^:]+):([^\]]*)\]/);
+      if (match) {
+        parsedReceiverId = match[1].trim();
+        parsedReceiverName = match[2].trim() || undefined;
+        cleanNotes = cleanNotes.replace(/\[CASH_REC:[^\]]+\]/g, '').trim();
+        cleanReason = cleanReason.replace(/\[CASH_REC:[^\]]+\]/g, '').trim();
+      }
+    }
+
     return {
       id: row.id,
       transactionNo: row.transaction_no,
@@ -158,15 +175,15 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
       amount: Number(row.amount),
       transactionDate: row.transaction_date,
       paymentMethod: row.payment_method,
-      cashReceiverMemberId: row.cash_receiver_id || row.cashReceiverMemberId,
-      cashReceiverName: row.cash_receiver_name || row.cashReceiverName,
+      cashReceiverMemberId: parsedReceiverId,
+      cashReceiverName: parsedReceiverName,
       paymentReference: row.payment_reference,
       receiptNumber: row.receipt_number,
       receiptBookNo: row.receipt_book_no || row.receiptBookNo,
       receiptSerialNo: row.receipt_serial_no || row.receiptSerialNo,
       isPhysicalReceipt: row.is_physical_receipt || Boolean(row.receipt_book_no),
       reason: cleanReason,
-      notes: row.notes,
+      notes: cleanNotes || undefined,
       attachmentUrl,
       approvalStatus: (row.approval_status as ApprovalStatus) || 'मंजूर',
       approvedBy: row.approved_by,
@@ -182,6 +199,11 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
 export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<void> {
   if (!isSupabaseConfigured) return;
   const dbAttachmentUrl = income.attachmentUrl || null;
+  const cashRecTag =
+    income.paymentMethod === 'रोख' && income.cashReceiverMemberId
+      ? ` [CASH_REC:${income.cashReceiverMemberId}:${income.cashReceiverName || ''}]`
+      : '';
+
   const row: any = {
     id: income.id,
     transaction_no: income.transactionNo,
@@ -198,7 +220,7 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
     payment_reference: income.paymentReference || null,
     receipt_number: income.receiptNumber || null,
     reason: income.reason,
-    notes: income.notes || null,
+    notes: (income.notes || '') + cashRecTag || null,
     approval_status: income.approvalStatus || 'मंजूर',
     approved_by: income.approvedBy || null,
     approved_by_role: income.approvedByRole || null,
@@ -225,7 +247,7 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
       payment_reference: income.paymentReference || null,
       receipt_number: income.receiptNumber || null,
       reason: dbAttachmentUrl ? `${income.reason}\n__ATTACHMENT__:${dbAttachmentUrl}` : income.reason,
-      notes: income.notes || null,
+      notes: (income.notes || '') + cashRecTag || null,
       recorded_by: income.createdBy || 'ॲडमिन',
       updated_at: new Date().toISOString(),
     };
