@@ -1746,12 +1746,13 @@ export default function App() {
       {/* Mobile Network Status Notifier */}
       <NetworkStatusNotifier />
 
-      {/* WhatsApp-Style Full Screen Logo Lightbox */}
+      {/* WhatsApp-Style Full Screen Logo Opening Window / Lightbox */}
       <LogoLightboxModal
         isOpen={isLogoLightboxOpen}
         logoSrc={groupLogo}
         onClose={() => setIsLogoLightboxOpen(false)}
         isAdmin={currentUser.role === 'ॲडमिन' && currentUser.isLoggedIn !== false}
+        onOpenLogin={handleOpenLogin}
       />
 
       {/* Agentation Visual Feedback Toolbar - Local Development & Admin User Only */}
