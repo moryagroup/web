@@ -46,6 +46,7 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('FINANCIAL');
   const [expandedYear, setExpandedYear] = useState<string | null>('२०२६-२७');
+  const [selectedMonthKey, setSelectedMonthKey] = useState<string>('CURRENT');
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
   const isCoreMember = isLoggedIn && isCoreMemberRole(currentUser.role);
@@ -421,65 +422,121 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
                 </div>
               </div>
 
-              {/* Expandable 12 Months Breakdown Sorted strictly April to March */}
-              {isExpanded && (
-                <div className="p-5 pt-0 border-t border-slate-100 dark:border-slate-700">
-                  <div className="mt-4 mb-3 flex items-center justify-between">
-                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                      <ReceiptText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                      {viewMode === 'FINANCIAL'
-                        ? `१२ आर्थिक महिने तपशील (एप्रिल ते मार्च क्रम - ${item.yearKey})`
-                        : `१२ कॅलेंडर महिने तपशील (जानेवारी ते डिसेंबर क्रम - ${item.yearKey})`}
-                    </h4>
-                  </div>
+              {/* Expandable Months Breakdown with Default Current Month & Month Selector Dropdown */}
+              {isExpanded && (() => {
+                const now = new Date();
+                const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                
+                // Determine which months to display
+                let displayMonths = item.monthlyBreakdown;
+                if (selectedMonthKey === 'CURRENT') {
+                  const curr = item.monthlyBreakdown.find((m) => m.key === currentMonthKey);
+                  displayMonths = curr ? [curr] : [item.monthlyBreakdown[0]];
+                } else if (selectedMonthKey !== 'ALL') {
+                  const matched = item.monthlyBreakdown.find((m) => m.key === selectedMonthKey);
+                  displayMonths = matched ? [matched] : item.monthlyBreakdown;
+                }
 
-                  {/* Monthly Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {item.monthlyBreakdown.map((m, mIdx) => (
-                      <div
-                        key={m.key}
-                        className={`p-3.5 rounded-xl border transition-all ${
-                          m.income > 0 || m.expense > 0
-                            ? 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 shadow-xs'
-                            : 'bg-slate-50/50 dark:bg-slate-900/30 border-dashed border-slate-200 dark:border-slate-800 opacity-70'
-                        }`}
-                      >
-                        <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-200 dark:border-slate-800">
-                          <span className="text-xs font-black text-slate-800 dark:text-slate-200">
-                            {mIdx + 1}. {m.monthName}
-                          </span>
-                          <span
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                              m.net >= 0
-                                ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
-                                : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
+                return (
+                  <div className="p-5 pt-0 border-t border-slate-100 dark:border-slate-700">
+                    <div className="mt-4 mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-700">
+                      <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                        <ReceiptText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        {viewMode === 'FINANCIAL'
+                          ? `आर्थिक महिना तपशील (एप्रिल ते मार्च क्रम - ${item.yearKey})`
+                          : `कॅलेंडर महिना तपशील (जानेवारी ते डिसेंबर क्रम - ${item.yearKey})`}
+                      </h4>
+
+                      {/* Month Selection Dropdown */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                          <Filter className="w-3.5 h-3.5 text-indigo-500" /> महिना निवडा:
+                        </span>
+                        <select
+                          value={selectedMonthKey}
+                          onChange={(e) => setSelectedMonthKey(e.target.value)}
+                          className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-bold text-xs rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+                        >
+                          <option value="CURRENT">⭐ चालू महिना (Current Month)</option>
+                          <option value="ALL">📋 सर्व १२ महिने (All Months)</option>
+                          <optgroup label="प्रत्येक महिना निवडा">
+                            {item.monthlyBreakdown.map((m, idx) => (
+                              <option key={m.key} value={m.key}>
+                                {idx + 1}. {m.monthName} {m.key === currentMonthKey ? '(चालू)' : ''}
+                              </option>
+                            ))}
+                          </optgroup>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Monthly Grid / Single Month Card */}
+                    <div
+                      className={`grid gap-3 ${
+                        displayMonths.length === 1
+                          ? 'grid-cols-1 max-w-md'
+                          : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+                      }`}
+                    >
+                      {displayMonths.map((m, mIdx) => {
+                        const originalIndex = item.monthlyBreakdown.findIndex((x) => x.key === m.key);
+                        const isCurrent = m.key === currentMonthKey;
+                        return (
+                          <div
+                            key={m.key}
+                            className={`p-4 rounded-2xl border transition-all ${
+                              isCurrent
+                                ? 'bg-amber-50/70 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 shadow-md ring-1 ring-amber-400'
+                                : m.income > 0 || m.expense > 0
+                                ? 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 shadow-xs'
+                                : 'bg-slate-50/50 dark:bg-slate-900/30 border-dashed border-slate-200 dark:border-slate-800 opacity-75'
                             }`}
                           >
-                            {m.net >= 0 ? '+शिल्लक' : '-तोटा'}
-                          </span>
-                        </div>
+                            <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-200 dark:border-slate-800">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                                  {originalIndex >= 0 ? originalIndex + 1 : mIdx + 1}. {m.monthName}
+                                </span>
+                                {isCurrent && (
+                                  <span className="px-1.5 py-0.2 text-[9px] font-black bg-amber-200 dark:bg-amber-800 text-amber-950 dark:text-amber-100 rounded-md">
+                                    चालू महिना
+                                  </span>
+                                )}
+                              </div>
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                                  m.net >= 0
+                                    ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                                    : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-700'
+                                }`}
+                              >
+                                {m.net >= 0 ? '+शिल्लक' : '-तोटा'}
+                              </span>
+                            </div>
 
-                        <div className="space-y-1 text-xs font-semibold">
-                          <div className="flex justify-between text-emerald-700 dark:text-emerald-400">
-                            <span>जमा ({m.incomeCount}):</span>
-                            <span className="font-bold">{formatCurr(m.income)}</span>
+                            <div className="space-y-1.5 text-xs font-semibold">
+                              <div className="flex justify-between text-emerald-700 dark:text-emerald-400">
+                                <span>जमा ({m.incomeCount}):</span>
+                                <span className="font-bold">{formatCurr(m.income)}</span>
+                              </div>
+                              <div className="flex justify-between text-rose-700 dark:text-rose-400">
+                                <span>खर्च ({m.expenseCount}):</span>
+                                <span className="font-bold">{formatCurr(m.expense)}</span>
+                              </div>
+                              <div className="flex justify-between pt-1.5 border-t border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 font-black text-sm">
+                                <span>शिल्लक बचत:</span>
+                                <span className={m.net >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}>
+                                  {formatCurr(m.net)}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex justify-between text-rose-700 dark:text-rose-400">
-                            <span>खर्च ({m.expenseCount}):</span>
-                            <span className="font-bold">{formatCurr(m.expense)}</span>
-                          </div>
-                          <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 font-black">
-                            <span>शिल्लक:</span>
-                            <span className={m.net >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}>
-                              {formatCurr(m.net)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           );
         })}
