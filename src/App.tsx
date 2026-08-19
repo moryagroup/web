@@ -443,15 +443,16 @@ export default function App() {
     }
   }, [incomes, expenses, currentUser.isLoggedIn]);
 
-  // Automated Daily 11:59 PM Dispatch of all approved receipt copies
+  // Automated Daily 11:59 PM Dispatch of all approved transactions, receipts & backup to Drive and Email
   useEffect(() => {
     const unsubScheduler = startDaily1159Scheduler(() => ({
       incomes,
       expenses,
+      cashSettlements,
       groupLogo,
     }));
     return () => unsubScheduler();
-  }, [incomes, expenses, groupLogo]);
+  }, [incomes, expenses, cashSettlements, groupLogo]);
 
   // Keep currentUser in localStorage (it's device-specific session data)
   useEffect(() => {
@@ -568,12 +569,36 @@ export default function App() {
     saveIncomeToSupabase(updatedIncome).catch(console.error);
   };
 
-  // Delete Income Transaction (Admin Only)
+  // Delete / Cancel Income Transaction (Admin Only)
   const handleDeleteIncome = (incomeId: string) => {
-    setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
-    deleteIncome(incomeId).catch(console.error);
-    cloudDeleteIncome(incomeId).catch(console.error);
-    deleteIncomeFromSupabase(incomeId).catch(console.error);
+    const item = incomes.find((i) => i.id === incomeId);
+    if (!item) return;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isSameDay =
+      item.transactionDate === todayStr ||
+      (item.createdAt && item.createdAt.split('T')[0] === todayStr);
+
+    if (isSameDay) {
+      // Created on the same day: Completely remove from DB
+      setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
+      deleteIncome(incomeId).catch(console.error);
+      cloudDeleteIncome(incomeId).catch(console.error);
+      deleteIncomeFromSupabase(incomeId).catch(console.error);
+    } else {
+      // Past dates: DO NOT delete; Mark as 'रद्द' (Cancelled) so sequence numbers do NOT shift!
+      const cancelled: IncomeTransaction = {
+        ...item,
+        approvalStatus: 'रद्द',
+        notes: item.notes
+          ? `${item.notes} | प्रशासकीय रद्द (${new Date().toLocaleDateString('mr-IN')})`
+          : `प्रशासकीय रद्द (${new Date().toLocaleDateString('mr-IN')})`,
+      };
+      setIncomes((prev) => prev.map((i) => (i.id === incomeId ? cancelled : i)));
+      saveIncome(cancelled).catch(console.error);
+      cloudSaveIncome(cancelled).catch(console.error);
+      saveIncomeToSupabase(cancelled).catch(console.error);
+    }
   };
 
   // Custom Income Types Firestore Sync
@@ -729,12 +754,36 @@ export default function App() {
     saveExpenseToSupabase(updatedExpense).catch(console.error);
   };
 
-  // Delete Expense Transaction (Admin Only)
+  // Delete / Cancel Expense Transaction (Admin Only)
   const handleDeleteExpense = (expenseId: string) => {
-    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
-    deleteExpense(expenseId).catch(console.error);
-    cloudDeleteExpense(expenseId).catch(console.error);
-    deleteExpenseFromSupabase(expenseId).catch(console.error);
+    const item = expenses.find((e) => e.id === expenseId);
+    if (!item) return;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isSameDay =
+      item.expenseDate === todayStr ||
+      (item.createdAt && item.createdAt.split('T')[0] === todayStr);
+
+    if (isSameDay) {
+      // Created on the same day: Completely remove from DB
+      setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+      deleteExpense(expenseId).catch(console.error);
+      cloudDeleteExpense(expenseId).catch(console.error);
+      deleteExpenseFromSupabase(expenseId).catch(console.error);
+    } else {
+      // Past dates: DO NOT delete; Mark as 'रद्द' (Cancelled) so sequence numbers do NOT shift!
+      const cancelled: ExpenseTransaction = {
+        ...item,
+        approvalStatus: 'रद्द',
+        notes: item.notes
+          ? `${item.notes} | प्रशासकीय रद्द (${new Date().toLocaleDateString('mr-IN')})`
+          : `प्रशासकीय रद्द (${new Date().toLocaleDateString('mr-IN')})`,
+      };
+      setExpenses((prev) => prev.map((e) => (e.id === expenseId ? cancelled : e)));
+      saveExpense(cancelled).catch(console.error);
+      cloudSaveExpense(cancelled).catch(console.error);
+      saveExpenseToSupabase(cancelled).catch(console.error);
+    }
   };
 
   // Approve Expense
@@ -920,10 +969,32 @@ export default function App() {
   };
 
   const handleDeleteCashSettlement = (settlementId: string) => {
-    setCashSettlements((prev) => prev.filter((s) => s.id !== settlementId));
-    deleteCashSettlement(settlementId).catch(console.error);
-    cloudDeleteCashSettlement(settlementId).catch(console.error);
-    deleteCashSettlementFromSupabase(settlementId).catch(console.error);
+    const item = cashSettlements.find((s) => s.id === settlementId);
+    if (!item) return;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isSameDay =
+      item.depositDate === todayStr ||
+      (item.createdAt && item.createdAt.split('T')[0] === todayStr);
+
+    if (isSameDay) {
+      setCashSettlements((prev) => prev.filter((s) => s.id !== settlementId));
+      deleteCashSettlement(settlementId).catch(console.error);
+      cloudDeleteCashSettlement(settlementId).catch(console.error);
+      deleteCashSettlementFromSupabase(settlementId).catch(console.error);
+    } else {
+      const cancelled: CashSettlement = {
+        ...item,
+        approvalStatus: 'रद्द',
+        notes: item.notes
+          ? `${item.notes} | प्रशासकीय रद्द (${new Date().toLocaleDateString('mr-IN')})`
+          : `प्रशासकीय रद्द (${new Date().toLocaleDateString('mr-IN')})`,
+      };
+      setCashSettlements((prev) => prev.map((s) => (s.id === settlementId ? cancelled : s)));
+      saveCashSettlement(cancelled).catch(console.error);
+      cloudSaveCashSettlement(cancelled).catch(console.error);
+      saveCashSettlementToSupabase(cancelled).catch(console.error);
+    }
   };
 
   // Reset to Demo Data

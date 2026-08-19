@@ -185,7 +185,7 @@ export function getTwoDigitYearFromDate(dateStr?: string): string {
 /**
  * Generates next sequential Credit transaction number: CR-2026-1, CR-2026-2, CR-2026-3 ...
  * Permanent prefix: CR-2026-
- * Strictly follows entry sequence regardless of back-dating.
+ * Strictly follows continuous incremental sequence across ALL payment modes (Online, Cash, etc.).
  */
 export function generateNextIncomeTransactionNo(
   _dateStr?: string,
@@ -198,11 +198,10 @@ export function generateNextIncomeTransactionNo(
   let maxSeq = 0;
   existingIncomes.forEach((i) => {
     if (i.transactionNo) {
-      const match = i.transactionNo.match(/^(?:CR|MG)-?(?:2026|26)?-?(\d+)$/i);
+      const match = i.transactionNo.match(/^(?:CR|MG|INCOME|INC)-?(?:2026|26)?-?(\d{1,7})$/i);
       if (match) {
         const num = parseInt(match[1], 10);
-        // Only count valid sequential numbers under 1000 to filter out legacy random IDs
-        if (!isNaN(num) && num < 1000 && num > maxSeq) {
+        if (!isNaN(num) && num > maxSeq) {
           maxSeq = num;
         }
       }
@@ -217,7 +216,7 @@ export function generateNextIncomeTransactionNo(
 /**
  * Generates next sequential Debit transaction number: EXP-2026-1, EXP-2026-2, EXP-2026-3 ...
  * Permanent prefix: EXP-2026-
- * Strictly follows entry sequence regardless of back-dating.
+ * Strictly follows continuous incremental sequence across ALL categories and payment modes.
  */
 export function generateNextExpenseTransactionNo(
   _dateStr?: string,
@@ -230,11 +229,10 @@ export function generateNextExpenseTransactionNo(
   let maxSeq = 0;
   existingExpenses.forEach((e) => {
     if (e.transactionNo) {
-      const match = e.transactionNo.match(/^(?:EXP|DR)-?(?:2026|26)?-?(\d+)$/i);
+      const match = e.transactionNo.match(/^(?:EXP|DR|DEBIT)-?(?:2026|26)?-?(\d{1,7})$/i);
       if (match) {
         const num = parseInt(match[1], 10);
-        // Only count valid sequential numbers under 1000 to filter out legacy random IDs
-        if (!isNaN(num) && num < 1000 && num > maxSeq) {
+        if (!isNaN(num) && num > maxSeq) {
           maxSeq = num;
         }
       }
@@ -242,6 +240,36 @@ export function generateNextExpenseTransactionNo(
   });
   if (maxSeq === 0) {
     maxSeq = existingExpenses.length;
+  }
+  return `${PREFIX}-${maxSeq + 1}`;
+}
+
+/**
+ * Generates next sequential Cash Settlement number: CST-2026-1, CST-2026-2, CST-2026-3 ...
+ * Permanent prefix: CST-2026-
+ */
+export function generateNextCashSettlementNo(
+  _dateStr?: string,
+  existingSettlements?: { depositDate?: string; settlementNo?: string; createdAt?: string }[]
+): string {
+  const PREFIX = 'CST-2026';
+  if (!existingSettlements || existingSettlements.length === 0) {
+    return `${PREFIX}-1`;
+  }
+  let maxSeq = 0;
+  existingSettlements.forEach((s) => {
+    if (s.settlementNo) {
+      const match = s.settlementNo.match(/^(?:CST|SETTLE|CASH)-?(?:2026|26)?-?(\d{1,7})$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxSeq) {
+          maxSeq = num;
+        }
+      }
+    }
+  });
+  if (maxSeq === 0) {
+    maxSeq = existingSettlements.length;
   }
   return `${PREFIX}-${maxSeq + 1}`;
 }

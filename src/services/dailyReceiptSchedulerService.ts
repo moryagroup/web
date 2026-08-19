@@ -6,7 +6,7 @@
  * with all receipt copies attached directly to moryagroupdata@gmail.com and Google Drive.
  */
 
-import { IncomeTransaction, ExpenseTransaction } from '../types';
+import { IncomeTransaction, ExpenseTransaction, CashSettlement } from '../types';
 import { generateReceiptImageCanvas, formatMarathiDate, toMarathiDigits } from '../utils/receiptCanvasGenerator';
 import { uploadAndEmailDailyReceiptsBatch, BatchReceiptItem } from './googleDriveService';
 
@@ -387,6 +387,7 @@ export function startDaily1159Scheduler(
   getData: () => {
     incomes: IncomeTransaction[];
     expenses: ExpenseTransaction[];
+    cashSettlements?: CashSettlement[];
     groupLogo?: string;
   }
 ): () => void {
@@ -399,7 +400,7 @@ export function startDaily1159Scheduler(
     if (hours === 23 && minutes === 59) {
       if (!isDaily1159ReportSentToday()) {
         const { incomes, expenses, groupLogo } = getData();
-        console.log('[Daily1159Scheduler] ⏰ Triggering automatic 11:59 PM approved receipts dispatch...');
+        console.log('[Daily1159Scheduler] ⏰ Triggering automatic 11:59 PM approved transactions dispatch to Drive & Email...');
         dispatchDaily1159ApprovedReceipts(incomes, expenses, { groupLogo }).then((res) => {
           console.log('[Daily1159Scheduler] Result:', res.message);
         });

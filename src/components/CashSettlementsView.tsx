@@ -11,7 +11,7 @@ import {
   RecipientType,
   PaymentMethod,
 } from '../types';
-import { isDateInSelectedYear, getFinancialYearFromDate, generateNextExpenseTransactionNo } from '../utils/dateUtils';
+import { isDateInSelectedYear, getFinancialYearFromDate, generateNextExpenseTransactionNo, generateNextCashSettlementNo } from '../utils/dateUtils';
 import { ProofLightboxModal } from './ProofLightboxModal';
 import { uploadFileToGoogleDrive } from '../services/googleDriveService';
 import {
@@ -352,7 +352,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
 
     const newSettlement: CashSettlement = {
       id: `cset-${Date.now()}`,
-      settlementNo: `CST-${Date.now().toString().slice(-4)}`,
+      settlementNo: generateNextCashSettlementNo(settleDate, cashSettlements),
       memberId: mem.id,
       memberName: mem.fullName,
       amount: numAmount,

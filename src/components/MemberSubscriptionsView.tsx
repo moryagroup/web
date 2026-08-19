@@ -10,7 +10,7 @@ import {
 } from '../types';
 import { getMemberSubscriptionPaid, getMemberExtraDonationPaid } from '../services/storageService';
 import { hasAdminPermissions, getDesignationRank, isBadgedMember } from '../utils/rbac';
-import { isDateInSelectedYear } from '../utils/dateUtils';
+import { isDateInSelectedYear, generateNextCashSettlementNo } from '../utils/dateUtils';
 import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
 import { ProofLightboxModal } from './ProofLightboxModal';
 import { uploadFileToGoogleDrive } from '../services/googleDriveService';
@@ -372,7 +372,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
 
     const newSettlement: CashSettlement = {
       id: `cset-${Date.now()}`,
-      settlementNo: `CST-${Date.now().toString().slice(-4)}`,
+      settlementNo: generateNextCashSettlementNo(settleDate, cashSettlements),
       memberId: mem.id,
       memberName: mem.fullName,
       amount: numAmount,
