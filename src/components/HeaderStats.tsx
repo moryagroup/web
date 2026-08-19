@@ -10,6 +10,7 @@ interface HeaderStatsProps {
   currentUser: CurrentUser;
   onOpenLogin?: () => void;
   onLogout?: () => void;
+  onNavigate?: (tab: string) => void;
 }
 
 export const HeaderStats: React.FC<HeaderStatsProps> = ({
@@ -18,6 +19,7 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({
   setSelectedYear,
   currentUser,
   onLogout,
+  onNavigate,
 }) => {
   const isLoggedIn = Boolean(currentUser && currentUser.isLoggedIn === true);
   const isTreasurer = isLoggedIn && isTreasurerRole(currentUser.role);
@@ -34,7 +36,13 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full my-2">
       {/* Total Income */}
-      <div className="bg-emerald-50/80 p-4 rounded-xl border border-emerald-100 flex items-start justify-between shadow-xs">
+      <div
+        onClick={() => onNavigate && onNavigate('income-history')}
+        className={`bg-emerald-50/80 p-4 rounded-xl border border-emerald-100 flex items-start justify-between shadow-xs transition-all ${
+          onNavigate ? 'cursor-pointer hover:shadow-md hover:border-emerald-300 active:scale-[0.99]' : ''
+        }`}
+        title={onNavigate ? 'जमा इतिहास पहा (Click to view Income History)' : undefined}
+      >
         <div>
           <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-bold uppercase tracking-wider mb-1">
             <ArrowDownCircle className="w-4 h-4 text-emerald-600" />
@@ -52,7 +60,13 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({
       </div>
 
       {/* Total Expenses */}
-      <div className="bg-rose-50/80 p-4 rounded-xl border border-rose-100 flex items-start justify-between shadow-xs">
+      <div
+        onClick={() => onNavigate && onNavigate('expense-history')}
+        className={`bg-rose-50/80 p-4 rounded-xl border border-rose-100 flex items-start justify-between shadow-xs transition-all ${
+          onNavigate ? 'cursor-pointer hover:shadow-md hover:border-rose-300 active:scale-[0.99]' : ''
+        }`}
+        title={onNavigate ? 'खर्च इतिहास पहा (Click to view Expense History)' : undefined}
+      >
         <div>
           <div className="flex items-center gap-1.5 text-xs text-rose-700 font-bold uppercase tracking-wider mb-1">
             <ArrowUpCircle className="w-4 h-4 text-rose-600" />
