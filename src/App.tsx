@@ -374,13 +374,9 @@ export default function App() {
         }
       }),
       subscribeToCashSettlements((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setCashSettlements((prev) => {
-            const map = new Map<string, CashSettlement>();
-            prev.forEach((s) => map.set(s.id, s));
-            data.forEach((s) => map.set(s.id, s));
-            return Array.from(map.values());
-          });
+        if (Array.isArray(data)) {
+          setCashSettlements(data);
+          saveCashSettlementsToCache(data);
         }
       }),
     ];
@@ -420,13 +416,9 @@ export default function App() {
             setGroupLogo(logo);
             saveGroupLogo(logo);
           }
-          if (settlements && settlements.length > 0) {
-            setCashSettlements((prev) => {
-              const map = new Map<string, CashSettlement>();
-              prev.forEach((s) => map.set(s.id, s));
-              settlements.forEach((s) => map.set(s.id, s));
-              return Array.from(map.values());
-            });
+          if (Array.isArray(settlements)) {
+            setCashSettlements(settlements);
+            saveCashSettlementsToCache(settlements);
           }
         } catch (err) {
           console.warn('[Supabase] Initial load error:', err);
@@ -465,13 +457,9 @@ export default function App() {
           setGroupLogo(logo);
           saveGroupLogo(logo);
         }
-        if (settlements && settlements.length > 0) {
-          setCashSettlements((prev) => {
-            const map = new Map<string, CashSettlement>();
-            prev.forEach((s) => map.set(s.id, s));
-            settlements.forEach((s) => map.set(s.id, s));
-            return Array.from(map.values());
-          });
+        if (Array.isArray(settlements)) {
+          setCashSettlements(settlements);
+          saveCashSettlementsToCache(settlements);
         }
       }
     });
@@ -509,13 +497,9 @@ export default function App() {
       if (Array.isArray(cloudDb.settings?.customIncomeTypes)) {
         setCustomIncomeTypes(cloudDb.settings.customIncomeTypes);
       }
-      if (Array.isArray(cloudDb.cashSettlements) && cloudDb.cashSettlements.length > 0) {
-        setCashSettlements((prev) => {
-          const map = new Map<string, CashSettlement>();
-          prev.forEach((s) => map.set(s.id, s));
-          cloudDb.cashSettlements!.forEach((s) => map.set(s.id, s));
-          return Array.from(map.values());
-        });
+      if (Array.isArray(cloudDb.cashSettlements)) {
+        setCashSettlements(cloudDb.cashSettlements);
+        saveCashSettlementsToCache(cloudDb.cashSettlements);
       }
       setIsLoading(false);
     });
