@@ -40,6 +40,7 @@ interface IncomeHistoryProps {
   onUpdateIncome?: (updatedIncome: IncomeTransaction) => void;
   onDeleteIncome?: (incomeId: string) => void;
   onApproveIncome?: (incomeId: string, approverName: string, approverRole: any) => void;
+  onRejectIncome?: (incomeId: string, rejecterName: string, rejecterRole: any) => void;
   onNavigate?: (tab: string) => void;
   onOpenLogin?: () => void;
 }
@@ -52,6 +53,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   onUpdateIncome,
   onDeleteIncome,
   onApproveIncome,
+  onRejectIncome,
   onNavigate,
   onOpenLogin,
 }) => {
@@ -758,14 +760,31 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        {item.approvalStatus === 'प्रलंबित' && canApprove && onApproveIncome && currentUser && (
-                          <button
-                            onClick={() => onApproveIncome(item.id, currentUser.name, currentUser.role)}
-                            className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg transition-all shadow-xs cursor-pointer"
-                            title="मंजूर करा"
-                          >
-                            मंजूर
-                          </button>
+                        {item.approvalStatus === 'प्रलंबित' && canApprove && currentUser && (
+                          <div className="flex items-center gap-1">
+                            {onApproveIncome && (
+                              <button
+                                onClick={() => onApproveIncome(item.id, currentUser.name, currentUser.role)}
+                                className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg transition-all shadow-xs cursor-pointer"
+                                title="पावती मंजूर करा"
+                              >
+                                ✓ मंजूर
+                              </button>
+                            )}
+                            {onRejectIncome && (
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`पावती क्र. ${item.transactionNo} (₹${item.amount}) रद्द करायची आहे का?`)) {
+                                    onRejectIncome(item.id, currentUser.name, currentUser.role);
+                                  }
+                                }}
+                                className="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] rounded-lg transition-all shadow-xs cursor-pointer"
+                                title="पावती रद्द करा"
+                              >
+                                ✕ रद्द
+                              </button>
+                            )}
+                          </div>
                         )}
                         {isAdmin && (
                           <>
@@ -937,32 +956,56 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
             )}
 
             {/* Approval Action Bar for Pending Income (Treasurer / Admin) */}
-            {selectedIncomeDetail.approvalStatus === 'प्रलंबित' && canApprove && onApproveIncome && currentUser && (
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-300 flex items-center justify-between">
+            {selectedIncomeDetail.approvalStatus === 'प्रलंबित' && canApprove && currentUser && (
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold text-amber-900">
                     पावती नोंद मंजुरी अधिकार ({currentUser.role})
                   </p>
                   <p className="text-[10px] text-amber-700">
-                    पावती पुस्तकातील रकमेची खात्री करून मंजुरी द्या.
+                    रक्कम व पावती तपशीलाची खात्री करून मंजुरी किंवा नकार द्या.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onApproveIncome(selectedIncomeDetail.id, currentUser.name, currentUser.role);
-                    setSelectedIncomeDetail({
-                      ...selectedIncomeDetail,
-                      approvalStatus: 'मंजूर',
-                      approvedBy: currentUser.name,
-                      approvedByRole: currentUser.role,
-                      approvedAt: new Date().toISOString(),
-                    });
-                  }}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95"
-                >
-                  ✓ मंजूर करा
-                </button>
+                <div className="flex items-center gap-2">
+                  {onApproveIncome && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onApproveIncome(selectedIncomeDetail.id, currentUser.name, currentUser.role);
+                        setSelectedIncomeDetail({
+                          ...selectedIncomeDetail,
+                          approvalStatus: 'मंजूर',
+                          approvedBy: currentUser.name,
+                          approvedByRole: currentUser.role,
+                          approvedAt: new Date().toISOString(),
+                        });
+                      }}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95"
+                    >
+                      ✓ मंजूर करा
+                    </button>
+                  )}
+                  {onRejectIncome && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`पावती क्र. ${selectedIncomeDetail.transactionNo} (₹${selectedIncomeDetail.amount}) रद्द करायची आहे का?`)) {
+                          onRejectIncome(selectedIncomeDetail.id, currentUser.name, currentUser.role);
+                          setSelectedIncomeDetail({
+                            ...selectedIncomeDetail,
+                            approvalStatus: 'रद्द',
+                            approvedBy: `${currentUser.name} (${currentUser.role})`,
+                            approvedByRole: currentUser.role,
+                            approvedAt: new Date().toISOString(),
+                          });
+                        }
+                      }}
+                      className="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95"
+                    >
+                      ✕ नोंद रद्द करा
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 

@@ -542,7 +542,8 @@ export default function App() {
 
   // Add Income Transaction
   const handleAddIncome = (newIncome: IncomeTransaction) => {
-    const isApproved = newIncome.approvalStatus === 'मंजूर';
+    const isAuthorized = canApproveFinancialTransactions(currentUser.role);
+    const isApproved = isAuthorized && newIncome.approvalStatus === 'मंजूर';
     const finalIncome: IncomeTransaction = {
       ...newIncome,
       approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
@@ -702,7 +703,8 @@ export default function App() {
 
   // Add Expense Transaction
   const handleAddExpense = (newExpense: ExpenseTransaction) => {
-    const isApproved = newExpense.approvalStatus === 'मंजूर';
+    const isAuthorized = canApproveFinancialTransactions(currentUser.role);
+    const isApproved = isAuthorized && newExpense.approvalStatus === 'मंजूर';
     const finalExpense: ExpenseTransaction = {
       ...newExpense,
       approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
@@ -751,6 +753,23 @@ export default function App() {
     cloudSaveExpense(updated).catch(console.error);
     saveExpenseToSupabase(updated).catch(console.error);
     dispatchApprovedTransaction(updated, 'EXPENSE').catch(console.error);
+  };
+
+  // Reject Expense
+  const handleRejectExpense = (expId: string, rejecterName: string, rejecterRole: any) => {
+    const expense = expenses.find((e) => e.id === expId);
+    if (!expense) return;
+    const updated = {
+      ...expense,
+      approvalStatus: 'रद्द' as const,
+      approvedBy: `${rejecterName} (${rejecterRole})`,
+      approvedByRole: rejecterRole,
+      approvedAt: new Date().toISOString(),
+    };
+    setExpenses((prev) => prev.map((e) => (e.id === expId ? updated : e)));
+    saveExpense(updated).catch(console.error);
+    cloudSaveExpense(updated).catch(console.error);
+    saveExpenseToSupabase(updated).catch(console.error);
   };
 
   // Approve Income
@@ -1098,6 +1117,8 @@ export default function App() {
                 members={members}
                 financialYear={selectedYear}
                 currentUser={currentUser}
+                onApproveIncome={handleApproveIncome}
+                onRejectIncome={handleRejectIncome}
                 onUpdateIncome={handleUpdateIncome}
                 onDeleteIncome={handleDeleteIncome}
                 onNavigate={(tab) => setActiveTab(tab)}

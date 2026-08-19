@@ -165,7 +165,8 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       : receiptNumber.trim() || undefined;
 
     const finalTransNo = generateNextIncomeTransactionNo(transactionDate, incomes);
-    const isApproved = autoApprove;
+    const isAuthorized = canApproveFinancialTransactions(currentUser.role);
+    const isApproved = isAuthorized && autoApprove;
 
     onSubmit({
       transactionNo: finalTransNo,

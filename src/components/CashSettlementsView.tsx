@@ -343,11 +343,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
 
     const stats = memberCashStats.memberMap[settleMemberId];
     const availableInHand = stats ? stats.netCashInHand : 0;
-    if (availableInHand <= 0) {
-      setSettleError(`या सभासदाकडे कोणतीही रोख शिल्लक उपलब्ध नाही (₹०). भरणा नोंद करता येणार नाही.`);
-      return;
-    }
-    if (numAmount > availableInHand) {
+    if (availableInHand > 0 && numAmount > availableInHand) {
       setSettleError(
         `भरणा रक्कम मर्यादेपेक्षा जास्त आहे! या सभासदाकडे केवळ ₹${availableInHand.toLocaleString('en-IN')} शिल्लक रोख उपलब्ध आहे.`
       );
@@ -403,11 +399,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
 
     const stats = memberCashStats.memberMap[debitMemberId];
     const availableInHand = stats ? stats.netCashInHand : 0;
-    if (availableInHand <= 0) {
-      setDebitError(`या सभासदाकडे कोणतीही रोख शिल्लक उपलब्ध नाही (₹०). रोखीतून खर्च नोंद करता येणार नाही.`);
-      return;
-    }
-    if (numAmount > availableInHand) {
+    if (availableInHand > 0 && numAmount > availableInHand) {
       setDebitError(
         `खर्च रक्कम मर्यादेपेक्षा जास्त आहे! या सभासदाकडे केवळ ₹${availableInHand.toLocaleString('en-IN')} शिल्लक रोख उपलब्ध आहे.`
       );

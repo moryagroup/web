@@ -164,6 +164,28 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
       }
     }
 
+    // Parse approval status strictly (default: 'प्रलंबित')
+    let parsedApprovalStatus: ApprovalStatus = 'प्रलंबित';
+    if (cleanNotes.includes('[STATUS:')) {
+      const m = cleanNotes.match(/\[STATUS:([^\]]+)\]/);
+      if (m) {
+        parsedApprovalStatus = m[1].trim() as ApprovalStatus;
+        cleanNotes = cleanNotes.replace(/\[STATUS:[^\]]+\]/g, '').trim();
+      }
+    } else if (cleanReason.includes('[STATUS:')) {
+      const m = cleanReason.match(/\[STATUS:([^\]]+)\]/);
+      if (m) {
+        parsedApprovalStatus = m[1].trim() as ApprovalStatus;
+        cleanReason = cleanReason.replace(/\[STATUS:[^\]]+\]/g, '').trim();
+      }
+    } else if (row.approval_status === 'मंजूर' || row.approval_status === 'रद्द' || row.approval_status === 'प्रलंबित') {
+      parsedApprovalStatus = row.approval_status as ApprovalStatus;
+    } else if (row.approved_by && row.approved_at) {
+      parsedApprovalStatus = 'मंजूर';
+    } else {
+      parsedApprovalStatus = 'प्रलंबित';
+    }
+
     return {
       id: row.id,
       transactionNo: row.transaction_no,
@@ -185,11 +207,11 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
       reason: cleanReason,
       notes: cleanNotes || undefined,
       attachmentUrl,
-      approvalStatus: (row.approval_status as ApprovalStatus) || 'मंजूर',
+      approvalStatus: parsedApprovalStatus,
       approvedBy: row.approved_by,
       approvedByRole: row.approved_by_role,
       approvedAt: row.approved_at,
-      createdBy: row.recorded_by || 'ॲडमिन',
+      createdBy: row.recorded_by || 'सभासद',
       createdAt: row.created_at || new Date().toISOString(),
       updatedAt: row.updated_at,
     };
@@ -203,6 +225,7 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
     income.paymentMethod === 'रोख' && income.cashReceiverMemberId
       ? ` [CASH_REC:${income.cashReceiverMemberId}:${income.cashReceiverName || ''}]`
       : '';
+  const statusTag = ` [STATUS:${income.approvalStatus || 'प्रलंबित'}]`;
 
   const row: any = {
     id: income.id,
@@ -220,12 +243,12 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
     payment_reference: income.paymentReference || null,
     receipt_number: income.receiptNumber || null,
     reason: income.reason,
-    notes: (income.notes || '') + cashRecTag || null,
-    approval_status: income.approvalStatus || 'मंजूर',
+    notes: ((income.notes || '') + cashRecTag + statusTag).trim() || null,
+    approval_status: income.approvalStatus || 'प्रलंबित',
     approved_by: income.approvedBy || null,
     approved_by_role: income.approvedByRole || null,
     approved_at: income.approvedAt || null,
-    recorded_by: income.createdBy || 'ॲडमिन',
+    recorded_by: income.createdBy || 'सभासद',
     updated_at: new Date().toISOString(),
     attachment_url: dbAttachmentUrl,
     bill_photo_url: dbAttachmentUrl,
@@ -247,8 +270,8 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
       payment_reference: income.paymentReference || null,
       receipt_number: income.receiptNumber || null,
       reason: dbAttachmentUrl ? `${income.reason}\n__ATTACHMENT__:${dbAttachmentUrl}` : income.reason,
-      notes: (income.notes || '') + cashRecTag || null,
-      recorded_by: income.createdBy || 'ॲडमिन',
+      notes: ((income.notes || '') + cashRecTag + statusTag).trim() || null,
+      recorded_by: income.createdBy || 'सभासद',
       updated_at: new Date().toISOString(),
     };
     await supabase.from('incomes').upsert(fallbackRow);
@@ -293,6 +316,22 @@ export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]>
       }
     }
 
+    // Parse approval status strictly (default: 'प्रलंबित')
+    let parsedExpenseStatus: ApprovalStatus = 'प्रलंबित';
+    if (cleanReason.includes('[STATUS:')) {
+      const m = cleanReason.match(/\[STATUS:([^\]]+)\]/);
+      if (m) {
+        parsedExpenseStatus = m[1].trim() as ApprovalStatus;
+        cleanReason = cleanReason.replace(/\[STATUS:[^\]]+\]/g, '').trim();
+      }
+    } else if (row.approval_status === 'मंजूर' || row.approval_status === 'रद्द' || row.approval_status === 'प्रलंबित') {
+      parsedExpenseStatus = row.approval_status as ApprovalStatus;
+    } else if (row.approved_by && row.approved_at) {
+      parsedExpenseStatus = 'मंजूर';
+    } else {
+      parsedExpenseStatus = 'प्रलंबित';
+    }
+
     return {
       id: row.id,
       transactionNo: row.transaction_no,
@@ -309,12 +348,12 @@ export async function fetchExpensesFromSupabase(): Promise<ExpenseTransaction[]>
       isPaidFromCashInHand: isPaidFromCash,
       billNumber: row.bill_number,
       reason: cleanReason,
-      approvalStatus: row.approval_status || 'प्रलंबित',
+      approvalStatus: parsedExpenseStatus,
       approvedBy: row.approved_by,
       approvedByRole: row.approved_by_role,
       approvedAt: row.approved_at,
       attachmentUrl,
-      createdBy: row.recorded_by || 'ॲडमिन',
+      createdBy: row.recorded_by || 'सभासद',
       createdAt: row.created_at || new Date().toISOString(),
       updatedAt: row.updated_at,
     };
@@ -327,8 +366,9 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
   const paidByTag = expense.paidByMemberId
     ? ` [PAID_BY_MEMBER:${expense.paidByMemberId}:${expense.paidByMemberName || ''}]`
     : '';
+  const statusTag = ` [STATUS:${expense.approvalStatus || 'प्रलंबित'}]`;
 
-  let finalReason = expense.reason + paidByTag;
+  let finalReason = expense.reason + paidByTag + statusTag;
   if (dbAttachmentUrl) {
     finalReason = `${finalReason}\n__ATTACHMENT__:${dbAttachmentUrl}`;
   }
@@ -348,11 +388,11 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
     is_paid_from_cash_in_hand: expense.isPaidFromCashInHand || false,
     bill_number: expense.billNumber || null,
     reason: finalReason,
-    approval_status: expense.approvalStatus,
+    approval_status: expense.approvalStatus || 'प्रलंबित',
     approved_by: expense.approvedBy || null,
     approved_by_role: expense.approvedByRole || null,
     approved_at: expense.approvedAt || null,
-    recorded_by: expense.createdBy || 'ॲडमिन',
+    recorded_by: expense.createdBy || 'सभासद',
     updated_at: new Date().toISOString(),
     attachment_url: dbAttachmentUrl,
     bill_photo_url: dbAttachmentUrl,

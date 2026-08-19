@@ -363,11 +363,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
 
     const stats = memberCashStats.memberMap[settleMemberId];
     const availableInHand = stats ? stats.netCashInHand : 0;
-    if (availableInHand <= 0) {
-      setSettleError(`या सभासदाकडे कोणतीही रोख शिल्लक उपलब्ध नाही (₹०). भरणा नोंद करता येणार नाही.`);
-      return;
-    }
-    if (numAmount > availableInHand) {
+    if (availableInHand > 0 && numAmount > availableInHand) {
       setSettleError(
         `भरणा रक्कम मर्यादेपेक्षा जास्त आहे! या सभासदाकडे केवळ ₹${availableInHand.toLocaleString('en-IN')} शिल्लक रोख उपलब्ध आहे.`
       );

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, MinusCircle, CheckCircle, Info } from 'lucide-react';
 import { getFinancialYearFromDate, generateNextExpenseTransactionNo } from '../utils/dateUtils';
+import { canApproveFinancialTransactions } from '../utils/rbac';
 import {
   ExpenseTransaction,
   RecipientType,
@@ -84,7 +85,9 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
       .toTimeString()
       .split(' ')[0]}`;
 
-    const status: ApprovalStatus = autoApprove ? 'मंजूर' : 'प्रलंबित';
+    const isAuthorized = canApproveFinancialTransactions(currentUser.role);
+    const isApproved = isAuthorized && autoApprove;
+    const status: ApprovalStatus = isApproved ? 'मंजूर' : 'प्रलंबित';
     const finalTransNo = generateNextExpenseTransactionNo(expenseDate, expenses);
 
     onSubmit({
@@ -103,9 +106,9 @@ export const ExpenseFormModal: React.FC<ExpenseFormModalProps> = ({
       billNumber: billNumber.trim() || undefined,
       financialYear: getFinancialYearFromDate(expenseDate),
       approvalStatus: status,
-      approvedBy: autoApprove ? currentUser.name : undefined,
-      approvedByRole: autoApprove ? currentUser.role : undefined,
-      approvedAt: autoApprove ? formattedCreatedAt : undefined,
+      approvedBy: isApproved ? currentUser.name : undefined,
+      approvedByRole: isApproved ? currentUser.role : undefined,
+      approvedAt: isApproved ? formattedCreatedAt : undefined,
       createdBy: `${currentUser.name} (${currentUser.role})`,
       createdAt: formattedCreatedAt,
     });
