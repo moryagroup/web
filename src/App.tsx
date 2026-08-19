@@ -217,7 +217,7 @@ import { LogoLightboxModal } from './components/LogoLightboxModal';
 import { isBadgedMember, hasAdminPermissions, canApproveFinancialTransactions } from './utils/rbac';
 import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo, getCalendarYearFromDate } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
-import { Menu, Sun, Moon, ChevronDown, ChevronRight, ShieldCheck, UserCheck, LogOut, LogIn, Lock } from 'lucide-react';
+import { Menu, Home, Sun, Moon, ChevronDown, ChevronRight, ShieldCheck, UserCheck, LogOut, LogIn, Lock } from 'lucide-react';
 
 const VALID_TABS = new Set([
   'dashboard',
@@ -643,7 +643,7 @@ export default function App() {
   };
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [isLogoLightboxOpen, setIsLogoLightboxOpen] = useState(false);
+  const [isLogoLightboxOpen, setIsLogoLightboxOpen] = useState(() => currentUser.isLoggedIn === false);
 
   const selectedRoleValue = useMemo(() => {
     if (currentUser.role === 'ॲडमिन') return 'ADMIN_ACCOUNT';
@@ -717,6 +717,7 @@ export default function App() {
   const handleLoginSuccess = (user: CurrentUser) => {
     setCurrentUser(user);
     setIsLoginModalOpen(false);
+    setIsLogoLightboxOpen(false);
   };
   // Logout handler
   const handleLogout = () => {
@@ -726,6 +727,7 @@ export default function App() {
       localStorage.removeItem('morya_active_tab');
     } catch {}
     setActiveTab('dashboard');
+    setIsLogoLightboxOpen(true);
   };
 
   // Formatted Sequential Transaction Numbers (CR-YY-N for Income, EXP-YY-N for Expense)
@@ -1303,22 +1305,15 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Home Logo & Navigation Button */}
             <button
-              onClick={toggleTheme}
-              className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 active:scale-95 transition-all cursor-pointer flex items-center gap-1 shadow-xs"
-              title={theme === 'dark' ? 'लाइट मोड चालू करा' : 'डार्क मोड चालू करा'}
+              type="button"
+              onClick={() => setActiveTab('dashboard')}
+              className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+              title="मुख्य डॅशबोर्डवर परत जा (Home)"
             >
-              {theme === 'dark' ? (
-                <>
-                  <Sun className="w-4 h-4 text-amber-400" />
-                  <span className="text-[10px] font-bold text-amber-300 hidden sm:inline">लाइट</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="w-4 h-4 text-amber-300" />
-                  <span className="text-[10px] font-bold text-amber-300 hidden sm:inline">डार्क</span>
-                </>
-              )}
+              <Home className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="text-xs font-black text-amber-200">मुख्य पान</span>
             </button>
 
             {/* Top Right Profile Logo & Popover Menu */}
