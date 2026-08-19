@@ -215,7 +215,7 @@ import { OccasionModal } from './components/OccasionModal';
 import { SettingsModal } from './components/SettingsModal';
 import { LogoLightboxModal } from './components/LogoLightboxModal';
 import { isBadgedMember, hasAdminPermissions, canApproveFinancialTransactions } from './utils/rbac';
-import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo, getCalendarYearFromDate } from './utils/dateUtils';
+import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo, formatCashSettlementsNo, getCalendarYearFromDate } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { Menu, Home, Sun, Moon, ChevronDown, ChevronRight, ShieldCheck, UserCheck, LogOut, LogIn, Lock } from 'lucide-react';
 
@@ -686,9 +686,10 @@ export default function App() {
     setIsLogoLightboxOpen(true);
   };
 
-  // Formatted Sequential Transaction Numbers (CR-YY-N for Income, EXP-YY-N for Expense)
+  // Formatted Sequential Transaction Numbers (CR-2026-N for Income, EXP-2026-N for Expense, CST-2026-N for Settlement)
   const formattedIncomes = useMemo(() => formatIncomeTransactionsNo(incomes), [incomes]);
   const formattedExpenses = useMemo(() => formatExpenseTransactionsNo(expenses), [expenses]);
+  const formattedCashSettlements = useMemo(() => formatCashSettlementsNo(cashSettlements), [cashSettlements]);
 
   // Financial Summary Calculation
   const summary = useMemo(() => {
@@ -1402,7 +1403,7 @@ export default function App() {
                 summary={summary}
                 incomes={formattedIncomes}
                 expenses={formattedExpenses}
-                cashSettlements={cashSettlements}
+                cashSettlements={formattedCashSettlements}
                 members={members}
                 occasions={occasions}
                 currentUser={currentUser}
@@ -1489,7 +1490,7 @@ export default function App() {
               <CashSettlementsView
                 incomes={formattedIncomes}
                 expenses={formattedExpenses}
-                cashSettlements={cashSettlements}
+                cashSettlements={formattedCashSettlements}
                 members={members}
                 currentUser={currentUser}
                 selectedYear={selectedYear}
@@ -1511,7 +1512,7 @@ export default function App() {
                   members={members}
                   incomes={formattedIncomes}
                   expenses={formattedExpenses}
-                  cashSettlements={cashSettlements}
+                  cashSettlements={formattedCashSettlements}
                   financialYear={selectedYear}
                   currentUser={currentUser}
                   onAddMember={handleAddMember}
@@ -1529,7 +1530,7 @@ export default function App() {
                   summary={summary}
                   incomes={formattedIncomes}
                   expenses={formattedExpenses}
-                  cashSettlements={cashSettlements}
+                  cashSettlements={formattedCashSettlements}
                   members={members}
                   currentUser={currentUser}
                   gallery={gallery}

@@ -200,98 +200,66 @@ export function getTwoDigitYearFromDate(dateStr?: string): string {
 /**
  * Generates next sequential Credit transaction number: CR-2026-1, CR-2026-2, CR-2026-3 ...
  * Permanent prefix: CR-2026-
- * Strictly follows continuous incremental sequence across ALL payment modes (Online, Cash, etc.).
+ * Strictly follows continuous unbroken sequence 1, 2, 3, 4 ... N without any jumps or gaps.
  */
 export function generateNextIncomeTransactionNo(
   _dateStr?: string,
-  existingIncomes?: { transactionDate?: string; transactionNo?: string; createdAt?: string }[]
+  existingIncomes?: { id?: string; transactionDate?: string; transactionNo?: string; createdAt?: string }[]
 ): string {
   const PREFIX = 'CR-2026';
   if (!existingIncomes || existingIncomes.length === 0) {
     return `${PREFIX}-1`;
   }
-  let maxSeq = 0;
-  existingIncomes.forEach((i) => {
-    if (i.transactionNo) {
-      const match = i.transactionNo.match(/^(?:CR|MG|INCOME|INC)-?(?:2026|26)?-?(\d{1,7})$/i);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num > maxSeq) {
-          maxSeq = num;
-        }
-      }
-    }
+  const uniqueMap = new Map<string, any>();
+  existingIncomes.forEach((i, idx) => {
+    uniqueMap.set(i.id || `idx-${idx}`, i);
   });
-  if (maxSeq === 0) {
-    maxSeq = existingIncomes.length;
-  }
-  return `${PREFIX}-${maxSeq + 1}`;
+  return `${PREFIX}-${uniqueMap.size + 1}`;
 }
 
 /**
  * Generates next sequential Debit transaction number: EXP-2026-1, EXP-2026-2, EXP-2026-3 ...
  * Permanent prefix: EXP-2026-
- * Strictly follows continuous incremental sequence across ALL categories and payment modes.
+ * Strictly follows continuous unbroken sequence 1, 2, 3, 4 ... N without any jumps or gaps.
  */
 export function generateNextExpenseTransactionNo(
   _dateStr?: string,
-  existingExpenses?: { expenseDate?: string; transactionNo?: string; createdAt?: string }[]
+  existingExpenses?: { id?: string; expenseDate?: string; transactionNo?: string; createdAt?: string }[]
 ): string {
   const PREFIX = 'EXP-2026';
   if (!existingExpenses || existingExpenses.length === 0) {
     return `${PREFIX}-1`;
   }
-  let maxSeq = 0;
-  existingExpenses.forEach((e) => {
-    if (e.transactionNo) {
-      const match = e.transactionNo.match(/^(?:EXP|DR|DEBIT)-?(?:2026|26)?-?(\d{1,7})$/i);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num > maxSeq) {
-          maxSeq = num;
-        }
-      }
-    }
+  const uniqueMap = new Map<string, any>();
+  existingExpenses.forEach((e, idx) => {
+    uniqueMap.set(e.id || `idx-${idx}`, e);
   });
-  if (maxSeq === 0) {
-    maxSeq = existingExpenses.length;
-  }
-  return `${PREFIX}-${maxSeq + 1}`;
+  return `${PREFIX}-${uniqueMap.size + 1}`;
 }
 
 /**
  * Generates next sequential Cash Settlement number: CST-2026-1, CST-2026-2, CST-2026-3 ...
  * Permanent prefix: CST-2026-
+ * Strictly follows continuous unbroken sequence 1, 2, 3, 4 ... N without any jumps or gaps.
  */
 export function generateNextCashSettlementNo(
   _dateStr?: string,
-  existingSettlements?: { depositDate?: string; settlementNo?: string; createdAt?: string }[]
+  existingSettlements?: { id?: string; depositDate?: string; settlementNo?: string; createdAt?: string }[]
 ): string {
   const PREFIX = 'CST-2026';
   if (!existingSettlements || existingSettlements.length === 0) {
     return `${PREFIX}-1`;
   }
-  let maxSeq = 0;
-  existingSettlements.forEach((s) => {
-    if (s.settlementNo) {
-      const match = s.settlementNo.match(/^(?:CST|SETTLE|CASH)-?(?:2026|26)?-?(\d{1,7})$/i);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num > maxSeq) {
-          maxSeq = num;
-        }
-      }
-    }
+  const uniqueMap = new Map<string, any>();
+  existingSettlements.forEach((s, idx) => {
+    uniqueMap.set(s.id || `idx-${idx}`, s);
   });
-  if (maxSeq === 0) {
-    maxSeq = existingSettlements.length;
-  }
-  return `${PREFIX}-${maxSeq + 1}`;
+  return `${PREFIX}-${uniqueMap.size + 1}`;
 }
 
 /**
  * Standardizes Income transaction numbers permanently as CR-2026-1, CR-2026-2, CR-2026-3 ...
- * Normalizes legacy formats (CR-26-X, random IDs) into clean permanent CR-2026-N.
+ * Strictly guarantees continuous 1, 2, 3 ... sequence based on creation order without any gaps or jumps.
  */
 export function formatIncomeTransactionsNo<
   T extends { id: string; transactionNo?: string; transactionDate?: string; createdAt?: string }
@@ -299,8 +267,15 @@ export function formatIncomeTransactionsNo<
   if (!Array.isArray(incomes) || incomes.length === 0) return incomes;
   const PREFIX = 'CR-2026';
 
-  // Sort chronological by creation / entry to maintain true sequential mapping
-  const chronological = [...incomes].sort((a, b) => {
+  // Deduplicate by ID
+  const uniqueMap = new Map<string, T>();
+  incomes.forEach((item) => {
+    if (item && item.id) uniqueMap.set(item.id, item);
+  });
+  const uniqueList = Array.from(uniqueMap.values());
+
+  // Sort chronological by creation / entry to maintain true permanent sequence
+  const chronological = [...uniqueList].sort((a, b) => {
     const timeA = a.createdAt || a.transactionDate || '';
     const timeB = b.createdAt || b.transactionDate || '';
     if (timeA !== timeB) return timeA.localeCompare(timeB);
@@ -309,30 +284,18 @@ export function formatIncomeTransactionsNo<
 
   const assignedMap = new Map<string, string>();
   chronological.forEach((item, index) => {
-    if (item.transactionNo) {
-      const match = item.transactionNo.match(/^(?:CR|MG)-?(?:2026|26)?-?(\d+)$/i);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        // If it's already a clean small sequential number, preserve its number with standard prefix
-        if (!isNaN(num) && num < 1000) {
-          assignedMap.set(item.id, `${PREFIX}-${num}`);
-          return;
-        }
-      }
-    }
-    // Otherwise assign sequential 1, 2, 3 based on creation order
     assignedMap.set(item.id, `${PREFIX}-${index + 1}`);
   });
 
   return incomes.map((item) => ({
     ...item,
-    transactionNo: assignedMap.get(item.id) || item.transactionNo || `${PREFIX}-1`,
+    transactionNo: assignedMap.get(item.id) || `${PREFIX}-1`,
   }));
 }
 
 /**
  * Standardizes Expense transaction numbers permanently as EXP-2026-1, EXP-2026-2, EXP-2026-3 ...
- * Normalizes legacy formats (EXP-26-X, random 4-digit IDs) into clean permanent EXP-2026-N.
+ * Strictly guarantees continuous 1, 2, 3 ... sequence based on creation order without any gaps or jumps.
  */
 export function formatExpenseTransactionsNo<
   T extends { id: string; transactionNo?: string; expenseDate?: string; createdAt?: string }
@@ -340,8 +303,15 @@ export function formatExpenseTransactionsNo<
   if (!Array.isArray(expenses) || expenses.length === 0) return expenses;
   const PREFIX = 'EXP-2026';
 
-  // Sort chronological by creation / entry to maintain true sequential mapping
-  const chronological = [...expenses].sort((a, b) => {
+  // Deduplicate by ID
+  const uniqueMap = new Map<string, T>();
+  expenses.forEach((item) => {
+    if (item && item.id) uniqueMap.set(item.id, item);
+  });
+  const uniqueList = Array.from(uniqueMap.values());
+
+  // Sort chronological by creation / entry to maintain true permanent sequence
+  const chronological = [...uniqueList].sort((a, b) => {
     const timeA = a.createdAt || a.expenseDate || '';
     const timeB = b.createdAt || b.expenseDate || '';
     if (timeA !== timeB) return timeA.localeCompare(timeB);
@@ -350,24 +320,46 @@ export function formatExpenseTransactionsNo<
 
   const assignedMap = new Map<string, string>();
   chronological.forEach((item, index) => {
-    if (item.transactionNo) {
-      const match = item.transactionNo.match(/^(?:EXP|DR)-?(?:2026|26)?-?(\d+)$/i);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        // If it's already a clean small sequential number, preserve its number with standard prefix
-        if (!isNaN(num) && num < 1000) {
-          assignedMap.set(item.id, `${PREFIX}-${num}`);
-          return;
-        }
-      }
-    }
-    // Otherwise assign sequential 1, 2, 3 based on creation order
     assignedMap.set(item.id, `${PREFIX}-${index + 1}`);
   });
 
   return expenses.map((item) => ({
     ...item,
-    transactionNo: assignedMap.get(item.id) || item.transactionNo || `${PREFIX}-1`,
+    transactionNo: assignedMap.get(item.id) || `${PREFIX}-1`,
+  }));
+}
+
+/**
+ * Standardizes Cash Settlement numbers permanently as CST-2026-1, CST-2026-2, CST-2026-3 ...
+ * Strictly guarantees continuous 1, 2, 3 ... sequence based on creation order without any gaps or jumps.
+ */
+export function formatCashSettlementsNo<
+  T extends { id: string; settlementNo?: string; depositDate?: string; createdAt?: string }
+>(settlements: T[]): T[] {
+  if (!Array.isArray(settlements) || settlements.length === 0) return settlements;
+  const PREFIX = 'CST-2026';
+
+  const uniqueMap = new Map<string, T>();
+  settlements.forEach((item) => {
+    if (item && item.id) uniqueMap.set(item.id, item);
+  });
+  const uniqueList = Array.from(uniqueMap.values());
+
+  const chronological = [...uniqueList].sort((a, b) => {
+    const timeA = a.createdAt || a.depositDate || '';
+    const timeB = b.createdAt || b.depositDate || '';
+    if (timeA !== timeB) return timeA.localeCompare(timeB);
+    return a.id.localeCompare(b.id);
+  });
+
+  const assignedMap = new Map<string, string>();
+  chronological.forEach((item, index) => {
+    assignedMap.set(item.id, `${PREFIX}-${index + 1}`);
+  });
+
+  return settlements.map((item) => ({
+    ...item,
+    settlementNo: assignedMap.get(item.id) || `${PREFIX}-1`,
   }));
 }
 
