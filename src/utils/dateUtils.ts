@@ -199,8 +199,8 @@ export function getTwoDigitYearFromDate(dateStr?: string): string {
 
 /**
  * Generates next sequential Credit transaction number: CR-2026-1, CR-2026-2, CR-2026-3 ...
- * Permanent prefix: CR-2026-
- * Strictly follows continuous unbroken sequence 1, 2, 3, 4 ... N without any jumps or gaps.
+ * Reads the highest already-assigned CR-2026-N from the formatted list and returns N+1.
+ * This guarantees no jumps — if 18 entries exist numbered 1-18, next is always 19.
  */
 export function generateNextIncomeTransactionNo(
   _dateStr?: string,
@@ -210,17 +210,37 @@ export function generateNextIncomeTransactionNo(
   if (!existingIncomes || existingIncomes.length === 0) {
     return `${PREFIX}-1`;
   }
-  const uniqueMap = new Map<string, any>();
-  existingIncomes.forEach((i, idx) => {
-    uniqueMap.set(i.id || `idx-${idx}`, i);
-  });
-  return `${PREFIX}-${uniqueMap.size + 1}`;
+
+  // Deduplicate by ID (skip entries without id)
+  const seen = new Set<string>();
+  let maxSeq = 0;
+  let uniqueCount = 0;
+
+  for (const item of existingIncomes) {
+    if (item.id) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+    }
+    uniqueCount++;
+
+    // Parse the sequential number from already-formatted transactionNo
+    if (item.transactionNo) {
+      const match = item.transactionNo.match(/^CR-2026-(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxSeq) maxSeq = num;
+      }
+    }
+  }
+
+  // Use the highest parsed number if available, otherwise fall back to unique count
+  const base = maxSeq > 0 ? maxSeq : uniqueCount;
+  return `${PREFIX}-${base + 1}`;
 }
 
 /**
  * Generates next sequential Debit transaction number: EXP-2026-1, EXP-2026-2, EXP-2026-3 ...
- * Permanent prefix: EXP-2026-
- * Strictly follows continuous unbroken sequence 1, 2, 3, 4 ... N without any jumps or gaps.
+ * Reads the highest already-assigned EXP-2026-N from the formatted list and returns N+1.
  */
 export function generateNextExpenseTransactionNo(
   _dateStr?: string,
@@ -230,17 +250,34 @@ export function generateNextExpenseTransactionNo(
   if (!existingExpenses || existingExpenses.length === 0) {
     return `${PREFIX}-1`;
   }
-  const uniqueMap = new Map<string, any>();
-  existingExpenses.forEach((e, idx) => {
-    uniqueMap.set(e.id || `idx-${idx}`, e);
-  });
-  return `${PREFIX}-${uniqueMap.size + 1}`;
+
+  const seen = new Set<string>();
+  let maxSeq = 0;
+  let uniqueCount = 0;
+
+  for (const item of existingExpenses) {
+    if (item.id) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+    }
+    uniqueCount++;
+
+    if (item.transactionNo) {
+      const match = item.transactionNo.match(/^EXP-2026-(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxSeq) maxSeq = num;
+      }
+    }
+  }
+
+  const base = maxSeq > 0 ? maxSeq : uniqueCount;
+  return `${PREFIX}-${base + 1}`;
 }
 
 /**
  * Generates next sequential Cash Settlement number: CST-2026-1, CST-2026-2, CST-2026-3 ...
- * Permanent prefix: CST-2026-
- * Strictly follows continuous unbroken sequence 1, 2, 3, 4 ... N without any jumps or gaps.
+ * Reads the highest already-assigned CST-2026-N from the formatted list and returns N+1.
  */
 export function generateNextCashSettlementNo(
   _dateStr?: string,
@@ -250,11 +287,29 @@ export function generateNextCashSettlementNo(
   if (!existingSettlements || existingSettlements.length === 0) {
     return `${PREFIX}-1`;
   }
-  const uniqueMap = new Map<string, any>();
-  existingSettlements.forEach((s, idx) => {
-    uniqueMap.set(s.id || `idx-${idx}`, s);
-  });
-  return `${PREFIX}-${uniqueMap.size + 1}`;
+
+  const seen = new Set<string>();
+  let maxSeq = 0;
+  let uniqueCount = 0;
+
+  for (const item of existingSettlements) {
+    if (item.id) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+    }
+    uniqueCount++;
+
+    if ((item as any).settlementNo) {
+      const match = (item as any).settlementNo.match(/^CST-2026-(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxSeq) maxSeq = num;
+      }
+    }
+  }
+
+  const base = maxSeq > 0 ? maxSeq : uniqueCount;
+  return `${PREFIX}-${base + 1}`;
 }
 
 /**
@@ -276,8 +331,8 @@ export function formatIncomeTransactionsNo<
 
   // Sort chronological by creation / entry to maintain true permanent sequence
   const chronological = [...uniqueList].sort((a, b) => {
-    const timeA = a.createdAt || a.transactionDate || '';
-    const timeB = b.createdAt || b.transactionDate || '';
+    const timeA = convertMarathiToEnglishDigits(a.createdAt || a.transactionDate || '');
+    const timeB = convertMarathiToEnglishDigits(b.createdAt || b.transactionDate || '');
     if (timeA !== timeB) return timeA.localeCompare(timeB);
     return a.id.localeCompare(b.id);
   });
@@ -312,8 +367,8 @@ export function formatExpenseTransactionsNo<
 
   // Sort chronological by creation / entry to maintain true permanent sequence
   const chronological = [...uniqueList].sort((a, b) => {
-    const timeA = a.createdAt || a.expenseDate || '';
-    const timeB = b.createdAt || b.expenseDate || '';
+    const timeA = convertMarathiToEnglishDigits(a.createdAt || a.expenseDate || '');
+    const timeB = convertMarathiToEnglishDigits(b.createdAt || b.expenseDate || '');
     if (timeA !== timeB) return timeA.localeCompare(timeB);
     return a.id.localeCompare(b.id);
   });
@@ -346,8 +401,8 @@ export function formatCashSettlementsNo<
   const uniqueList = Array.from(uniqueMap.values());
 
   const chronological = [...uniqueList].sort((a, b) => {
-    const timeA = a.createdAt || a.depositDate || '';
-    const timeB = b.createdAt || b.depositDate || '';
+    const timeA = convertMarathiToEnglishDigits(a.createdAt || a.depositDate || '');
+    const timeB = convertMarathiToEnglishDigits(b.createdAt || b.depositDate || '');
     if (timeA !== timeB) return timeA.localeCompare(timeB);
     return a.id.localeCompare(b.id);
   });

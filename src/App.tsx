@@ -215,7 +215,7 @@ import { OccasionModal } from './components/OccasionModal';
 import { SettingsModal } from './components/SettingsModal';
 import { LogoLightboxModal } from './components/LogoLightboxModal';
 import { isBadgedMember, hasAdminPermissions, canApproveFinancialTransactions } from './utils/rbac';
-import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo, formatCashSettlementsNo, getCalendarYearFromDate } from './utils/dateUtils';
+import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo, formatCashSettlementsNo, getCalendarYearFromDate, generateNextIncomeTransactionNo, generateNextExpenseTransactionNo } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { Menu, Home, Sun, Moon, ChevronDown, ChevronRight, ShieldCheck, UserCheck, LogOut, LogIn, Lock } from 'lucide-react';
 
@@ -706,8 +706,11 @@ export default function App() {
   const handleAddIncome = (newIncome: IncomeTransaction) => {
     const isAuthorized = canApproveFinancialTransactions(currentUser.role);
     const isApproved = isAuthorized && newIncome.approvalStatus === 'मंजूर';
+    // Recalculate canonical sequential transactionNo from already-formatted list
+    const canonicalTransNo = generateNextIncomeTransactionNo(newIncome.transactionDate, formattedIncomes);
     const finalIncome: IncomeTransaction = {
       ...newIncome,
+      transactionNo: canonicalTransNo,
       approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
       approvedBy: isApproved ? (newIncome.approvedBy || currentUser.name) : undefined,
       approvedByRole: isApproved ? (newIncome.approvedByRole || currentUser.role) : undefined,
@@ -891,8 +894,11 @@ export default function App() {
   const handleAddExpense = (newExpense: ExpenseTransaction) => {
     const isAuthorized = canApproveFinancialTransactions(currentUser.role);
     const isApproved = isAuthorized && newExpense.approvalStatus === 'मंजूर';
+    // Recalculate canonical sequential transactionNo from already-formatted list
+    const canonicalTransNo = generateNextExpenseTransactionNo(newExpense.expenseDate, formattedExpenses);
     const finalExpense: ExpenseTransaction = {
       ...newExpense,
+      transactionNo: canonicalTransNo,
       approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
       approvedBy: isApproved ? (newExpense.approvedBy || currentUser.name) : undefined,
       approvedByRole: isApproved ? (newExpense.approvedByRole || currentUser.role) : undefined,
