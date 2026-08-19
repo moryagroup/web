@@ -294,7 +294,12 @@ export default function App() {
       }),
       subscribeToCashSettlements((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          setCashSettlements(data);
+          setCashSettlements((prev) => {
+            const map = new Map<string, CashSettlement>();
+            prev.forEach((s) => map.set(s.id, s));
+            data.forEach((s) => map.set(s.id, s));
+            return Array.from(map.values());
+          });
         }
       }),
     ];
@@ -335,7 +340,12 @@ export default function App() {
             saveGroupLogo(logo);
           }
           if (settlements && settlements.length > 0) {
-            setCashSettlements(settlements);
+            setCashSettlements((prev) => {
+              const map = new Map<string, CashSettlement>();
+              prev.forEach((s) => map.set(s.id, s));
+              settlements.forEach((s) => map.set(s.id, s));
+              return Array.from(map.values());
+            });
           }
         } catch (err) {
           console.warn('[Supabase] Initial load error:', err);
@@ -374,8 +384,13 @@ export default function App() {
           setGroupLogo(logo);
           saveGroupLogo(logo);
         }
-        if (settlements) {
-          setCashSettlements(settlements);
+        if (settlements && settlements.length > 0) {
+          setCashSettlements((prev) => {
+            const map = new Map<string, CashSettlement>();
+            prev.forEach((s) => map.set(s.id, s));
+            settlements.forEach((s) => map.set(s.id, s));
+            return Array.from(map.values());
+          });
         }
       }
     });
@@ -413,8 +428,13 @@ export default function App() {
       if (Array.isArray(cloudDb.settings?.customIncomeTypes)) {
         setCustomIncomeTypes(cloudDb.settings.customIncomeTypes);
       }
-      if (Array.isArray(cloudDb.cashSettlements)) {
-        setCashSettlements(cloudDb.cashSettlements);
+      if (Array.isArray(cloudDb.cashSettlements) && cloudDb.cashSettlements.length > 0) {
+        setCashSettlements((prev) => {
+          const map = new Map<string, CashSettlement>();
+          prev.forEach((s) => map.set(s.id, s));
+          cloudDb.cashSettlements!.forEach((s) => map.set(s.id, s));
+          return Array.from(map.values());
+        });
       }
       setIsLoading(false);
     });
@@ -1134,6 +1154,7 @@ export default function App() {
                 summary={summary}
                 incomes={formattedIncomes}
                 expenses={formattedExpenses}
+                cashSettlements={cashSettlements}
                 members={members}
                 occasions={occasions}
                 currentUser={currentUser}
@@ -1147,6 +1168,8 @@ export default function App() {
                 onRejectExpense={handleRejectExpense}
                 onApproveIncome={handleApproveIncome}
                 onRejectIncome={handleRejectIncome}
+                onApproveCashSettlement={handleApproveCashSettlement}
+                onRejectCashSettlement={handleRejectCashSettlement}
                 onLogout={handleLogout}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
                 onUpdateOccasion={handleUpdateOccasion}
@@ -1257,6 +1280,7 @@ export default function App() {
                   summary={summary}
                   incomes={formattedIncomes}
                   expenses={formattedExpenses}
+                  cashSettlements={cashSettlements}
                   members={members}
                   currentUser={currentUser}
                   gallery={gallery}
@@ -1265,8 +1289,11 @@ export default function App() {
                   onSaveGallery={handleSaveGallery}
                   onNavigate={(tab) => setActiveTab(tab)}
                   onApproveExpense={handleApproveExpense}
+                  onRejectExpense={handleRejectExpense}
                   onApproveIncome={handleApproveIncome}
                   onRejectIncome={handleRejectIncome}
+                  onApproveCashSettlement={handleApproveCashSettlement}
+                  onRejectCashSettlement={handleRejectCashSettlement}
                   onLogout={handleLogout}
                   onOpenLogin={() => setIsLoginModalOpen(true)}
                 />

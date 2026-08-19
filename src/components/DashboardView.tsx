@@ -10,6 +10,7 @@ import {
   EventGalleryImage,
   OccasionEvent,
   EventTask,
+  CashSettlement,
 } from '../types';
 import { HeaderStats } from './HeaderStats';
 import { EventGallerySection } from './EventGallerySection';
@@ -44,6 +45,7 @@ interface DashboardViewProps {
   summary: FinancialYearSummary;
   incomes: IncomeTransaction[];
   expenses: ExpenseTransaction[];
+  cashSettlements?: CashSettlement[];
   members: Member[];
   occasions?: OccasionEvent[];
   currentUser: CurrentUser;
@@ -57,6 +59,8 @@ interface DashboardViewProps {
   onRejectExpense?: (expId: string, name: string, role: any) => void;
   onApproveIncome?: (incId: string, name: string, role: any) => void;
   onRejectIncome?: (incId: string, name: string, role: any) => void;
+  onApproveCashSettlement?: (id: string, name: string, role: any) => void;
+  onRejectCashSettlement?: (id: string, name: string, role: any) => void;
   onLogout?: () => void;
   onOpenLogin?: () => void;
   onUpdateOccasion?: (occasion: OccasionEvent) => void;
@@ -66,6 +70,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   summary,
   incomes,
   expenses,
+  cashSettlements = [],
   members,
   occasions = [],
   currentUser,
@@ -79,6 +84,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onRejectExpense,
   onApproveIncome,
   onRejectIncome,
+  onApproveCashSettlement,
+  onRejectCashSettlement,
   onLogout,
   onOpenLogin,
   onUpdateOccasion,
@@ -218,6 +225,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const pendingIncomes = canApprove
     ? incomes.filter((i) => i.approvalStatus === 'प्रलंबित')
+    : [];
+
+  const pendingCashSettlements = canApprove
+    ? (cashSettlements || []).filter((s) => s.approvalStatus === 'प्रलंबित')
     : [];
 
   const pendingExpenses = canApprove
@@ -571,6 +582,93 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         }}
                         className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1"
                         title="पावती नाकारा / रद्द करा (Decline)"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>नाकारा</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pending Bank Deposit / Cash Settlement Approvals Banner */}
+      {pendingCashSettlements.length > 0 && (
+        <div className="bg-sky-50 dark:bg-slate-800/90 border border-sky-200 dark:border-sky-700/60 p-4 rounded-2xl shadow-xs">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-sky-200/60 dark:border-sky-700/60">
+            <div className="flex items-center gap-2 text-sky-900 dark:text-sky-300 font-bold text-sm">
+              <ShieldAlert className="w-5 h-5 text-sky-600 dark:text-sky-400 animate-bounce" />
+              <span>बँक भरणा / रोख सुपूर्द मंजुरी प्रलंबित ({pendingCashSettlements.length} व्यवहार)</span>
+            </div>
+            <button
+              onClick={() => onNavigate('cash-settlements')}
+              className="text-xs text-sky-800 dark:text-sky-300 hover:underline font-bold flex items-center gap-1 cursor-pointer"
+            >
+              <span>सर्व भरणा नोंदी पहा</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {pendingCashSettlements.map((s) => (
+              <div
+                key={s.id}
+                className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-sky-200/80 dark:border-sky-700/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
+              >
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-slate-800 dark:text-slate-100">{s.memberName}</span>
+                    <span className="text-slate-500 dark:text-slate-400">
+                      (गंतव्य: {s.destination})
+                    </span>
+                    <span className="px-2 py-0.5 bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 rounded border border-sky-300 dark:border-sky-700 text-[10px] font-bold">
+                      {s.settlementNo || 'बँक भरणा'}
+                    </span>
+                    {s.slipPhotoUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => handleProofClick(s.slipPhotoUrl!)}
+                        className="px-2.5 py-1 bg-sky-100 dark:bg-sky-950 text-sky-900 dark:text-sky-200 border border-sky-400 dark:border-sky-700 rounded-lg text-[11px] font-bold flex items-center gap-1 hover:bg-sky-200 dark:hover:bg-sky-900 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                        title="भरणा पावती स्लिप पहा"
+                      >
+                        <Paperclip className="w-3.5 h-3.5 text-sky-700 dark:text-sky-400" />
+                        <span>📎 भरणा स्लिप फोटो पाहा</span>
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 italic">
+                        (स्लिप फोटो जोडलेला नाही)
+                      </span>
+                    )}
+                  </div>
+                  <span className="block text-[10px] text-slate-400 mt-0.5">
+                    तारीख: {s.depositDate} {s.bankRefNo ? `| संदर्भ / स्लिप: ${s.bankRefNo}` : ''} | नोंदकर्ता: {s.createdBy}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <span className="font-black text-sky-700 dark:text-sky-400 text-sm">
+                    ₹{s.amount.toLocaleString('en-IN')}
+                  </span>
+                  {canApprove && (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => onApproveCashSettlement && onApproveCashSettlement(s.id, currentUser.name, currentUser.role)}
+                        className="px-3 py-1.5 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+                        title="भरणा मंजूर करा"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>मंजूर</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`बँक भरणा क्र. ${s.settlementNo || ''} (₹${s.amount}) नाकारायचा / रद्द करायचा आहे का?`)) {
+                            onRejectCashSettlement && onRejectCashSettlement(s.id, currentUser.name, currentUser.role);
+                          }
+                        }}
+                        className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+                        title="भरणा नाकारा / रद्द करा"
                       >
                         <XCircle className="w-3.5 h-3.5" />
                         <span>नाकारा</span>
