@@ -161,6 +161,11 @@ export const CoreSummaryView: React.FC<CoreSummaryViewProps> = ({
           <p className="text-3xl font-black text-emerald-950 tracking-tight">
             {formatCurrency(summary.totalIncome)}
           </p>
+          <p className="text-xs text-emerald-700 font-bold flex items-center gap-1.5 flex-wrap">
+            <span>🌐 ऑनलाइन: {formatCurrency(summary.totalOnlineIncome || 0)}</span>
+            <span className="text-emerald-400">|</span>
+            <span>💵 रोख: {formatCurrency(summary.totalCashIncome || 0)}</span>
+          </p>
           <div className="space-y-1 pt-2 border-t border-emerald-200/80 text-xs text-emerald-900 font-medium">
             <div className="flex justify-between">
               <span>सभासद वर्गणी (Subscriptions):</span>

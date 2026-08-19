@@ -43,8 +43,10 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({
           <p className="text-2xl font-black text-emerald-800 tracking-tight">
             {formatCurrency(summary.totalIncome)}
           </p>
-          <p className="text-[11px] text-emerald-600 mt-1">
-            वर्गणी: {formatCurrency(summary.totalSubscriptionsCollected)} | देणगी: {formatCurrency(summary.totalDonationsCollected)}
+          <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-1 font-semibold flex items-center gap-1.5 flex-wrap">
+            <span>ऑनलाइन: {formatCurrency(summary.totalOnlineIncome || 0)}</span>
+            <span className="text-emerald-400">|</span>
+            <span>रोख: {formatCurrency(summary.totalCashIncome || 0)}</span>
           </p>
         </div>
       </div>

@@ -70,6 +70,8 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
 
       const subTotal = yearIncomes.filter((i) => i.incomeType.includes('वर्गणी')).reduce((sum, i) => sum + i.amount, 0);
       const donTotal = yearIncomes.filter((i) => i.incomeType.includes('देणगी')).reduce((sum, i) => sum + i.amount, 0);
+      const onlineTotal = yearIncomes.filter((i) => i.paymentMethod !== 'रोख').reduce((sum, i) => sum + i.amount, 0);
+      const cashTotal = yearIncomes.filter((i) => i.paymentMethod === 'रोख').reduce((sum, i) => sum + i.amount, 0);
 
       return {
         year,
@@ -78,6 +80,8 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
         netBalance,
         subTotal,
         donTotal,
+        onlineTotal,
+        cashTotal,
         incomeCount: yearIncomes.length,
         expenseCount: yearExpenses.length,
       };
@@ -248,8 +252,10 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
                 <div className="p-3 bg-emerald-50/80 dark:bg-emerald-950/40 rounded-xl border border-emerald-100 dark:border-emerald-800">
                   <p className="text-emerald-800 dark:text-emerald-300 font-bold mb-1">एकूण जमा (Income)</p>
                   <p className="text-xl font-black text-emerald-900 dark:text-emerald-200">{formatCurrency(item.totalIncome)}</p>
-                  <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1">
-                    वर्गणी: {formatCurrency(item.subTotal)} | देणगी: {formatCurrency(item.donTotal)}
+                  <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1 font-semibold flex items-center gap-1.5 flex-wrap">
+                    <span>ऑनलाइन: {formatCurrency(item.onlineTotal)}</span>
+                    <span className="text-emerald-400">|</span>
+                    <span>रोख: {formatCurrency(item.cashTotal)}</span>
                   </p>
                 </div>
 

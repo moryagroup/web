@@ -216,6 +216,8 @@ export interface FinancialYearSummary {
   netBalance: number;
   totalSubscriptionsCollected: number;
   totalDonationsCollected: number;
+  totalOnlineIncome: number;
+  totalCashIncome: number;
   pendingExpensesCount: number;
   approvedExpensesTotal: number;
 }
