@@ -1237,6 +1237,7 @@ export default function App() {
                 onRejectIncome={handleRejectIncome}
                 onApproveCashSettlement={handleApproveCashSettlement}
                 onRejectCashSettlement={handleRejectCashSettlement}
+                onDeleteCashSettlement={handleDeleteCashSettlement}
                 onLogout={handleLogout}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
                 onUpdateOccasion={handleUpdateOccasion}
@@ -1361,6 +1362,7 @@ export default function App() {
                   onRejectIncome={handleRejectIncome}
                   onApproveCashSettlement={handleApproveCashSettlement}
                   onRejectCashSettlement={handleRejectCashSettlement}
+                  onDeleteCashSettlement={handleDeleteCashSettlement}
                   onLogout={handleLogout}
                   onOpenLogin={() => setIsLoginModalOpen(true)}
                 />

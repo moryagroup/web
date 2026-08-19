@@ -808,6 +808,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <XCircle className="w-3.5 h-3.5" />
                         <span>नाकारा</span>
                       </button>
+                      {hasFullFinancialAccess(currentUser.role) && onDeleteCashSettlement && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`बँक भरणा विनंती क्र. ${s.settlementNo || ''} (₹${s.amount}) पूर्णपणे हटवायची (Delete) आहे का?`)) {
+                              onDeleteCashSettlement(s.id);
+                            }
+                          }}
+                          className="p-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-950/50 text-slate-500 rounded-xl transition-all cursor-pointer"
+                          title="नोंद कायमची हटवा (Delete)"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

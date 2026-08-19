@@ -38,6 +38,7 @@ import {
   FileText,
   Receipt,
   Upload,
+  Trash2,
 } from 'lucide-react';
 
 interface CashSettlementsViewProps {
@@ -146,19 +147,22 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
 
   const effectiveRole = loggedMember?.designation || currentUser.role;
 
+  const isAdmin =
+    currentUser.role === 'ॲडमिन' ||
+    currentUser.role === 'Admin' ||
+    effectiveRole === 'ॲडमिन' ||
+    effectiveRole === 'Admin';
+
   const isTreasurerOrVice =
+    isAdmin ||
     effectiveRole === 'खजिनदार' ||
     effectiveRole === 'उपखजिनदार' ||
     effectiveRole === 'Treasurer' ||
     effectiveRole === 'Vice Treasurer' ||
-    effectiveRole === 'ॲडमिन' ||
-    effectiveRole === 'Admin' ||
     currentUser.role === 'खजिनदार' ||
     currentUser.role === 'उपखजिनदार' ||
     currentUser.role === 'Treasurer' ||
     currentUser.role === 'Vice Treasurer' ||
-    currentUser.role === 'ॲडमिन' ||
-    currentUser.role === 'Admin' ||
     (currentUser.name && (
       currentUser.name.includes('उदय') ||
       currentUser.name.includes('हेरवाडे') ||
@@ -727,13 +731,13 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                 </div>
 
                 {isTreasurerOrVice ? (
-                  <div className="flex items-center gap-2 pt-3 border-t border-slate-800">
+                  <div className="flex items-center gap-2 pt-3 border-t border-slate-800 flex-wrap">
                     <button
                       type="button"
                       onClick={() =>
                         onApproveCashSettlement(item.id, currentUser.name, currentUser.role)
                       }
-                      className="flex-1 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                      className="flex-1 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl shadow flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 min-w-[120px]"
                     >
                       <CheckCircle className="w-4 h-4" />
                       <span>मंजूर करा (Deduct Cash)</span>
@@ -748,6 +752,21 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                       <XCircle className="w-4 h-4" />
                       <span>रद्द</span>
                     </button>
+                    {onDeleteCashSettlement && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`बँक भरणा विनंती क्र. ${item.settlementNo || ''} (₹${item.amount}) पूर्णपणे हटवायची (Delete) आहे का?`)) {
+                            onDeleteCashSettlement(item.id);
+                          }
+                        }}
+                        className="px-3 py-2 bg-slate-800 hover:bg-rose-900/80 text-rose-300 font-bold text-xs rounded-xl border border-rose-500/30 flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
+                        title="ही नोंद कायमची हटवा (Admin Delete)"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>हटवा</span>
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <p className="text-xs text-amber-300/80 italic pt-2 border-t border-slate-800 flex items-center gap-1">
@@ -1060,6 +1079,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                     <th className="p-3">बँक संदर्भ / स्लिप क्र.</th>
                     <th className="p-3">मंजुरी दर्जा</th>
                     <th className="p-3">पुरावा</th>
+                    {(isAdmin || isTreasurerOrVice) && <th className="p-3 text-right">कृती</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -1105,6 +1125,24 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                           <span className="text-slate-400 text-[10px]">---</span>
                         )}
                       </td>
+                      {(isAdmin || isTreasurerOrVice) && (
+                        <td className="p-3 text-right">
+                          {onDeleteCashSettlement && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(`बँक भरणा नोंद क्र. ${item.settlementNo || ''} (₹${item.amount}) पूर्णपणे हटवायची (Delete) आहे का?`)) {
+                                  onDeleteCashSettlement(item.id);
+                                }
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center"
+                              title="नोंद कायमची हटवा (Delete)"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
