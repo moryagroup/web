@@ -22,6 +22,8 @@ import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions,
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  ArrowDownCircle,
+  ArrowUpCircle,
   Clock,
   CheckCircle,
   XCircle,
@@ -220,6 +222,68 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     );
   }, [expenses, canApprove, currentMember, currentUser]);
 
+  // User's personal total deposits and expenses (Total, Online & Cash)
+  const userPersonalSummary = useMemo(() => {
+    if (!currentUser || !currentUser.name) {
+      return {
+        totalDeposit: 0,
+        onlineDeposit: 0,
+        cashDeposit: 0,
+        totalExpense: 0,
+        onlineExpense: 0,
+        cashExpense: 0,
+        depositCount: 0,
+        expenseCount: 0,
+      };
+    }
+
+    const userNorm = (currentUser.name || '').trim().toLowerCase();
+
+    const userIncomes = (incomes || []).filter((i) => {
+      if (i.approvalStatus === 'रद्द') return false;
+      const isLinked = Boolean(currentMember && i.linkedMemberId === currentMember.id);
+      const isDepositor = (i.depositorName || '').trim().toLowerCase().includes(userNorm);
+      const isCreator = (i.createdBy || '').trim().toLowerCase().includes(userNorm);
+      return isLinked || isDepositor || isCreator;
+    });
+
+    const totalDeposit = userIncomes.reduce((sum, i) => sum + i.amount, 0);
+    const onlineDeposit = userIncomes
+      .filter((i) => i.paymentMethod !== 'रोख')
+      .reduce((sum, i) => sum + i.amount, 0);
+    const cashDeposit = userIncomes
+      .filter((i) => i.paymentMethod === 'रोख')
+      .reduce((sum, i) => sum + i.amount, 0);
+
+    const userExpenses = (expenses || []).filter((e) => {
+      if (e.approvalStatus === 'रद्द') return false;
+      const isLinked = Boolean(currentMember && (e.linkedMemberId === currentMember.id || e.paidByMemberId === currentMember.id));
+      const isRecipient = (e.recipientName || '').trim().toLowerCase().includes(userNorm);
+      const isPaidBy = (e.paidByMemberName || '').trim().toLowerCase().includes(userNorm);
+      const isCreator = (e.createdBy || '').trim().toLowerCase().includes(userNorm);
+      return isLinked || isRecipient || isPaidBy || isCreator;
+    });
+
+    const totalExpense = userExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const onlineExpense = userExpenses
+      .filter((e) => e.paymentMethod !== 'रोख')
+      .reduce((sum, e) => sum + e.amount, 0);
+    const cashExpense = userExpenses
+      .filter((e) => e.paymentMethod === 'रोख')
+      .reduce((sum, e) => sum + e.amount, 0);
+
+    return {
+      totalDeposit,
+      onlineDeposit,
+      cashDeposit,
+      totalExpense,
+      onlineExpense,
+      cashExpense,
+      depositCount: userIncomes.length,
+      expenseCount: userExpenses.length,
+    };
+  }, [incomes, expenses, currentUser, currentMember]);
+
   const recentIncomes = displayIncomes.slice(0, 5);
   const recentExpenses = displayExpenses.slice(0, 5);
 
@@ -393,6 +457,81 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           )}
         </div>
       </div>
+
+      {/* User's Personal Total Deposit & Total Expense Cards (Side by Side) */}
+      {isLoggedIn && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* User's Total Deposit Card */}
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50/70 dark:from-emerald-950/40 dark:to-teal-950/30 p-5 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/60 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                  <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 rounded-lg">
+                    <ArrowDownCircle className="w-4 h-4" />
+                  </div>
+                  <span>तुमची एकूण जमा (My Total Deposit)</span>
+                </div>
+                <span className="text-[10px] bg-emerald-200/70 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 font-black px-2 py-0.5 rounded-full">
+                  {userPersonalSummary.depositCount} नोंदी
+                </span>
+              </div>
+              <p className="text-2xl sm:text-3xl font-black text-emerald-900 dark:text-emerald-100 tracking-tight">
+                ₹{userPersonalSummary.totalDeposit.toLocaleString('en-IN')}
+              </p>
+            </div>
+            <div className="mt-3 pt-2.5 border-t border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-between text-xs font-bold text-emerald-800 dark:text-emerald-300">
+              <span className="flex items-center gap-1">
+                <span className="text-emerald-600 dark:text-emerald-400">🌐 ऑनलाइन:</span>
+                <span className="font-extrabold text-emerald-950 dark:text-emerald-100">
+                  ₹{userPersonalSummary.onlineDeposit.toLocaleString('en-IN')}
+                </span>
+              </span>
+              <span className="text-emerald-300 dark:text-emerald-700">|</span>
+              <span className="flex items-center gap-1">
+                <span className="text-emerald-600 dark:text-emerald-400">💵 रोख:</span>
+                <span className="font-extrabold text-emerald-950 dark:text-emerald-100">
+                  ₹{userPersonalSummary.cashDeposit.toLocaleString('en-IN')}
+                </span>
+              </span>
+            </div>
+          </div>
+
+          {/* User's Total Expense Card */}
+          <div className="bg-gradient-to-br from-rose-50 to-red-50/70 dark:from-rose-950/40 dark:to-red-950/30 p-5 rounded-2xl border border-rose-200/80 dark:border-rose-800/60 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-rose-800 dark:text-rose-300">
+                  <div className="p-1.5 bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 rounded-lg">
+                    <ArrowUpCircle className="w-4 h-4" />
+                  </div>
+                  <span>तुमचा एकूण खर्च (My Total Expense)</span>
+                </div>
+                <span className="text-[10px] bg-rose-200/70 dark:bg-rose-900/60 text-rose-900 dark:text-rose-200 font-black px-2 py-0.5 rounded-full">
+                  {userPersonalSummary.expenseCount} नोंदी
+                </span>
+              </div>
+              <p className="text-2xl sm:text-3xl font-black text-rose-900 dark:text-rose-100 tracking-tight">
+                ₹{userPersonalSummary.totalExpense.toLocaleString('en-IN')}
+              </p>
+            </div>
+            <div className="mt-3 pt-2.5 border-t border-rose-200/60 dark:border-rose-800/40 flex items-center justify-between text-xs font-bold text-rose-800 dark:text-rose-300">
+              <span className="flex items-center gap-1">
+                <span className="text-rose-600 dark:text-rose-400">🌐 ऑनलाइन:</span>
+                <span className="font-extrabold text-rose-950 dark:text-rose-100">
+                  ₹{userPersonalSummary.onlineExpense.toLocaleString('en-IN')}
+                </span>
+              </span>
+              <span className="text-rose-300 dark:text-rose-700">|</span>
+              <span className="flex items-center gap-1">
+                <span className="text-rose-600 dark:text-rose-400">💵 रोख:</span>
+                <span className="font-extrabold text-rose-950 dark:text-rose-100">
+                  ₹{userPersonalSummary.cashExpense.toLocaleString('en-IN')}
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Home Page Notification: Assigned Event Tasks & Work Responsibilities */}
       {assignedTasksForMe.length > 0 && (
