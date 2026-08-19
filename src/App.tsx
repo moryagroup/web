@@ -1232,16 +1232,6 @@ export default function App() {
         {/* Dynamic Main View Area (All content including Stats scrolls smoothly together) */}
         <section className="flex-1 p-4 lg:p-6 overflow-y-auto">
           <div className="max-w-7xl mx-auto space-y-6">
-            {activeTab !== 'dashboard' && (
-              <HeaderStats
-                summary={summary}
-                selectedYear={selectedYear}
-                setSelectedYear={setSelectedYear}
-                currentUser={currentUser}
-                onLogout={handleLogout}
-              />
-            )}
-
             {activeTab === 'dashboard' && (
               <DashboardView
                 summary={summary}

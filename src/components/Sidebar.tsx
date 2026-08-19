@@ -170,13 +170,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       isCoreOnly: true,
     },
     {
-      id: 'core-summary',
-      label: '३. जमा, खर्च व शिल्लक',
-      icon: PieChart,
-      color: 'text-emerald-400',
-      isCoreOnly: true,
-    },
-    {
       id: 'suggestions',
       label: 'सूचना व सुचवणी',
       icon: MessageSquarePlus,

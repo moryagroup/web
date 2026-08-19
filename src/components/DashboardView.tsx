@@ -360,13 +360,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Income, Expense & Net Balance Summary Cards (Positioned directly below the Middle Login option) */}
-        <HeaderStats
-          summary={summary}
-          selectedYear={selectedYear}
-          setSelectedYear={setSelectedYear}
-          currentUser={currentUser}
-          onLogout={onLogout}
-        />
+        {hasFullFinancialAccess(currentUser.role) && (
+          <HeaderStats
+            summary={summary}
+            selectedYear={selectedYear}
+            setSelectedYear={setSelectedYear}
+            currentUser={currentUser}
+            onLogout={onLogout}
+          />
+        )}
 
         {/* Event Photo Gallery */}
         <EventGallerySection
@@ -430,15 +432,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Income, Expense & Net Balance Summary Cards */}
-      <HeaderStats
-        summary={summary}
-        selectedYear={selectedYear}
-        setSelectedYear={setSelectedYear}
-        currentUser={currentUser}
-        onLogout={onLogout}
-        onNavigate={onNavigate}
-      />
+      {/* Income, Expense & Net Balance Summary Cards (Only for Treasurer & Vice Treasurer) */}
+      {hasFullFinancialAccess(currentUser.role) && (
+        <HeaderStats
+          summary={summary}
+          selectedYear={selectedYear}
+          setSelectedYear={setSelectedYear}
+          currentUser={currentUser}
+          onLogout={onLogout}
+          onNavigate={onNavigate}
+        />
+      )}
 
       {/* User's Personal Total Deposit & Total Expense Cards (Side by Side) */}
       {/* User's Personal Total Deposit & Total Expense Cards (Side by Side in One Small Box) */}
