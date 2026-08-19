@@ -216,7 +216,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { isBadgedMember, hasAdminPermissions, canApproveFinancialTransactions } from './utils/rbac';
 import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo, getCalendarYearFromDate } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
-import { Menu, Sun, Moon } from 'lucide-react';
+import { Menu, Sun, Moon, ChevronDown, ChevronRight, ShieldCheck, UserCheck, LogOut, LogIn, Lock } from 'lucide-react';
 
 const VALID_TABS = new Set([
   'dashboard',
@@ -639,6 +639,70 @@ export default function App() {
     saveGroupLogoFirestore(finalUrl).catch(console.error);
     cloudSaveGroupLogo(finalUrl).catch(console.error);
     saveGroupLogoToSupabase(finalUrl).catch(console.error);
+  };
+
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+
+  const selectedRoleValue = useMemo(() => {
+    if (currentUser.role === 'ॲडमिन') return 'ADMIN_ACCOUNT';
+    const found = members.find(
+      (m) =>
+        m.fullName.trim().toLowerCase() === currentUser.name.trim().toLowerCase() ||
+        (m.phone && currentUser.phone && m.phone === currentUser.phone)
+    );
+    return found ? found.id : 'ADMIN_ACCOUNT';
+  }, [currentUser, members]);
+
+  const handleUserSelect = (val: string) => {
+    const isAdmin = currentUser.role === 'ॲडमिन' && currentUser.isLoggedIn !== false;
+
+    if (isAdmin) {
+      if (val === 'ADMIN_ACCOUNT') {
+        setCurrentUser({
+          name: 'सिस्टम ॲडमिन',
+          role: 'ॲडमिन',
+          phone: '९८२२०१०१००',
+          isLoggedIn: true,
+        });
+        return;
+      }
+
+      const foundMember = members.find((m) => m.id === val);
+      if (foundMember) {
+        setCurrentUser({
+          name: foundMember.fullName,
+          role: (foundMember.designation as any) || 'सभासद',
+          phone: foundMember.phone,
+          email: foundMember.email,
+          birthDate: foundMember.birthDate,
+          age: foundMember.age,
+          isLoggedIn: true,
+        });
+      }
+      return;
+    }
+
+    if (val === 'ADMIN_ACCOUNT') {
+      handleOpenLogin('ADMIN_ACCOUNT', 'admin');
+      return;
+    }
+
+    const foundMember = members.find((m) => m.id === val);
+    if (foundMember) {
+      if (foundMember.password && foundMember.password.trim() !== '') {
+        handleOpenLogin(foundMember.id, 'member');
+      } else {
+        setCurrentUser({
+          name: foundMember.fullName,
+          role: (foundMember.designation as any) || 'सभासद',
+          phone: foundMember.phone,
+          email: foundMember.email,
+          birthDate: foundMember.birthDate,
+          age: foundMember.age,
+          isLoggedIn: true,
+        });
+      }
+    }
   };
 
   const handleOpenLogin = (memberId?: string, type: 'admin' | 'member' = 'member') => {
@@ -1250,23 +1314,131 @@ export default function App() {
               )}
             </button>
 
-            {currentUser.isLoggedIn !== false && (
+            {/* Top Right Profile Logo & Popover Menu */}
+            <div className="relative">
               <button
-                onClick={() => {
-                  setActiveTab('profile');
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-xl cursor-pointer hover:bg-amber-500/20 transition-colors"
-                title="माझे प्रोफाइल पहा"
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                className="flex items-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 px-2.5 py-1 rounded-xl cursor-pointer transition-all shadow-xs active:scale-95"
+                title="प्रोफाइल व खाते मेन्यू उघडा"
               >
-                <div className="w-5 h-5 bg-amber-500 text-slate-950 font-black rounded-md flex items-center justify-center text-[10px]">
-                  {currentUser.name.substring(0, 1)}
+                <div className="w-6 h-6 bg-amber-500 text-slate-950 font-black rounded-lg flex items-center justify-center text-xs shadow-xs shrink-0">
+                  {currentUser.isLoggedIn !== false ? currentUser.name.substring(0, 1) : '🔑'}
                 </div>
-                <span className="text-[11px] font-bold text-amber-300 max-w-[65px] truncate sm:max-w-none">
-                  {currentUser.name.split(' ')[0]}
+                <span className="text-xs font-bold text-amber-200 max-w-[90px] truncate sm:max-w-none">
+                  {currentUser.isLoggedIn !== false ? currentUser.name.split(' ')[0] : 'लॉगइन'}
                 </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-amber-300 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
               </button>
-            )}
+
+              {/* Profile Menu Dropdown Popover */}
+              {isProfileMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsProfileMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-amber-500/40 text-white rounded-2xl shadow-2xl p-3 z-50 space-y-3">
+                    {currentUser.isLoggedIn !== false ? (
+                      <>
+                        <div className="p-2.5 bg-slate-800/90 rounded-xl border border-slate-700/80 flex items-center gap-2.5">
+                          <div className="w-9 h-9 bg-amber-500 text-slate-950 font-black rounded-xl flex items-center justify-center text-sm shadow shrink-0">
+                            {currentUser.name.substring(0, 2)}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-white truncate">{currentUser.name}</p>
+                            <span className="text-[10px] text-amber-300 font-bold px-1.5 py-0.2 bg-slate-950 rounded border border-amber-500/20 inline-block mt-0.5">
+                              {currentUser.role}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> प्रोफाइल / पद बदलावा:
+                          </label>
+                          <select
+                            value={selectedRoleValue}
+                            onChange={(e) => {
+                              handleUserSelect(e.target.value);
+                              setIsProfileMenuOpen(false);
+                            }}
+                            className="w-full bg-slate-800 text-slate-100 text-xs font-bold rounded-xl border border-slate-700 p-2 focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
+                          >
+                            <option value="ADMIN_ACCOUNT">⚡ ॲडमिन (सिस्टम ॲडमिन)</option>
+                            <optgroup label="पदाधिकारी (Office Bearers)">
+                              {members
+                                .filter((m) => m.designation && m.designation !== 'सभासद')
+                                .map((m) => (
+                                  <option key={m.id} value={m.id}>
+                                    🏅 {m.fullName} ({m.designation})
+                                  </option>
+                                ))}
+                            </optgroup>
+                            <optgroup label="सभासद (General Members)">
+                              {members
+                                .filter((m) => !m.designation || m.designation === 'सभासद')
+                                .map((m) => (
+                                  <option key={m.id} value={m.id}>
+                                    👤 {m.fullName} (सभासद)
+                                  </option>
+                                ))}
+                            </optgroup>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1 pt-1 border-t border-slate-800">
+                          <button
+                            onClick={() => {
+                              setActiveTab('profile');
+                              setIsProfileMenuOpen(false);
+                            }}
+                            className="w-full py-2 px-3 bg-slate-800/60 hover:bg-slate-800 text-slate-200 rounded-xl font-bold text-xs flex items-center justify-between transition-colors cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2">
+                              <UserCheck className="w-4 h-4 text-amber-400" />
+                              <span>माझे प्रोफाइल पहा</span>
+                            </div>
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              handleLogout();
+                              setIsProfileMenuOpen(false);
+                            }}
+                            className="w-full py-2 px-3 bg-rose-950/60 hover:bg-rose-900/80 text-rose-200 rounded-xl font-bold text-xs flex items-center justify-between border border-rose-800/40 transition-colors cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2">
+                              <LogOut className="w-4 h-4 text-rose-400" />
+                              <span>लॉगआउट (Logout)</span>
+                            </div>
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="p-3 bg-slate-800/90 rounded-xl border border-amber-500/40 text-center space-y-2">
+                        <p className="text-xs text-amber-300 font-bold flex items-center justify-center gap-1">
+                          <Lock className="w-3.5 h-3.5" /> पाहुणा मोड (Guest Mode)
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          आर्थिक नोंदी व हिशोब पाहण्यासाठी लॉगिन करा.
+                        </p>
+                        <button
+                          onClick={() => {
+                            handleOpenLogin();
+                            setIsProfileMenuOpen(false);
+                          }}
+                          className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                        >
+                          <LogIn className="w-4 h-4" />
+                          <span>लॉगिन करा (Login)</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
 

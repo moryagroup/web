@@ -6,8 +6,6 @@ import { exportToCSV, triggerPDFPrint } from '../utils/exportUtils';
 import {
   CALENDAR_YEAR_OPTIONS,
   FINANCIAL_YEAR_OPTIONS,
-  getFinancialYearMonthList,
-  getCalendarYearMonthList,
   isDateInSelectedYear,
 } from '../utils/dateUtils';
 import {
@@ -20,12 +18,9 @@ import {
   ArrowLeft,
   FileSpreadsheet,
   Printer,
-  ChevronDown,
-  ChevronUp,
   Building2,
   CalendarDays,
-  ReceiptText,
-  Filter,
+  CalendarRange,
 } from 'lucide-react';
 
 interface AllYearsDataViewProps {
@@ -46,8 +41,6 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
   onOpenLogin,
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('FINANCIAL');
-  const [expandedYear, setExpandedYear] = useState<string | null>('२०२६-२७');
-  const [selectedMonthKey, setSelectedMonthKey] = useState<string>('CURRENT');
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
   const isCoreMember = isLoggedIn && isCoreMemberRole(currentUser.role);
@@ -69,7 +62,7 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
 
   const activeYearList = viewMode === 'FINANCIAL' ? FINANCIAL_YEAR_OPTIONS : CALENDAR_YEAR_OPTIONS;
 
-  // Multi-year aggregates
+  // Multi-year aggregates (Yearly Data Only)
   const yearsSummary = useMemo(() => {
     return activeYearList.map((yearKey) => {
       const yearIncomes = incomes.filter((i) =>
@@ -99,36 +92,6 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
         .filter((i) => i.paymentMethod === 'रोख')
         .reduce((sum, i) => sum + i.amount, 0);
 
-      // Monthly breakdown sorted according to mode
-      const monthList =
-        viewMode === 'FINANCIAL'
-          ? getFinancialYearMonthList(yearKey) // April -> March
-          : getCalendarYearMonthList(yearKey); // Jan -> Dec
-
-      const monthlyBreakdown = monthList.map((m) => {
-        const mIncomes = yearIncomes.filter((i) => {
-          if (!i.transactionDate) return false;
-          return i.transactionDate.startsWith(m.key);
-        });
-        const mExpenses = yearExpenses.filter((e) => {
-          if (!e.expenseDate) return false;
-          return e.expenseDate.startsWith(m.key);
-        });
-
-        const incSum = mIncomes.reduce((sum, i) => sum + i.amount, 0);
-        const expSum = mExpenses.reduce((sum, e) => sum + e.amount, 0);
-        return {
-          ...m,
-          income: incSum,
-          incomeCount: mIncomes.length,
-          expense: expSum,
-          expenseCount: mExpenses.length,
-          net: incSum - expSum,
-          incomes: mIncomes,
-          expenses: mExpenses,
-        };
-      });
-
       return {
         yearKey,
         totalIncome,
@@ -141,7 +104,6 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
         cashTotal,
         incomeCount: yearIncomes.length,
         expenseCount: yearExpenses.length,
-        monthlyBreakdown,
       };
     });
   }, [incomes, expenses, viewMode, activeYearList]);
@@ -154,53 +116,48 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
   const grandNetBalance = grandTotalIncome - grandTotalExpense;
 
   const handleExportCSV = () => {
-    const modeLabel = viewMode === 'FINANCIAL' ? 'FinancialYears_AprToMar' : 'CalendarYears_JanToDec';
-    const filename = `MoryaGroup_${modeLabel}_${Date.now()}.csv`;
+    const filename = `MoryaGroup_MultiYearReport_${Date.now()}.csv`;
     const headers = [
-      'अ क्र.',
-      viewMode === 'FINANCIAL' ? 'आर्थिक वर्ष (१ एप्रिल - ३१ मार्च)' : 'कॅलेंडर वर्ष (१ जाने - ३१ डिसे)',
+      'वर्ष',
       'एकूण जमा (₹)',
       'वर्गणी जमा (₹)',
       'देणगी जमा (₹)',
       'इतर जमा (₹)',
-      'एकूण मंजूर खर्च (₹)',
+      'ऑनलाइन जमा (₹)',
+      'रोख जमा (₹)',
+      'जमा नोंदी संख्या',
+      'मंजूर खर्च (₹)',
+      'खर्च नोंदी संख्या',
       'निव्वळ शिल्लक बचत (₹)',
-      'शिल्लक टक्केवारी (%)',
-      'जमा नोंदी',
-      'मंजूर खर्च नोंदी',
     ];
 
-    const rows: (string | number | boolean)[][] = yearsSummary.map((item, index) => {
-      const margin = item.totalIncome > 0 ? Math.round((item.netBalance / item.totalIncome) * 100) : 0;
-      return [
-        index + 1,
-        item.yearKey,
-        item.totalIncome,
-        item.subTotal,
-        item.donTotal,
-        item.otherTotal,
-        item.totalExpense,
-        item.netBalance,
-        `${margin}%`,
-        item.incomeCount,
-        item.expenseCount,
-      ];
-    });
+    const rows: (string | number)[][] = yearsSummary.map((y) => [
+      y.yearKey,
+      y.totalIncome,
+      y.subTotal,
+      y.donTotal,
+      y.otherTotal,
+      y.onlineTotal,
+      y.cashTotal,
+      y.incomeCount,
+      y.totalExpense,
+      y.expenseCount,
+      y.netBalance,
+    ]);
 
-    // Grand totals row
     rows.push([]);
     rows.push([
-      '',
-      'सर्व वर्षांची एकूण बचत (Grand Total)',
+      'सर्व वर्षांची एकूण निष्पत्ती (Lifetime Total)',
       grandTotalIncome,
       '',
       '',
       '',
-      grandTotalExpense,
-      grandNetBalance,
+      '',
       '',
       incomes.length,
+      grandTotalExpense,
       expenses.filter((e) => e.approvalStatus === 'मंजूर').length,
+      grandNetBalance,
     ]);
 
     exportToCSV(filename, headers, rows);
@@ -209,8 +166,8 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
   const handlePrintPDF = () => {
     const title =
       viewMode === 'FINANCIAL'
-        ? 'मोरया ग्रुप सर्व आर्थिक वर्षांचा हिशोब अहवाल (१ एप्रिल ते ३१ मार्च)'
-        : 'मोरया ग्रुप सर्व कॅलेंडर वर्षांचा हिशोब अहवाल (१ जानेवारी ते ३१ डिसेंबर)';
+        ? `मोरया ग्रुप बहुवार्षिक आर्थिक वर्ष हिशोब अहवाल (All Financial Years Report)`
+        : `मोरया ग्रुप बहुवार्षिक कॅलेंडर वर्ष हिशोब अहवाल (All Calendar Years Report)`;
     triggerPDFPrint(title);
   };
 
@@ -223,40 +180,37 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
             <button
               type="button"
               onClick={() => onNavigate('dashboard')}
-              className="p-2 bg-slate-800 hover:bg-slate-700 text-indigo-300 rounded-xl border border-slate-700 font-bold text-xs shadow-xs transition-all cursor-pointer shrink-0 active:scale-95 flex items-center gap-1"
-              title="मुख्य डॅशबोर्डवर परत जा"
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl border border-slate-700 font-bold text-xs shadow-xs transition-all cursor-pointer shrink-0 active:scale-95 flex items-center gap-1"
+              title="मुख्य डॅशबोर्डवर परत जा (Exit)"
             >
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">← मुख्य पान</span>
             </button>
           )}
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold shrink-0">
             <History className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 rounded-md text-[11px] font-bold uppercase">
-                बहुवार्षिक इतिहास अहवाल
+              <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-md text-[11px] font-bold uppercase">
+                सर्व वर्षांचा अहवाल (Yearly Data Only)
               </span>
-              <span className="text-xs text-indigo-300 font-bold">• {currentUser.role}</span>
+              <span className="text-xs text-amber-400 font-bold">• {currentUser.role}</span>
             </div>
             <h2 className="text-xl font-black mt-1 text-white">
-              सर्व वर्षांचा हिशोब अहवाल (All Years History)
+              वार्षिक तुलना व बहुवार्षिक जमा-खर्च (Multi-Year Summary)
             </h2>
             <p className="text-xs text-slate-300">
-              आर्थिक वर्ष (१ एप्रिल ते ३१ मार्च) किंवा कॅलेंडर वर्ष (१ जानेवारी ते ३१ डिसेंबर) निवडून सविस्तर हिशोब पहा.
+              प्रत्येक वर्षाचा एकूण जमा, मंजूर खर्च व शिल्लक बचतीचा वर्षानिहाय आढावा.
             </p>
           </div>
         </div>
 
-        {/* View Mode Toggle: Financial vs Calendar */}
+        {/* Mode Switcher: Financial vs Calendar */}
         <div className="flex items-center bg-slate-800/90 p-1.5 rounded-2xl border border-slate-700 shadow-inner gap-1">
           <button
             type="button"
-            onClick={() => {
-              setViewMode('FINANCIAL');
-              setExpandedYear('२०२६-२७');
-            }}
+            onClick={() => setViewMode('FINANCIAL')}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
               viewMode === 'FINANCIAL'
                 ? 'bg-amber-500 text-slate-950 shadow-md scale-[1.02]'
@@ -268,10 +222,7 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => {
-              setViewMode('CALENDAR');
-              setExpandedYear('२०२६');
-            }}
+            onClick={() => setViewMode('CALENDAR')}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
               viewMode === 'CALENDAR'
                 ? 'bg-amber-500 text-slate-950 shadow-md scale-[1.02]'
@@ -284,7 +235,7 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
         </div>
       </div>
 
-      {/* Lifetime Grand Totals */}
+      {/* Lifetime KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-emerald-600 text-white p-5 rounded-2xl shadow-md space-y-1">
           <div className="flex items-center gap-1.5 text-xs text-emerald-100 font-bold uppercase">
@@ -292,7 +243,9 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
             <span>सर्व वर्षांची एकूण जमा</span>
           </div>
           <p className="text-2xl font-black">{formatCurr(grandTotalIncome)}</p>
-          <p className="text-[11px] text-emerald-100 font-medium">एकूण जमा नोंदी: {incomes.length}</p>
+          <p className="text-[11px] text-emerald-100 font-medium">
+            एकूण जमा नोंदी: {incomes.length}
+          </p>
         </div>
 
         <div className="bg-rose-600 text-white p-5 rounded-2xl shadow-md space-y-1">
@@ -319,10 +272,10 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
       {/* Export & Action Controls */}
       <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
             {viewMode === 'FINANCIAL'
-              ? '📊 आर्थिक वर्षानुसार महिने क्रम: १ एप्रिल ते ३१ मार्च'
-              : '📅 कॅलेंडर वर्षानुसार महिने क्रम: १ जानेवारी ते ३१ डिसेंबर'}
+              ? '📊 वर्षानिहाय तुलनात्मक अहवाल (आर्थिक वर्ष क्रम: १ एप्रिल ते ३१ मार्च)'
+              : '📅 वर्षानिहाय तुलनात्मक अहवाल (कॅलेंडर वर्ष क्रम: १ जानेवारी ते ३१ डिसेंबर)'}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -343,20 +296,16 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
         </div>
       </div>
 
-      {/* Year-by-Year Cards with April-to-March Breakdown */}
+      {/* Pure Year-by-Year Summary Cards (No Monthly Data) */}
       <div className="space-y-4">
         {yearsSummary.map((item) => {
-          const isExpanded = expandedYear === item.yearKey;
           return (
             <div
               key={item.yearKey}
-              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-all"
+              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-all space-y-3"
             >
               {/* Year Summary Header */}
-              <div
-                onClick={() => setExpandedYear(isExpanded ? null : item.yearKey)}
-                className="p-5 bg-slate-50 dark:bg-slate-900/60 hover:bg-slate-100/80 dark:hover:bg-slate-900/90 cursor-pointer flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors select-none"
-              >
+              <div className="p-5 bg-slate-50 dark:bg-slate-900/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-3">
                   <div className="px-3.5 py-1.5 bg-slate-900 dark:bg-slate-800 text-amber-400 font-black text-base rounded-xl border border-slate-700 shadow-xs">
                     {item.yearKey}
@@ -377,7 +326,7 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
                   <div className="text-left md:text-right">
                     <span className="text-[10px] uppercase font-bold text-slate-400 block">निव्वळ शिल्लक:</span>
                     <span
-                      className={`text-lg font-black ${
+                      className={`text-xl font-black ${
                         item.netBalance >= 0
                           ? 'text-emerald-700 dark:text-emerald-400'
                           : 'text-rose-700 dark:text-rose-400'
@@ -386,158 +335,56 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
                       {formatCurr(item.netBalance)}
                     </span>
                   </div>
-                  <div className="p-2 bg-slate-200 dark:bg-slate-700 rounded-xl text-slate-700 dark:text-slate-200">
-                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                  </div>
+                  {onNavigate && (
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('month_reports')}
+                      className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors flex items-center gap-1 shrink-0"
+                    >
+                      <CalendarRange className="w-3.5 h-3.5" /> महिना अहवाल पहा →
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* KPI Cards inside Year */}
-              <div className="p-5 border-t border-slate-100 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                  <p className="text-emerald-800 dark:text-emerald-300 font-bold mb-1">एकूण जमा (Deposit)</p>
-                  <p className="text-xl font-black text-emerald-900 dark:text-emerald-200">{formatCurr(item.totalIncome)}</p>
-                  <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1 font-semibold flex items-center gap-1.5 flex-wrap">
+              {/* Pure Yearly KPI Metrics */}
+              <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 space-y-1">
+                  <p className="text-emerald-800 dark:text-emerald-300 font-black text-xs uppercase tracking-wide">
+                    एकूण जमा (Deposit)
+                  </p>
+                  <p className="text-2xl font-black text-emerald-900 dark:text-emerald-200">{formatCurr(item.totalIncome)}</p>
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1.5 flex-wrap pt-1 border-t border-emerald-200 dark:border-emerald-800/60">
                     <span>वर्गणी: {formatCurr(item.subTotal)}</span>
                     <span className="text-emerald-400">|</span>
                     <span>देणगी: {formatCurr(item.donTotal)}</span>
                   </p>
                 </div>
 
-                <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 rounded-xl border border-rose-200 dark:border-rose-800">
-                  <p className="text-rose-800 dark:text-rose-300 font-bold mb-1">एकूण मंजूर खर्च (Expense)</p>
-                  <p className="text-xl font-black text-rose-900 dark:text-rose-200">{formatCurr(item.totalExpense)}</p>
-                  <p className="text-[10px] text-rose-700 dark:text-rose-400 mt-1">मंजूर व्यवहारांची संख्या: {item.expenseCount}</p>
+                <div className="p-4 bg-rose-50 dark:bg-rose-950/40 rounded-xl border border-rose-200 dark:border-rose-800 space-y-1">
+                  <p className="text-rose-800 dark:text-rose-300 font-black text-xs uppercase tracking-wide">
+                    एकूण मंजूर खर्च (Expense)
+                  </p>
+                  <p className="text-2xl font-black text-rose-900 dark:text-rose-200">{formatCurr(item.totalExpense)}</p>
+                  <p className="text-[11px] text-rose-700 dark:text-rose-400 font-medium pt-1 border-t border-rose-200 dark:border-rose-800/60">
+                    मंजूर व्यवहारांची संख्या: {item.expenseCount}
+                  </p>
                 </div>
 
-                <div className="p-3.5 bg-blue-50 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800 flex flex-col justify-between">
+                <div className="p-4 bg-blue-50 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800 flex flex-col justify-between space-y-1">
                   <div>
-                    <p className="text-blue-800 dark:text-blue-300 font-bold mb-1">शिल्लक टक्केवारी (Savings %)</p>
-                    <p className="text-xl font-black text-blue-950 dark:text-blue-200">
+                    <p className="text-blue-800 dark:text-blue-300 font-black text-xs uppercase tracking-wide">
+                      शिल्लक टक्केवारी (Savings %)
+                    </p>
+                    <p className="text-2xl font-black text-blue-950 dark:text-blue-200">
                       {item.totalIncome > 0 ? Math.round((item.netBalance / item.totalIncome) * 100) : 0}%
                     </p>
                   </div>
-                  <p className="text-[10px] text-blue-700 dark:text-blue-400 font-medium">
+                  <p className="text-[11px] text-blue-700 dark:text-blue-400 font-medium pt-1 border-t border-blue-200 dark:border-blue-800/60">
                     ऑनलाइन: {formatCurr(item.onlineTotal)} | रोख: {formatCurr(item.cashTotal)}
                   </p>
                 </div>
               </div>
-
-              {/* Expandable Months Breakdown with Default Current Month & Month Selector Dropdown */}
-              {isExpanded && (() => {
-                const now = new Date();
-                const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                
-                // Determine which months to display
-                let displayMonths = item.monthlyBreakdown;
-                if (selectedMonthKey === 'CURRENT') {
-                  const curr = item.monthlyBreakdown.find((m) => m.key === currentMonthKey);
-                  displayMonths = curr ? [curr] : [item.monthlyBreakdown[0]];
-                } else if (selectedMonthKey !== 'ALL') {
-                  const matched = item.monthlyBreakdown.find((m) => m.key === selectedMonthKey);
-                  displayMonths = matched ? [matched] : item.monthlyBreakdown;
-                }
-
-                return (
-                  <div className="p-5 pt-0 border-t border-slate-100 dark:border-slate-700">
-                    <div className="mt-4 mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-700">
-                      <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                        <ReceiptText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                        {viewMode === 'FINANCIAL'
-                          ? `आर्थिक महिना तपशील (एप्रिल ते मार्च क्रम - ${item.yearKey})`
-                          : `कॅलेंडर महिना तपशील (जानेवारी ते डिसेंबर क्रम - ${item.yearKey})`}
-                      </h4>
-
-                      {/* Month Selection Dropdown */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                          <Filter className="w-3.5 h-3.5 text-indigo-500" /> महिना निवडा:
-                        </span>
-                        <select
-                          value={selectedMonthKey}
-                          onChange={(e) => setSelectedMonthKey(e.target.value)}
-                          className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-bold text-xs rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
-                        >
-                          <option value="CURRENT">⭐ चालू महिना (Current Month)</option>
-                          <option value="ALL">📋 सर्व १२ महिने (All Months)</option>
-                          <optgroup label="प्रत्येक महिना निवडा">
-                            {item.monthlyBreakdown.map((m, idx) => (
-                              <option key={m.key} value={m.key}>
-                                {idx + 1}. {m.monthName} {m.key === currentMonthKey ? '(चालू)' : ''}
-                              </option>
-                            ))}
-                          </optgroup>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Monthly Grid / Single Month Card */}
-                    <div
-                      className={`grid gap-3 ${
-                        displayMonths.length === 1
-                          ? 'grid-cols-1 max-w-md'
-                          : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-                      }`}
-                    >
-                      {displayMonths.map((m, mIdx) => {
-                        const originalIndex = item.monthlyBreakdown.findIndex((x) => x.key === m.key);
-                        const isCurrent = m.key === currentMonthKey;
-                        return (
-                          <div
-                            key={m.key}
-                            className={`p-4 rounded-2xl border transition-all ${
-                              isCurrent
-                                ? 'bg-amber-50/70 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 shadow-md ring-1 ring-amber-400'
-                                : m.income > 0 || m.expense > 0
-                                ? 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 shadow-xs'
-                                : 'bg-slate-50/50 dark:bg-slate-900/30 border-dashed border-slate-200 dark:border-slate-800 opacity-75'
-                            }`}
-                          >
-                            <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-200 dark:border-slate-800">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-black text-slate-800 dark:text-slate-200">
-                                  {originalIndex >= 0 ? originalIndex + 1 : mIdx + 1}. {m.monthName}
-                                </span>
-                                {isCurrent && (
-                                  <span className="px-1.5 py-0.2 text-[9px] font-black bg-amber-200 dark:bg-amber-800 text-amber-950 dark:text-amber-100 rounded-md">
-                                    चालू महिना
-                                  </span>
-                                )}
-                              </div>
-                              <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                                  m.net >= 0
-                                    ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
-                                    : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-700'
-                                }`}
-                              >
-                                {m.net >= 0 ? '+शिल्लक' : '-तोटा'}
-                              </span>
-                            </div>
-
-                            <div className="space-y-1.5 text-xs font-semibold">
-                              <div className="flex justify-between text-emerald-700 dark:text-emerald-400">
-                                <span>जमा ({m.incomeCount}):</span>
-                                <span className="font-bold">{formatCurr(m.income)}</span>
-                              </div>
-                              <div className="flex justify-between text-rose-700 dark:text-rose-400">
-                                <span>खर्च ({m.expenseCount}):</span>
-                                <span className="font-bold">{formatCurr(m.expense)}</span>
-                              </div>
-                              <div className="flex justify-between pt-1.5 border-t border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 font-black text-sm">
-                                <span>शिल्लक बचत:</span>
-                                <span className={m.net >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}>
-                                  {formatCurr(m.net)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
             </div>
           );
         })}
@@ -545,3 +392,4 @@ export const AllYearsDataView: React.FC<AllYearsDataViewProps> = ({
     </div>
   );
 };
+
