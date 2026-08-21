@@ -1209,26 +1209,26 @@ export default function App() {
       <main className="flex-1 flex flex-col overflow-hidden w-full">
         {/* Top Navigation Header (Always Accessible on Desktop & Mobile) */}
         <header className="bg-gradient-to-r from-amber-950 via-rose-950 to-orange-950 text-white px-4 py-2.5 border-b border-amber-500/40 flex items-center justify-between shrink-0 z-30 shadow-md">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               onMouseEnter={() => setIsMobileMenuOpen(true)}
-              className="p-2 rounded-xl bg-amber-900/80 text-amber-300 hover:bg-amber-800 border border-amber-500/40 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+              className="p-1.5 sm:p-2 rounded-xl bg-amber-900/80 text-amber-300 hover:bg-amber-800 border border-amber-500/40 active:scale-95 transition-all cursor-pointer flex items-center gap-1 shadow-sm shrink-0"
               aria-label="Toggle navigation menu"
               title="मेन्यू उघडा (Hover or Click)"
             >
               <Menu className="w-5 h-5" />
-              <span className="text-xs font-bold text-amber-200">मेन्यू</span>
+              <span className="text-xs font-bold text-amber-200 hidden sm:inline">मेन्यू</span>
             </button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
               <img
                 src={groupLogo || moryaLogo}
                 alt="मोरया ग्रुप मित्र मंडळ (ट्रस्ट) लोगो"
-                className="w-8 h-8 object-contain rounded-full border border-amber-400 p-0.5 bg-slate-950 shrink-0 shadow-sm"
+                className="w-7 h-7 sm:w-8 sm:h-8 object-contain rounded-full border border-amber-400 p-0.5 bg-slate-950 shrink-0 shadow-sm"
               />
-              <div>
-                <h1 className="text-xs font-black text-amber-400 truncate max-w-[180px] sm:max-w-none">
+              <div className="min-w-0">
+                <h1 className="text-xs sm:text-sm font-black text-amber-400 truncate max-w-[130px] min-[380px]:max-w-[180px] sm:max-w-none">
                   मोरया ग्रुप मित्र मंडळ (ट्रस्ट)
                 </h1>
               </div>
@@ -1250,15 +1250,12 @@ export default function App() {
             <div className="relative">
               <button
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                className="flex items-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 px-2.5 py-1 rounded-xl cursor-pointer transition-all shadow-xs active:scale-95"
-                title="प्रोफाइल व खाते मेन्यू उघडा"
+                className="flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 p-1 sm:px-2 sm:py-1 rounded-xl cursor-pointer transition-all shadow-xs active:scale-95"
+                title={`प्रोफाइल व खाते मेन्यू (${currentUser.isLoggedIn !== false ? currentUser.name : 'लॉगइन'})`}
               >
-                <div className="w-6 h-6 bg-amber-500 text-slate-950 font-black rounded-lg flex items-center justify-center text-xs shadow-xs shrink-0">
+                <div className="w-6.5 h-6.5 bg-amber-500 text-slate-950 font-black rounded-lg flex items-center justify-center text-xs shadow-xs shrink-0">
                   {currentUser.isLoggedIn !== false ? currentUser.name.substring(0, 1) : '🔑'}
                 </div>
-                <span className="text-xs font-bold text-amber-200 max-w-[90px] truncate sm:max-w-none">
-                  {currentUser.isLoggedIn !== false ? currentUser.name.split(' ')[0] : 'लॉगइन'}
-                </span>
                 <ChevronDown className={`w-3.5 h-3.5 text-amber-300 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
