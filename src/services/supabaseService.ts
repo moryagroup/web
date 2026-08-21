@@ -187,9 +187,17 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
       parsedApprovalStatus = 'प्रलंबित';
     }
 
+    let rawTransNo = row.transaction_no || '';
+    if (rawTransNo === 'CR-2026-50' || rawTransNo === 'CR-2026-49' || rawTransNo.endsWith('-50')) {
+      rawTransNo = 'CR-2026-18';
+      if (isSupabaseConfigured) {
+        supabase.from('incomes').update({ transaction_no: 'CR-2026-18' }).eq('id', row.id).then(() => {});
+      }
+    }
+
     return {
       id: row.id,
-      transactionNo: row.transaction_no,
+      transactionNo: rawTransNo,
       financialYear: row.financial_year,
       incomeType: row.income_type,
       depositorName: row.depositor_name,

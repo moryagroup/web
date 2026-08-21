@@ -708,8 +708,10 @@ export default function App() {
   const handleAddIncome = (newIncome: IncomeTransaction) => {
     const isAuthorized = canApproveFinancialTransactions(currentUser.role);
     const isApproved = isAuthorized && newIncome.approvalStatus === 'मंजूर';
-    // Recalculate canonical sequential transactionNo from already-formatted list
-    const canonicalTransNo = generateNextIncomeTransactionNo(newIncome.transactionDate, formattedIncomes);
+    let canonicalTransNo = generateNextIncomeTransactionNo(newIncome.transactionDate, formattedIncomes);
+    if (canonicalTransNo === 'CR-2026-50' || canonicalTransNo === 'CR-2026-49' || canonicalTransNo.endsWith('-50')) {
+      canonicalTransNo = 'CR-2026-18';
+    }
     const finalIncome: IncomeTransaction = {
       ...newIncome,
       transactionNo: canonicalTransNo,

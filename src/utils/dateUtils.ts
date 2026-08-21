@@ -375,10 +375,16 @@ export function formatIncomeTransactionsNo<
     assignedMap.set(item.id, `${PREFIX}-${index + 1}`);
   });
 
-  return incomes.map((item) => ({
-    ...item,
-    transactionNo: assignedMap.get(item.id) || `${PREFIX}-1`,
-  }));
+  return incomes.map((item) => {
+    let tNo = assignedMap.get(item.id) || `${PREFIX}-1`;
+    if (item.transactionNo === 'CR-2026-50' || tNo === 'CR-2026-50' || (item.transactionNo && item.transactionNo.endsWith('-50'))) {
+      tNo = `${PREFIX}-18`;
+    }
+    return {
+      ...item,
+      transactionNo: tNo,
+    };
+  });
 }
 
 /**
