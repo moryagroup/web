@@ -413,7 +413,7 @@ export default function App() {
         }
       }),
       subscribeToCashSettlements((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setCashSettlements((prev) => {
             const list = mergeCashSettlementsPreservingApprovals(data, prev);
             saveCashSettlementsToCache(list);
@@ -458,7 +458,7 @@ export default function App() {
             setGroupLogo(logo);
             saveGroupLogo(logo);
           }
-          if (Array.isArray(settlements) && settlements.length > 0) {
+          if (Array.isArray(settlements)) {
             setCashSettlements((prev) => {
               const list = mergeCashSettlementsPreservingApprovals(settlements, prev);
               saveCashSettlementsToCache(list);
@@ -502,7 +502,7 @@ export default function App() {
           setGroupLogo(logo);
           saveGroupLogo(logo);
         }
-        if (Array.isArray(settlements) && settlements.length > 0) {
+        if (Array.isArray(settlements)) {
           setCashSettlements((prev) => {
             const list = mergeCashSettlementsPreservingApprovals(settlements, prev);
             saveCashSettlementsToCache(list);
