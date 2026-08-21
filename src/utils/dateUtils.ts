@@ -232,30 +232,29 @@ export function getTwoDigitYearFromDate(dateStr?: string): string {
 /**
  * Generates next sequential Credit transaction number: CR-2026-1, CR-2026-2, CR-2026-3 ...
  * Reads the highest already-assigned CR-2026-N from the formatted list and returns N+1.
- * Ignores any out-of-sequence jumps (e.g. 50 when unique count is 17).
+ * Strictly guarantees continuous 1, 2, 3 ... sequence without any jumps.
  */
 export function generateNextIncomeTransactionNo(
   _dateStr?: string,
-  existingIncomes?: { id?: string; transactionDate?: string; transactionNo?: string; createdAt?: string }[]
+  existingIncomes?: { id?: string; transactionDate?: string; transactionNo?: string; createdAt?: string; approvalStatus?: string }[]
 ): string {
   const PREFIX = 'CR-2026';
   if (!existingIncomes || existingIncomes.length === 0) {
     return `${PREFIX}-1`;
   }
 
-  // Deduplicate by ID (skip entries without id)
   const seen = new Set<string>();
   let maxSeq = 0;
-  let uniqueCount = 0;
+  let validCount = 0;
 
   for (const item of existingIncomes) {
+    if (item.approvalStatus === 'रद्द') continue;
     if (item.id) {
       if (seen.has(item.id)) continue;
       seen.add(item.id);
     }
-    uniqueCount++;
+    validCount++;
 
-    // Parse the sequential number from already-formatted transactionNo
     if (item.transactionNo) {
       const match = item.transactionNo.match(/^(?:CR|MG)-?(?:2026|26)?-?(\d+)$/i);
       if (match) {
@@ -265,8 +264,8 @@ export function generateNextIncomeTransactionNo(
     }
   }
 
-  // Jump Protection: if maxSeq > uniqueCount + 2 (e.g. 50 when uniqueCount is 17), ignore maxSeq jump
-  const base = maxSeq > 0 && maxSeq <= uniqueCount + 2 ? maxSeq : uniqueCount;
+  // Jump Protection: maxSeq must never exceed validCount + 1
+  const base = maxSeq > 0 && maxSeq <= validCount + 1 ? maxSeq : validCount;
   return `${PREFIX}-${base + 1}`;
 }
 
@@ -276,7 +275,7 @@ export function generateNextIncomeTransactionNo(
  */
 export function generateNextExpenseTransactionNo(
   _dateStr?: string,
-  existingExpenses?: { id?: string; expenseDate?: string; transactionNo?: string; createdAt?: string }[]
+  existingExpenses?: { id?: string; expenseDate?: string; transactionNo?: string; createdAt?: string; approvalStatus?: string }[]
 ): string {
   const PREFIX = 'EXP-2026';
   if (!existingExpenses || existingExpenses.length === 0) {
@@ -285,14 +284,15 @@ export function generateNextExpenseTransactionNo(
 
   const seen = new Set<string>();
   let maxSeq = 0;
-  let uniqueCount = 0;
+  let validCount = 0;
 
   for (const item of existingExpenses) {
+    if (item.approvalStatus === 'रद्द') continue;
     if (item.id) {
       if (seen.has(item.id)) continue;
       seen.add(item.id);
     }
-    uniqueCount++;
+    validCount++;
 
     if (item.transactionNo) {
       const match = item.transactionNo.match(/^(?:EXP|DR)-?(?:2026|26)?-?(\d+)$/i);
@@ -303,7 +303,7 @@ export function generateNextExpenseTransactionNo(
     }
   }
 
-  const base = maxSeq > 0 && maxSeq <= uniqueCount + 2 ? maxSeq : uniqueCount;
+  const base = maxSeq > 0 && maxSeq <= validCount + 1 ? maxSeq : validCount;
   return `${PREFIX}-${base + 1}`;
 }
 
@@ -313,7 +313,7 @@ export function generateNextExpenseTransactionNo(
  */
 export function generateNextCashSettlementNo(
   _dateStr?: string,
-  existingSettlements?: { id?: string; depositDate?: string; settlementNo?: string; createdAt?: string }[]
+  existingSettlements?: { id?: string; depositDate?: string; settlementNo?: string; createdAt?: string; approvalStatus?: string }[]
 ): string {
   const PREFIX = 'CST-2026';
   if (!existingSettlements || existingSettlements.length === 0) {
@@ -322,14 +322,15 @@ export function generateNextCashSettlementNo(
 
   const seen = new Set<string>();
   let maxSeq = 0;
-  let uniqueCount = 0;
+  let validCount = 0;
 
   for (const item of existingSettlements) {
+    if ((item as any).approvalStatus === 'रद्द') continue;
     if (item.id) {
       if (seen.has(item.id)) continue;
       seen.add(item.id);
     }
-    uniqueCount++;
+    validCount++;
 
     if ((item as any).settlementNo) {
       const match = (item as any).settlementNo.match(/^CST-2026-(\d+)$/i);
@@ -340,7 +341,7 @@ export function generateNextCashSettlementNo(
     }
   }
 
-  const base = maxSeq > 0 && maxSeq <= uniqueCount + 2 ? maxSeq : uniqueCount;
+  const base = maxSeq > 0 && maxSeq <= validCount + 1 ? maxSeq : validCount;
   return `${PREFIX}-${base + 1}`;
 }
 
