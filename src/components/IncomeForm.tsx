@@ -14,6 +14,7 @@ import { RbacGuard } from './RbacGuard';
 import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft, ShieldCheck, BookOpen, BookMarked } from 'lucide-react';
 import { uploadFileToGoogleDrive, isGoogleDriveUrl } from '../services/googleDriveService';
 import { getNextSerialForReceiptBook, formatPhysicalReceiptNumber } from '../utils/physicalReceiptUtils';
+import { TransactionSuccessModal } from './TransactionSuccessModal';
 
 interface IncomeFormProps {
   members: Member[];
@@ -22,6 +23,7 @@ interface IncomeFormProps {
   currentUser: CurrentUser;
   financialYear: string;
   incomes?: IncomeTransaction[];
+  groupLogo?: string;
   onAddIncome: (income: IncomeTransaction) => void;
   onAddCustomIncomeType: (newType: string) => void;
   onSuccessNavigate?: () => void;
@@ -36,6 +38,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
   currentUser,
   financialYear,
   incomes = [],
+  groupLogo,
   onAddIncome,
   onAddCustomIncomeType,
   onSuccessNavigate,
@@ -94,6 +97,8 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
   const [autoApprove, setAutoApprove] = useState<boolean>(false);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [createdTransaction, setCreatedTransaction] = useState<IncomeTransaction | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
 
   // Default cash receiver to logged-in user or first member
   useEffect(() => {
@@ -252,6 +257,8 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
     };
 
     onAddIncome(newIncome);
+    setCreatedTransaction(newIncome);
+    setShowSuccessModal(true);
     setSavedSuccess(true);
 
     // Auto-increment physical receipt serial number if applicable
@@ -879,6 +886,31 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
           </div>
         </div>
       )}
+
+      {/* Prominent Window Popup for Successfully Created Credit / Income Transaction */}
+      <TransactionSuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => {
+          setShowSuccessModal(false);
+          setSavedSuccess(false);
+        }}
+        type="INCOME"
+        transaction={createdTransaction}
+        groupLogo={groupLogo}
+        onAddNew={() => {
+          setShowSuccessModal(false);
+          setSavedSuccess(false);
+        }}
+        onViewHistory={() => {
+          setShowSuccessModal(false);
+          setSavedSuccess(false);
+          if (onSuccessNavigate) {
+            onSuccessNavigate();
+          } else if (onNavigate) {
+            onNavigate('income-history');
+          }
+        }}
+      />
     </div>
   );
 };

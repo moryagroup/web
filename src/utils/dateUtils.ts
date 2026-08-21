@@ -230,130 +230,121 @@ export function getTwoDigitYearFromDate(dateStr?: string): string {
 }
 
 /**
+ * Helper to extract 4-digit Year string from any transaction's date / createdAt / financialYear
+ * Defaults to '2026'
+ */
+export function getTransactionYear(dateStr?: string, createdAt?: string, financialYear?: string): string {
+  const target = dateStr || createdAt || financialYear || '';
+  const converted = convertMarathiToEnglishDigits(target);
+  const match = converted.match(/\b(20\d\d)\b/);
+  if (match) return match[1];
+  return '2026';
+}
+
+/**
  * Generates next sequential Credit transaction number: CR-2026-1, CR-2026-2, CR-2026-3 ...
- * Reads the highest already-assigned CR-2026-N from the formatted list and returns N+1.
- * Strictly guarantees continuous 1, 2, 3 ... sequence without any jumps.
+ * Scoped strictly to the target year (e.g. 2026), guaranteeing continuous unbroken sequence 1..N.
  */
 export function generateNextIncomeTransactionNo(
-  _dateStr?: string,
-  existingIncomes?: { id?: string; transactionDate?: string; transactionNo?: string; createdAt?: string; approvalStatus?: string }[]
+  dateStr?: string,
+  existingIncomes?: { id?: string; transactionDate?: string; transactionNo?: string; createdAt?: string; financialYear?: string; approvalStatus?: string }[]
 ): string {
-  const PREFIX = 'CR-2026';
+  const targetYear = getTransactionYear(dateStr, undefined, undefined);
+  const PREFIX = `CR-${targetYear}`;
   if (!existingIncomes || existingIncomes.length === 0) {
     return `${PREFIX}-1`;
   }
 
   const seen = new Set<string>();
-  let maxSeq = 0;
   let validCount = 0;
 
   for (const item of existingIncomes) {
     if (item.approvalStatus === 'रद्द') continue;
+    const yr = getTransactionYear(item.transactionDate, item.createdAt, item.financialYear);
+    if (yr !== targetYear) continue;
+
     if (item.id) {
       if (seen.has(item.id)) continue;
       seen.add(item.id);
     }
     validCount++;
-
-    if (item.transactionNo) {
-      const match = item.transactionNo.match(/^(?:CR|MG)-?(?:2026|26)?-?(\d+)$/i);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num > maxSeq) maxSeq = num;
-      }
-    }
   }
 
-  // Jump Protection: maxSeq must never exceed validCount + 1
-  const base = maxSeq > 0 && maxSeq <= validCount + 1 ? maxSeq : validCount;
-  return `${PREFIX}-${base + 1}`;
+  return `${PREFIX}-${validCount + 1}`;
 }
 
 /**
  * Generates next sequential Debit transaction number: EXP-2026-1, EXP-2026-2, EXP-2026-3 ...
- * Reads the highest already-assigned EXP-2026-N from the formatted list and returns N+1.
+ * Scoped strictly to the target year (e.g. 2026), guaranteeing continuous unbroken sequence 1..N.
  */
 export function generateNextExpenseTransactionNo(
-  _dateStr?: string,
-  existingExpenses?: { id?: string; expenseDate?: string; transactionNo?: string; createdAt?: string; approvalStatus?: string }[]
+  dateStr?: string,
+  existingExpenses?: { id?: string; expenseDate?: string; transactionNo?: string; createdAt?: string; financialYear?: string; approvalStatus?: string }[]
 ): string {
-  const PREFIX = 'EXP-2026';
+  const targetYear = getTransactionYear(dateStr, undefined, undefined);
+  const PREFIX = `EXP-${targetYear}`;
   if (!existingExpenses || existingExpenses.length === 0) {
     return `${PREFIX}-1`;
   }
 
   const seen = new Set<string>();
-  let maxSeq = 0;
   let validCount = 0;
 
   for (const item of existingExpenses) {
     if (item.approvalStatus === 'रद्द') continue;
+    const yr = getTransactionYear(item.expenseDate, item.createdAt, item.financialYear);
+    if (yr !== targetYear) continue;
+
     if (item.id) {
       if (seen.has(item.id)) continue;
       seen.add(item.id);
     }
     validCount++;
-
-    if (item.transactionNo) {
-      const match = item.transactionNo.match(/^(?:EXP|DR)-?(?:2026|26)?-?(\d+)$/i);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num > maxSeq) maxSeq = num;
-      }
-    }
   }
 
-  const base = maxSeq > 0 && maxSeq <= validCount + 1 ? maxSeq : validCount;
-  return `${PREFIX}-${base + 1}`;
+  return `${PREFIX}-${validCount + 1}`;
 }
 
 /**
  * Generates next sequential Cash Settlement number: CST-2026-1, CST-2026-2, CST-2026-3 ...
- * Reads the highest already-assigned CST-2026-N from the formatted list and returns N+1.
+ * Scoped strictly to the target year (e.g. 2026), guaranteeing continuous unbroken sequence 1..N.
  */
 export function generateNextCashSettlementNo(
-  _dateStr?: string,
-  existingSettlements?: { id?: string; depositDate?: string; settlementNo?: string; createdAt?: string; approvalStatus?: string }[]
+  dateStr?: string,
+  existingSettlements?: { id?: string; depositDate?: string; settlementNo?: string; createdAt?: string; financialYear?: string; approvalStatus?: string }[]
 ): string {
-  const PREFIX = 'CST-2026';
+  const targetYear = getTransactionYear(dateStr, undefined, undefined);
+  const PREFIX = `CST-${targetYear}`;
   if (!existingSettlements || existingSettlements.length === 0) {
     return `${PREFIX}-1`;
   }
 
   const seen = new Set<string>();
-  let maxSeq = 0;
   let validCount = 0;
 
   for (const item of existingSettlements) {
     if ((item as any).approvalStatus === 'रद्द') continue;
+    const yr = getTransactionYear(item.depositDate, item.createdAt, item.financialYear);
+    if (yr !== targetYear) continue;
+
     if (item.id) {
       if (seen.has(item.id)) continue;
       seen.add(item.id);
     }
     validCount++;
-
-    if ((item as any).settlementNo) {
-      const match = (item as any).settlementNo.match(/^CST-2026-(\d+)$/i);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num > maxSeq) maxSeq = num;
-      }
-    }
   }
 
-  const base = maxSeq > 0 && maxSeq <= validCount + 1 ? maxSeq : validCount;
-  return `${PREFIX}-${base + 1}`;
+  return `${PREFIX}-${validCount + 1}`;
 }
 
 /**
  * Standardizes Income transaction numbers permanently as CR-2026-1, CR-2026-2, CR-2026-3 ...
- * Strictly guarantees continuous 1, 2, 3 ... sequence based on creation order without any gaps or jumps.
+ * Strictly guarantees continuous 1, 2, 3 ... sequence per year without any gaps or jumps.
  */
 export function formatIncomeTransactionsNo<
-  T extends { id: string; transactionNo?: string; transactionDate?: string; createdAt?: string }
+  T extends { id: string; transactionNo?: string; transactionDate?: string; createdAt?: string; financialYear?: string }
 >(incomes: T[]): T[] {
   if (!Array.isArray(incomes) || incomes.length === 0) return incomes;
-  const PREFIX = 'CR-2026';
 
   // Deduplicate by ID
   const uniqueMap = new Map<string, T>();
@@ -362,40 +353,44 @@ export function formatIncomeTransactionsNo<
   });
   const uniqueList = Array.from(uniqueMap.values());
 
-  // Sort chronological by creation / entry to maintain true permanent sequence
-  const chronological = [...uniqueList].sort((a, b) => {
-    const timeA = parseDateToTimestamp(a.createdAt || a.transactionDate || '');
-    const timeB = parseDateToTimestamp(b.createdAt || b.transactionDate || '');
-    if (timeA !== timeB) return timeA - timeB;
-    return a.id.localeCompare(b.id);
+  // Group by Year
+  const yearGroups = new Map<string, T[]>();
+  uniqueList.forEach((item) => {
+    const yr = getTransactionYear(item.transactionDate, item.createdAt, item.financialYear);
+    if (!yearGroups.has(yr)) yearGroups.set(yr, []);
+    yearGroups.get(yr)!.push(item);
   });
 
   const assignedMap = new Map<string, string>();
-  chronological.forEach((item, index) => {
-    assignedMap.set(item.id, `${PREFIX}-${index + 1}`);
+
+  yearGroups.forEach((itemsInYear, yr) => {
+    // Sort strictly chronologically by creation / entry to maintain true permanent sequence
+    const chronological = [...itemsInYear].sort((a, b) => {
+      const timeA = parseDateToTimestamp(a.createdAt || a.transactionDate || '');
+      const timeB = parseDateToTimestamp(b.createdAt || b.transactionDate || '');
+      if (timeA !== timeB) return timeA - timeB;
+      return a.id.localeCompare(b.id);
+    });
+
+    chronological.forEach((item, index) => {
+      assignedMap.set(item.id, `CR-${yr}-${index + 1}`);
+    });
   });
 
-  return incomes.map((item) => {
-    let tNo = assignedMap.get(item.id) || `${PREFIX}-1`;
-    if (item.transactionNo === 'CR-2026-50' || tNo === 'CR-2026-50' || (item.transactionNo && item.transactionNo.endsWith('-50'))) {
-      tNo = `${PREFIX}-18`;
-    }
-    return {
-      ...item,
-      transactionNo: tNo,
-    };
-  });
+  return incomes.map((item) => ({
+    ...item,
+    transactionNo: assignedMap.get(item.id) || `CR-2026-1`,
+  }));
 }
 
 /**
  * Standardizes Expense transaction numbers permanently as EXP-2026-1, EXP-2026-2, EXP-2026-3 ...
- * Strictly guarantees continuous 1, 2, 3 ... sequence based on creation order without any gaps or jumps.
+ * Strictly guarantees continuous 1, 2, 3 ... sequence per year without any gaps or jumps.
  */
 export function formatExpenseTransactionsNo<
-  T extends { id: string; transactionNo?: string; expenseDate?: string; createdAt?: string }
+  T extends { id: string; transactionNo?: string; expenseDate?: string; createdAt?: string; financialYear?: string }
 >(expenses: T[]): T[] {
   if (!Array.isArray(expenses) || expenses.length === 0) return expenses;
-  const PREFIX = 'EXP-2026';
 
   // Deduplicate by ID
   const uniqueMap = new Map<string, T>();
@@ -404,34 +399,43 @@ export function formatExpenseTransactionsNo<
   });
   const uniqueList = Array.from(uniqueMap.values());
 
-  // Sort chronological by creation / entry to maintain true permanent sequence
-  const chronological = [...uniqueList].sort((a, b) => {
-    const timeA = parseDateToTimestamp(a.createdAt || a.expenseDate || '');
-    const timeB = parseDateToTimestamp(b.createdAt || b.expenseDate || '');
-    if (timeA !== timeB) return timeA - timeB;
-    return a.id.localeCompare(b.id);
+  // Group by Year
+  const yearGroups = new Map<string, T[]>();
+  uniqueList.forEach((item) => {
+    const yr = getTransactionYear(item.expenseDate, item.createdAt, item.financialYear);
+    if (!yearGroups.has(yr)) yearGroups.set(yr, []);
+    yearGroups.get(yr)!.push(item);
   });
 
   const assignedMap = new Map<string, string>();
-  chronological.forEach((item, index) => {
-    assignedMap.set(item.id, `${PREFIX}-${index + 1}`);
+
+  yearGroups.forEach((itemsInYear, yr) => {
+    const chronological = [...itemsInYear].sort((a, b) => {
+      const timeA = parseDateToTimestamp(a.createdAt || a.expenseDate || '');
+      const timeB = parseDateToTimestamp(b.createdAt || b.expenseDate || '');
+      if (timeA !== timeB) return timeA - timeB;
+      return a.id.localeCompare(b.id);
+    });
+
+    chronological.forEach((item, index) => {
+      assignedMap.set(item.id, `EXP-${yr}-${index + 1}`);
+    });
   });
 
   return expenses.map((item) => ({
     ...item,
-    transactionNo: assignedMap.get(item.id) || `${PREFIX}-1`,
+    transactionNo: assignedMap.get(item.id) || `EXP-2026-1`,
   }));
 }
 
 /**
  * Standardizes Cash Settlement numbers permanently as CST-2026-1, CST-2026-2, CST-2026-3 ...
- * Strictly guarantees continuous 1, 2, 3 ... sequence based on creation order without any gaps or jumps.
+ * Strictly guarantees continuous 1, 2, 3 ... sequence per year without any gaps or jumps.
  */
 export function formatCashSettlementsNo<
-  T extends { id: string; settlementNo?: string; depositDate?: string; createdAt?: string }
+  T extends { id: string; settlementNo?: string; depositDate?: string; createdAt?: string; financialYear?: string }
 >(settlements: T[]): T[] {
   if (!Array.isArray(settlements) || settlements.length === 0) return settlements;
-  const PREFIX = 'CST-2026';
 
   const uniqueMap = new Map<string, T>();
   settlements.forEach((item) => {
@@ -439,21 +443,32 @@ export function formatCashSettlementsNo<
   });
   const uniqueList = Array.from(uniqueMap.values());
 
-  const chronological = [...uniqueList].sort((a, b) => {
-    const timeA = parseDateToTimestamp(a.createdAt || a.depositDate || '');
-    const timeB = parseDateToTimestamp(b.createdAt || b.depositDate || '');
-    if (timeA !== timeB) return timeA - timeB;
-    return a.id.localeCompare(b.id);
+  // Group by Year
+  const yearGroups = new Map<string, T[]>();
+  uniqueList.forEach((item) => {
+    const yr = getTransactionYear(item.depositDate, item.createdAt, item.financialYear);
+    if (!yearGroups.has(yr)) yearGroups.set(yr, []);
+    yearGroups.get(yr)!.push(item);
   });
 
   const assignedMap = new Map<string, string>();
-  chronological.forEach((item, index) => {
-    assignedMap.set(item.id, `${PREFIX}-${index + 1}`);
+
+  yearGroups.forEach((itemsInYear, yr) => {
+    const chronological = [...itemsInYear].sort((a, b) => {
+      const timeA = parseDateToTimestamp(a.createdAt || a.depositDate || '');
+      const timeB = parseDateToTimestamp(b.createdAt || b.depositDate || '');
+      if (timeA !== timeB) return timeA - timeB;
+      return a.id.localeCompare(b.id);
+    });
+
+    chronological.forEach((item, index) => {
+      assignedMap.set(item.id, `CST-${yr}-${index + 1}`);
+    });
   });
 
   return settlements.map((item) => ({
     ...item,
-    settlementNo: assignedMap.get(item.id) || `${PREFIX}-1`,
+    settlementNo: assignedMap.get(item.id) || `CST-2026-1`,
   }));
 }
 

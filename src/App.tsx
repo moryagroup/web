@@ -1412,6 +1412,7 @@ export default function App() {
                 currentUser={currentUser}
                 financialYear={selectedYear}
                 incomes={formattedIncomes}
+                groupLogo={groupLogo}
                 onAddIncome={handleAddIncome}
                 onAddCustomIncomeType={handleAddCustomIncomeType}
                 onSuccessNavigate={() => setActiveTab('income-history')}
@@ -1427,6 +1428,7 @@ export default function App() {
                 currentUser={currentUser}
                 financialYear={selectedYear}
                 expenses={formattedExpenses}
+                groupLogo={groupLogo}
                 onAddExpense={handleAddExpense}
                 onSuccessNavigate={() => setActiveTab('expense-history')}
                 onNavigate={(tab) => setActiveTab(tab)}

@@ -13,6 +13,7 @@ import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextExpenseT
 import { RbacGuard } from './RbacGuard';
 import { ArrowUpRight, CheckCircle2, Upload, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { uploadFileToGoogleDrive } from '../services/googleDriveService';
+import { TransactionSuccessModal } from './TransactionSuccessModal';
 
 interface ExpenseFormProps {
   occasions: OccasionEvent[];
@@ -20,6 +21,7 @@ interface ExpenseFormProps {
   currentUser: CurrentUser;
   financialYear: string;
   expenses?: ExpenseTransaction[];
+  groupLogo?: string;
   onAddExpense: (expense: ExpenseTransaction) => void;
   onSuccessNavigate?: () => void;
   onNavigate?: (tab: string) => void;
@@ -32,6 +34,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
   currentUser,
   financialYear,
   expenses = [],
+  groupLogo,
   onAddExpense,
   onSuccessNavigate,
   onNavigate,
@@ -69,6 +72,8 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [createdExpense, setCreatedExpense] = useState<ExpenseTransaction | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
 
   const [isUploadingDrive, setIsUploadingDrive] = useState(false);
 
@@ -148,22 +153,19 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
     };
 
     onAddExpense(newExpense);
+    setCreatedExpense(newExpense);
+    setShowSuccessModal(true);
     setSavedSuccess(true);
 
-    setTimeout(() => {
-      setSavedSuccess(false);
-      setAmount('');
-      setRecipientName('');
-      setReason('');
-      setDescription('');
-      setPaymentReference('');
-      setBillNumber('');
-      setAttachmentUrl('');
-      setNotes('');
-      if (onSuccessNavigate) {
-        onSuccessNavigate();
-      }
-    }, 1500);
+    // Reset input fields for next entry
+    setAmount('');
+    setRecipientName('');
+    setReason('');
+    setDescription('');
+    setPaymentReference('');
+    setBillNumber('');
+    setAttachmentUrl('');
+    setNotes('');
   };
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
@@ -536,6 +538,31 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
           </button>
         </div>
       </form>
+
+      {/* Prominent Window Popup for Successfully Created Debit / Expense Transaction */}
+      <TransactionSuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => {
+          setShowSuccessModal(false);
+          setSavedSuccess(false);
+        }}
+        type="EXPENSE"
+        transaction={createdExpense}
+        groupLogo={groupLogo}
+        onAddNew={() => {
+          setShowSuccessModal(false);
+          setSavedSuccess(false);
+        }}
+        onViewHistory={() => {
+          setShowSuccessModal(false);
+          setSavedSuccess(false);
+          if (onSuccessNavigate) {
+            onSuccessNavigate();
+          } else if (onNavigate) {
+            onNavigate('expense-history');
+          }
+        }}
+      />
     </div>
   );
 };
