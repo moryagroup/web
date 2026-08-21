@@ -279,10 +279,14 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
   }
 }
 
-export async function deleteIncomeFromSupabase(id: string): Promise<void> {
+export async function deleteIncomeFromSupabase(id: string, transactionNo?: string): Promise<void> {
   if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from('incomes').delete().eq('id', id);
-  if (error) console.error('[Supabase] deleteIncome error:', error);
+  const { error: err1 } = await supabase.from('incomes').delete().eq('id', id);
+  if (err1) console.error('[Supabase] deleteIncome by id error:', err1);
+  if (transactionNo) {
+    const { error: err2 } = await supabase.from('incomes').delete().eq('transaction_no', transactionNo);
+    if (err2) console.error('[Supabase] deleteIncome by transaction_no error:', err2);
+  }
 }
 
 // ─── Expenses Table CRUD ────────────────────────────────────────────────────
@@ -424,10 +428,14 @@ export async function saveExpenseToSupabase(expense: ExpenseTransaction): Promis
   }
 }
 
-export async function deleteExpenseFromSupabase(id: string): Promise<void> {
+export async function deleteExpenseFromSupabase(id: string, transactionNo?: string): Promise<void> {
   if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from('expenses').delete().eq('id', id);
-  if (error) console.error('[Supabase] deleteExpense error:', error);
+  const { error: err1 } = await supabase.from('expenses').delete().eq('id', id);
+  if (err1) console.error('[Supabase] deleteExpense by id error:', err1);
+  if (transactionNo) {
+    const { error: err2 } = await supabase.from('expenses').delete().eq('transaction_no', transactionNo);
+    if (err2) console.error('[Supabase] deleteExpense by transaction_no error:', err2);
+  }
 }
 
 export async function clearAllTransactionsFromSupabase(): Promise<void> {

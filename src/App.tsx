@@ -738,9 +738,9 @@ export default function App() {
   // Delete / Cancel Income Transaction (Admin Only)
   const handleDeleteIncome = (incomeId: string) => {
     const item = incomes.find((i) => i.id === incomeId);
-    if (!item) return;
+    const transNo = item?.transactionNo;
 
-    if (item.paymentMethod === 'रोख' && item.linkedMemberId) {
+    if (item && item.paymentMethod === 'रोख' && item.linkedMemberId) {
       const remainingCashIncomes = incomes
         .filter((i) => i.id !== incomeId && i.approvalStatus !== 'रद्द' && i.paymentMethod === 'रोख' && i.linkedMemberId === item.linkedMemberId)
         .reduce((sum, i) => sum + i.amount, 0);
@@ -753,10 +753,14 @@ export default function App() {
     }
 
     // Permanently remove from state and online DBs (Supabase, Firestore, Gist)
-    setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
+    setIncomes((prev) => {
+      const updated = prev.filter((i) => i.id !== incomeId && (transNo ? i.transactionNo !== transNo : true));
+      saveIncomes(updated);
+      return updated;
+    });
     deleteIncome(incomeId).catch(console.error);
     cloudDeleteIncome(incomeId).catch(console.error);
-    deleteIncomeFromSupabase(incomeId).catch(console.error);
+    deleteIncomeFromSupabase(incomeId, transNo).catch(console.error);
   };
 
   // Custom Income Types Firestore Sync
@@ -918,13 +922,17 @@ export default function App() {
   // Delete / Cancel Expense Transaction (Admin Only)
   const handleDeleteExpense = (expenseId: string) => {
     const item = expenses.find((e) => e.id === expenseId);
-    if (!item) return;
+    const transNo = item?.transactionNo;
 
     // Permanently remove from state and online DBs (Supabase, Firestore, Gist)
-    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+    setExpenses((prev) => {
+      const updated = prev.filter((e) => e.id !== expenseId && (transNo ? e.transactionNo !== transNo : true));
+      saveExpenses(updated);
+      return updated;
+    });
     deleteExpense(expenseId).catch(console.error);
     cloudDeleteExpense(expenseId).catch(console.error);
-    deleteExpenseFromSupabase(expenseId).catch(console.error);
+    deleteExpenseFromSupabase(expenseId, transNo).catch(console.error);
   };
 
   // Approve Expense
