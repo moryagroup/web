@@ -31,6 +31,8 @@ import {
   getCustomIncomeTypes,
   getStoredCashSettlements,
   saveCashSettlementsToCache,
+  getDeletedSettlementIds,
+  addDeletedSettlementId,
   purgeLegacyLocalStorage,
   DEFAULT_USER,
   calculateFinancialSummary,
@@ -81,21 +83,21 @@ function mergeCashSettlementsPreservingApprovals(
   incoming: CashSettlement[],
   existing: CashSettlement[]
 ): CashSettlement[] {
+  const deletedIds = getDeletedSettlementIds();
   const map = new Map<string, CashSettlement>();
 
-  // 1. Load incoming from online DB first
-  incoming.forEach((item) => {
-    if (item && item.id) map.set(item.id, item);
+  // 1. Authoritative Online DB items (excluding any deleted tombstones)
+  (incoming || []).forEach((item) => {
+    if (item && item.id && !deletedIds.has(item.id)) {
+      map.set(item.id, item);
+    }
   });
 
-  // 2. Merge existing local state, ensuring approved/rejected statuses take precedence over stale pending
-  existing.forEach((prev) => {
-    if (!prev || !prev.id) return;
+  // 2. Preserve local approval status if online has not caught up yet
+  (existing || []).forEach((prev) => {
+    if (!prev || !prev.id || deletedIds.has(prev.id)) return;
     const fromOnline = map.get(prev.id);
-    if (!fromOnline) {
-      map.set(prev.id, prev);
-    } else {
-      // If local state is already approved or rejected, preserve it unless online is also finalized
+    if (fromOnline) {
       if (prev.approvalStatus === 'मंजूर' || prev.approvalStatus === 'रद्द') {
         if (fromOnline.approvalStatus === 'प्रलंबित') {
           map.set(prev.id, {
@@ -743,6 +745,18 @@ export default function App() {
       item.transactionDate === todayStr ||
       (item.createdAt && item.createdAt.split('T')[0] === todayStr);
 
+    if (item.paymentMethod === 'रोख' && item.linkedMemberId) {
+      const remainingCashIncomes = incomes
+        .filter((i) => i.id !== incomeId && i.approvalStatus !== 'रद्द' && i.paymentMethod === 'रोख' && i.linkedMemberId === item.linkedMemberId)
+        .reduce((sum, i) => sum + i.amount, 0);
+      const totalSettled = cashSettlements
+        .filter((s) => s.memberId === item.linkedMemberId && s.approvalStatus === 'मंजूर')
+        .reduce((sum, s) => sum + s.amount, 0);
+      if (totalSettled > remainingCashIncomes) {
+        console.warn(`[Audit Alert] Deleting cash income ₹${item.amount} causes member settled bank deposits (₹${totalSettled}) to exceed remaining collected cash (₹${remainingCashIncomes}).`);
+      }
+    }
+
     if (isSameDay) {
       // Created on the same day: Completely remove from DB
       setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
@@ -1154,29 +1168,20 @@ export default function App() {
     const item = cashSettlements.find((s) => s.id === settlementId);
     if (!item) return;
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const isSameDay =
-      item.depositDate === todayStr ||
-      (item.createdAt && item.createdAt.split('T')[0] === todayStr);
+    // 1. Immediately record in deleted tombstone set
+    addDeletedSettlementId(settlementId);
 
-    if (isSameDay) {
-      setCashSettlements((prev) => prev.filter((s) => s.id !== settlementId));
-      deleteCashSettlement(settlementId).catch(console.error);
-      cloudDeleteCashSettlement(settlementId).catch(console.error);
-      deleteCashSettlementFromSupabase(settlementId).catch(console.error);
-    } else {
-      const cancelled: CashSettlement = {
-        ...item,
-        approvalStatus: 'रद्द',
-        notes: item.notes
-          ? `${item.notes} | प्रशासकीय रद्द (${new Date().toLocaleDateString('mr-IN')})`
-          : `प्रशासकीय रद्द (${new Date().toLocaleDateString('mr-IN')})`,
-      };
-      setCashSettlements((prev) => prev.map((s) => (s.id === settlementId ? cancelled : s)));
-      saveCashSettlement(cancelled).catch(console.error);
-      cloudSaveCashSettlement(cancelled).catch(console.error);
-      saveCashSettlementToSupabase(cancelled).catch(console.error);
-    }
+    // 2. Permanently remove from React state & localStorage cache
+    setCashSettlements((prev) => {
+      const updated = prev.filter((s) => s.id !== settlementId);
+      saveCashSettlementsToCache(updated);
+      return updated;
+    });
+
+    // 3. Permanently purge from all central databases
+    deleteCashSettlement(settlementId).catch(console.error);
+    cloudDeleteCashSettlement(settlementId).catch(console.error);
+    deleteCashSettlementFromSupabase(settlementId).catch(console.error);
   };
 
   // Reset to Demo Data

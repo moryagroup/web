@@ -86,12 +86,34 @@ export const saveOccasions = (_occasions: OccasionEvent[]) => {};
 export const getCustomIncomeTypes = (): string[] => [];
 export const saveCustomIncomeType = (_newType: string) => [];
 
+export const getDeletedSettlementIds = (): Set<string> => {
+  try {
+    const raw = localStorage.getItem('morya_deleted_settlement_ids');
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+};
+
+export const addDeletedSettlementId = (id: string) => {
+  if (!id) return;
+  try {
+    const set = getDeletedSettlementIds();
+    set.add(id);
+    localStorage.setItem('morya_deleted_settlement_ids', JSON.stringify(Array.from(set)));
+  } catch {}
+};
+
 export const getStoredCashSettlements = (): CashSettlement[] => {
   try {
     const data = localStorage.getItem('morya_settlements_cache');
     if (!data) return [];
     const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    const deletedIds = getDeletedSettlementIds();
+    return parsed.filter((s) => s && s.id && !deletedIds.has(s.id));
   } catch {
     return [];
   }
@@ -99,7 +121,9 @@ export const getStoredCashSettlements = (): CashSettlement[] => {
 
 export const saveCashSettlementsToCache = (settlements: CashSettlement[]) => {
   try {
-    localStorage.setItem('morya_settlements_cache', JSON.stringify(settlements));
+    const deletedIds = getDeletedSettlementIds();
+    const cleanList = (settlements || []).filter((s) => s && s.id && !deletedIds.has(s.id));
+    localStorage.setItem('morya_settlements_cache', JSON.stringify(cleanList));
   } catch {}
 };
 

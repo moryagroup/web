@@ -20,6 +20,7 @@ import {
   INITIAL_OCCASIONS,
   INITIAL_EVENT_GALLERY,
 } from '../mockData';
+import { addDeletedSettlementId, getDeletedSettlementIds } from './storageService';
 
 const BUCKET_NAME = 'morya-assets';
 
@@ -759,7 +760,8 @@ export async function fetchCashSettlementsFromSupabase(): Promise<CashSettlement
       .maybeSingle();
 
     if (settingsData?.value?.list && Array.isArray(settingsData.value.list)) {
-      return settingsData.value.list;
+      const deletedIds = getDeletedSettlementIds();
+      return (settingsData.value.list as CashSettlement[]).filter((s) => s && s.id && !deletedIds.has(s.id));
     }
 
     const { data, error } = await supabase
@@ -771,7 +773,10 @@ export async function fetchCashSettlementsFromSupabase(): Promise<CashSettlement
       return [];
     }
 
-    return (data || []).map((row: any) => ({
+    const deletedIds = getDeletedSettlementIds();
+    return (data || [])
+      .filter((row: any) => !deletedIds.has(row.id))
+      .map((row: any) => ({
       id: row.id,
       settlementNo: row.settlement_no,
       memberId: row.member_id,
@@ -800,9 +805,13 @@ export async function fetchCashSettlementsFromSupabase(): Promise<CashSettlement
 export async function saveCashSettlementToSupabase(settlement: CashSettlement): Promise<void> {
   if (!isSupabaseConfigured) return;
   try {
+    if (getDeletedSettlementIds().has(settlement.id)) {
+      console.warn('[Supabase] Skipping save of deleted cash settlement:', settlement.id);
+      return;
+    }
     // 1. Primary: Save into Supabase settings table
     const current = await fetchCashSettlementsFromSupabase();
-    const filtered = current.filter((s) => s.id !== settlement.id);
+    const filtered = current.filter((s) => s.id !== settlement.id && !getDeletedSettlementIds().has(s.id));
     const updated = [settlement, ...filtered];
 
     await supabase.from('settings').upsert({
@@ -840,6 +849,7 @@ export async function saveCashSettlementToSupabase(settlement: CashSettlement): 
 export async function deleteCashSettlementFromSupabase(id: string): Promise<void> {
   if (!isSupabaseConfigured) return;
   try {
+    addDeletedSettlementId(id);
     const current = await fetchCashSettlementsFromSupabase();
     const updated = current.filter((s) => s.id !== id);
 

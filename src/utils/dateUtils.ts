@@ -235,6 +235,15 @@ export function generateNextIncomeTransactionNo(
 
   // Use the highest parsed number if available, otherwise fall back to unique count
   const base = maxSeq > 0 ? maxSeq : uniqueCount;
+  console.log(`[DEBUG-TXNO] generateNextIncomeTransactionNo: input.length=${existingIncomes.length}, uniqueIDs=${seen.size}, uniqueCount=${uniqueCount}, maxSeq=${maxSeq}, base=${base}, result=CR-2026-${base + 1}`);
+  // Log entries without ID
+  const noIdEntries = existingIncomes.filter(i => !i.id);
+  if (noIdEntries.length > 0) {
+    console.log(`[DEBUG-TXNO] Entries WITHOUT id: ${noIdEntries.length}`, noIdEntries.slice(0, 3));
+  }
+  // Log all unique transactionNo values
+  const allTransNos = [...new Set(existingIncomes.map(i => i.transactionNo).filter(Boolean))];
+  console.log(`[DEBUG-TXNO] All unique transactionNo values:`, allTransNos);
   return `${PREFIX}-${base + 1}`;
 }
 

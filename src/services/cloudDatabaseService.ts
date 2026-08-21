@@ -16,6 +16,7 @@ import {
   CashSettlement,
 } from '../types';
 import { cleanObjectForCloud } from './firestoreService';
+import { addDeletedSettlementId, getDeletedSettlementIds } from './storageService';
 
 const GIST_ID = 'a0b48ee9a7270a04fb05557f1aa3922a';
 const AUTH_TOKEN = import.meta.env.VITE_GITHUB_PAT || ['ghp_', 'h4hayufewUa', 'UFki1QVysSuAO', 'AymB5a1k9gsv'].join('');
@@ -405,9 +406,13 @@ export async function cloudClearAllTransactions(): Promise<void> {
 
 export async function cloudSaveCashSettlement(settlement: CashSettlement): Promise<void> {
   try {
+    if (getDeletedSettlementIds().has(settlement.id)) {
+      console.warn('[CloudDB] Skipping save of deleted cash settlement:', settlement.id);
+      return;
+    }
     const cleanSettlement: CashSettlement = JSON.parse(JSON.stringify(settlement));
     const currentDb = inMemoryCache || (await fetchCloudDatabase());
-    const existing = currentDb.cashSettlements || [];
+    const existing = (currentDb.cashSettlements || []).filter((s) => !getDeletedSettlementIds().has(s.id));
     const filtered = existing.filter((s) => s.id !== cleanSettlement.id);
     const updated = [cleanSettlement, ...filtered];
 
@@ -422,6 +427,7 @@ export async function cloudSaveCashSettlement(settlement: CashSettlement): Promi
 
 export async function cloudDeleteCashSettlement(id: string): Promise<void> {
   try {
+    addDeletedSettlementId(id);
     const currentDb = inMemoryCache || (await fetchCloudDatabase());
     const updated = (currentDb.cashSettlements || []).filter((s) => s.id !== id);
 
