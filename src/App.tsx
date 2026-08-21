@@ -740,11 +740,6 @@ export default function App() {
     const item = incomes.find((i) => i.id === incomeId);
     if (!item) return;
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const isSameDay =
-      item.transactionDate === todayStr ||
-      (item.createdAt && item.createdAt.split('T')[0] === todayStr);
-
     if (item.paymentMethod === 'रोख' && item.linkedMemberId) {
       const remainingCashIncomes = incomes
         .filter((i) => i.id !== incomeId && i.approvalStatus !== 'रद्द' && i.paymentMethod === 'रोख' && i.linkedMemberId === item.linkedMemberId)
@@ -757,26 +752,11 @@ export default function App() {
       }
     }
 
-    if (isSameDay) {
-      // Created on the same day: Completely remove from DB
-      setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
-      deleteIncome(incomeId).catch(console.error);
-      cloudDeleteIncome(incomeId).catch(console.error);
-      deleteIncomeFromSupabase(incomeId).catch(console.error);
-    } else {
-      // Past dates: DO NOT delete; Mark as 'रद्द' (Cancelled) so sequence numbers do NOT shift!
-      const cancelled: IncomeTransaction = {
-        ...item,
-        approvalStatus: 'रद्द',
-        notes: item.notes
-          ? `${item.notes} | प्रशासकीय रद्द (${new Date().toLocaleDateString('mr-IN')})`
-          : `प्रशासकीय रद्द (${new Date().toLocaleDateString('mr-IN')})`,
-      };
-      setIncomes((prev) => prev.map((i) => (i.id === incomeId ? cancelled : i)));
-      saveIncome(cancelled).catch(console.error);
-      cloudSaveIncome(cancelled).catch(console.error);
-      saveIncomeToSupabase(cancelled).catch(console.error);
-    }
+    // Permanently remove from state and online DBs (Supabase, Firestore, Gist)
+    setIncomes((prev) => prev.filter((i) => i.id !== incomeId));
+    deleteIncome(incomeId).catch(console.error);
+    cloudDeleteIncome(incomeId).catch(console.error);
+    deleteIncomeFromSupabase(incomeId).catch(console.error);
   };
 
   // Custom Income Types Firestore Sync
@@ -940,31 +920,11 @@ export default function App() {
     const item = expenses.find((e) => e.id === expenseId);
     if (!item) return;
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const isSameDay =
-      item.expenseDate === todayStr ||
-      (item.createdAt && item.createdAt.split('T')[0] === todayStr);
-
-    if (isSameDay) {
-      // Created on the same day: Completely remove from DB
-      setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
-      deleteExpense(expenseId).catch(console.error);
-      cloudDeleteExpense(expenseId).catch(console.error);
-      deleteExpenseFromSupabase(expenseId).catch(console.error);
-    } else {
-      // Past dates: DO NOT delete; Mark as 'रद्द' (Cancelled) so sequence numbers do NOT shift!
-      const cancelled: ExpenseTransaction = {
-        ...item,
-        approvalStatus: 'रद्द',
-        notes: item.notes
-          ? `${item.notes} | प्रशासकीय रद्द (${new Date().toLocaleDateString('mr-IN')})`
-          : `प्रशासकीय रद्द (${new Date().toLocaleDateString('mr-IN')})`,
-      };
-      setExpenses((prev) => prev.map((e) => (e.id === expenseId ? cancelled : e)));
-      saveExpense(cancelled).catch(console.error);
-      cloudSaveExpense(cancelled).catch(console.error);
-      saveExpenseToSupabase(cancelled).catch(console.error);
-    }
+    // Permanently remove from state and online DBs (Supabase, Firestore, Gist)
+    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+    deleteExpense(expenseId).catch(console.error);
+    cloudDeleteExpense(expenseId).catch(console.error);
+    deleteExpenseFromSupabase(expenseId).catch(console.error);
   };
 
   // Approve Expense
