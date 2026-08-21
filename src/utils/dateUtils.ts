@@ -177,6 +177,38 @@ export function isDateInSelectedYear(
 }
 
 /**
+ * Safely parses any date/timestamp string (ISO, YYYY-MM-DD, DD/MM/YYYY, Marathi digits) into Unix time (ms).
+ * Returns 0 if invalid or empty.
+ */
+export function parseDateToTimestamp(dateStr?: string): number {
+  if (!dateStr) return 0;
+  const cleanStr = convertMarathiToEnglishDigits(dateStr.trim());
+  if (!cleanStr) return 0;
+
+  // Check if DD/MM/YYYY format
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(cleanStr)) {
+    const parts = cleanStr.split(/[\s/]+/);
+    if (parts.length >= 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      const timePart = parts[3] || '00:00:00';
+      const [h, m, s] = timePart.split(':').map((x) => parseInt(x, 10) || 0);
+      const dt = new Date(year, month, day, h, m, s);
+      if (!isNaN(dt.getTime())) return dt.getTime();
+    }
+  }
+
+  // Standard Date parsing for YYYY-MM-DD, ISO string, etc.
+  const dt = new Date(cleanStr);
+  if (!isNaN(dt.getTime())) {
+    return dt.getTime();
+  }
+
+  return 0;
+}
+
+/**
  * Extracts 2-digit year from date string (e.g. '2026-08-16' -> '26', '2025-10-01' -> '25')
  */
 export function getTwoDigitYearFromDate(dateStr?: string): string {
@@ -200,7 +232,7 @@ export function getTwoDigitYearFromDate(dateStr?: string): string {
 /**
  * Generates next sequential Credit transaction number: CR-2026-1, CR-2026-2, CR-2026-3 ...
  * Reads the highest already-assigned CR-2026-N from the formatted list and returns N+1.
- * This guarantees no jumps — if 18 entries exist numbered 1-18, next is always 19.
+ * Ignores any out-of-sequence jumps (e.g. 50 when unique count is 17).
  */
 export function generateNextIncomeTransactionNo(
   _dateStr?: string,
@@ -225,7 +257,7 @@ export function generateNextIncomeTransactionNo(
 
     // Parse the sequential number from already-formatted transactionNo
     if (item.transactionNo) {
-      const match = item.transactionNo.match(/^CR-2026-(\d+)$/i);
+      const match = item.transactionNo.match(/^(?:CR|MG)-?(?:2026|26)?-?(\d+)$/i);
       if (match) {
         const num = parseInt(match[1], 10);
         if (!isNaN(num) && num > maxSeq) maxSeq = num;
@@ -233,17 +265,8 @@ export function generateNextIncomeTransactionNo(
     }
   }
 
-  // Use the highest parsed number if available, otherwise fall back to unique count
-  const base = maxSeq > 0 ? maxSeq : uniqueCount;
-  console.log(`[DEBUG-TXNO] generateNextIncomeTransactionNo: input.length=${existingIncomes.length}, uniqueIDs=${seen.size}, uniqueCount=${uniqueCount}, maxSeq=${maxSeq}, base=${base}, result=CR-2026-${base + 1}`);
-  // Log entries without ID
-  const noIdEntries = existingIncomes.filter(i => !i.id);
-  if (noIdEntries.length > 0) {
-    console.log(`[DEBUG-TXNO] Entries WITHOUT id: ${noIdEntries.length}`, noIdEntries.slice(0, 3));
-  }
-  // Log all unique transactionNo values
-  const allTransNos = [...new Set(existingIncomes.map(i => i.transactionNo).filter(Boolean))];
-  console.log(`[DEBUG-TXNO] All unique transactionNo values:`, allTransNos);
+  // Jump Protection: if maxSeq > uniqueCount + 2 (e.g. 50 when uniqueCount is 17), ignore maxSeq jump
+  const base = maxSeq > 0 && maxSeq <= uniqueCount + 2 ? maxSeq : uniqueCount;
   return `${PREFIX}-${base + 1}`;
 }
 
@@ -272,7 +295,7 @@ export function generateNextExpenseTransactionNo(
     uniqueCount++;
 
     if (item.transactionNo) {
-      const match = item.transactionNo.match(/^EXP-2026-(\d+)$/i);
+      const match = item.transactionNo.match(/^(?:EXP|DR)-?(?:2026|26)?-?(\d+)$/i);
       if (match) {
         const num = parseInt(match[1], 10);
         if (!isNaN(num) && num > maxSeq) maxSeq = num;
@@ -280,7 +303,7 @@ export function generateNextExpenseTransactionNo(
     }
   }
 
-  const base = maxSeq > 0 ? maxSeq : uniqueCount;
+  const base = maxSeq > 0 && maxSeq <= uniqueCount + 2 ? maxSeq : uniqueCount;
   return `${PREFIX}-${base + 1}`;
 }
 
@@ -317,7 +340,7 @@ export function generateNextCashSettlementNo(
     }
   }
 
-  const base = maxSeq > 0 ? maxSeq : uniqueCount;
+  const base = maxSeq > 0 && maxSeq <= uniqueCount + 2 ? maxSeq : uniqueCount;
   return `${PREFIX}-${base + 1}`;
 }
 
@@ -340,9 +363,9 @@ export function formatIncomeTransactionsNo<
 
   // Sort chronological by creation / entry to maintain true permanent sequence
   const chronological = [...uniqueList].sort((a, b) => {
-    const timeA = convertMarathiToEnglishDigits(a.createdAt || a.transactionDate || '');
-    const timeB = convertMarathiToEnglishDigits(b.createdAt || b.transactionDate || '');
-    if (timeA !== timeB) return timeA.localeCompare(timeB);
+    const timeA = parseDateToTimestamp(a.createdAt || a.transactionDate || '');
+    const timeB = parseDateToTimestamp(b.createdAt || b.transactionDate || '');
+    if (timeA !== timeB) return timeA - timeB;
     return a.id.localeCompare(b.id);
   });
 
@@ -376,9 +399,9 @@ export function formatExpenseTransactionsNo<
 
   // Sort chronological by creation / entry to maintain true permanent sequence
   const chronological = [...uniqueList].sort((a, b) => {
-    const timeA = convertMarathiToEnglishDigits(a.createdAt || a.expenseDate || '');
-    const timeB = convertMarathiToEnglishDigits(b.createdAt || b.expenseDate || '');
-    if (timeA !== timeB) return timeA.localeCompare(timeB);
+    const timeA = parseDateToTimestamp(a.createdAt || a.expenseDate || '');
+    const timeB = parseDateToTimestamp(b.createdAt || b.expenseDate || '');
+    if (timeA !== timeB) return timeA - timeB;
     return a.id.localeCompare(b.id);
   });
 
@@ -410,9 +433,9 @@ export function formatCashSettlementsNo<
   const uniqueList = Array.from(uniqueMap.values());
 
   const chronological = [...uniqueList].sort((a, b) => {
-    const timeA = convertMarathiToEnglishDigits(a.createdAt || a.depositDate || '');
-    const timeB = convertMarathiToEnglishDigits(b.createdAt || b.depositDate || '');
-    if (timeA !== timeB) return timeA.localeCompare(timeB);
+    const timeA = parseDateToTimestamp(a.createdAt || a.depositDate || '');
+    const timeB = parseDateToTimestamp(b.createdAt || b.depositDate || '');
+    if (timeA !== timeB) return timeA - timeB;
     return a.id.localeCompare(b.id);
   });
 

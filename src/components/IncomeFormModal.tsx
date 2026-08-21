@@ -74,6 +74,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [financialYear, setFinancialYear] = useState<string>('2026-2027');
   const [autoApprove, setAutoApprove] = useState<boolean>(false);
+  const [savedSuccessMsg, setSavedSuccessMsg] = useState<string | null>(null);
 
   // Default cash receiver
   useEffect(() => {
@@ -129,8 +130,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const processFormSubmit = (keepOpenAfterSave: boolean) => {
     if (!amount || Number(amount) <= 0) {
       alert('कृपया वैध रक्कम टाका.');
       return;
@@ -201,7 +201,25 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       createdAt: formattedCreatedAt,
     });
 
-    onClose();
+    if (keepOpenAfterSave) {
+      if (isPhysicalReceipt && receiptSerialNo) {
+        const num = parseInt(receiptSerialNo, 10);
+        if (!isNaN(num)) setReceiptSerialNo(String(num + 1));
+      }
+      setAmount('');
+      setReason('');
+      setPaymentReference('');
+      setNotes('');
+      setSavedSuccessMsg(`पावती (${finalTransNo}) यशस्वीरित्या नोंदवली गेली. पुढील नोंद करा.`);
+      setTimeout(() => setSavedSuccessMsg(null), 3500);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    processFormSubmit(false);
   };
 
   return (
@@ -230,6 +248,13 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+          {savedSuccessMsg && (
+            <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-xs font-bold text-emerald-900 flex items-center gap-2 animate-in fade-in">
+              <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+              <span>{savedSuccessMsg}</span>
+            </div>
+          )}
+
           <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
             <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
@@ -611,17 +636,25 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-4 border-t border-slate-200">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold text-sm cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold text-xs cursor-pointer"
             >
-              रद्द करा
+              रद्द करा (Close)
+            </button>
+            <button
+              type="button"
+              onClick={() => processFormSubmit(true)}
+              className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs cursor-pointer shadow-sm active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>जतन करून पुढील नोंद करा</span>
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm cursor-pointer shadow-md"
+              className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-md active:scale-95"
             >
               <CheckCircle className="w-4 h-4" />
               <span>जमा नोंद जतन करा</span>

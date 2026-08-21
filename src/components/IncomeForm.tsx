@@ -9,7 +9,7 @@ import {
   CurrentUser,
 } from '../types';
 import { hasFullFinancialAccess, sortMembersByDesignation, canApproveFinancialTransactions } from '../utils/rbac';
-import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextIncomeTransactionNo } from '../utils/dateUtils';
+import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextIncomeTransactionNo, convertMarathiToEnglishDigits } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft, ShieldCheck, BookOpen, BookMarked } from 'lucide-react';
 import { uploadFileToGoogleDrive, isGoogleDriveUrl } from '../services/googleDriveService';
@@ -254,26 +254,28 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
     onAddIncome(newIncome);
     setSavedSuccess(true);
 
-    setTimeout(() => {
-      setSavedSuccess(false);
-      // Reset form
-      setAmount('');
-      setReason('');
-      setPaymentReference('');
-      setReceiptNumber('');
-      setAttachmentUrl('');
-      setNotes('');
-      if (currentLoggedInMember) {
-        setCashReceiverMemberId(currentLoggedInMember.id);
-        setCashReceiverName(currentLoggedInMember.fullName);
-      } else if (members.length > 0) {
-        setCashReceiverMemberId(members[0].id);
-        setCashReceiverName(members[0].fullName);
+    // Auto-increment physical receipt serial number if applicable
+    if (isPhysicalReceipt && receiptSerialNo) {
+      const currentNum = parseInt(convertMarathiToEnglishDigits(receiptSerialNo), 10);
+      if (!isNaN(currentNum)) {
+        setReceiptSerialNo(String(currentNum + 1));
       }
-      if (onSuccessNavigate) {
-        onSuccessNavigate();
-      }
-    }, 1500);
+    }
+
+    // Reset input fields for next entry
+    setAmount('');
+    setReason('');
+    setPaymentReference('');
+    setReceiptNumber('');
+    setAttachmentUrl('');
+    setNotes('');
+    if (currentLoggedInMember) {
+      setCashReceiverMemberId(currentLoggedInMember.id);
+      setCashReceiverName(currentLoggedInMember.fullName);
+    } else if (members.length > 0) {
+      setCashReceiverMemberId(members[0].id);
+      setCashReceiverName(members[0].fullName);
+    }
   };
 
   const isLoggedIn = currentUser.isLoggedIn !== false;
@@ -320,11 +322,35 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       </div>
 
       {savedSuccess && (
-        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-800">
-          <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-          <div>
-            <p className="font-bold text-sm">जमा नोंद यशस्वीरित्या जतन झाली!</p>
-            <p className="text-xs text-emerald-600">व्यवहार नोंदवून मुख्य खात्यात जमा झाला आहे.</p>
+        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-emerald-800 animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+            <div>
+              <p className="font-bold text-sm">पावती / जमा नोंद यशस्वीरित्या जतन झाली!</p>
+              <p className="text-xs text-emerald-700 font-medium">
+                {isPhysicalReceipt
+                  ? `पुढील पावती अनुक्रमांक #${receiptSerialNo} तयार आहे. आणखी जमा नोंद करा.`
+                  : 'व्यवहार नोंदवून मुख्य खात्यात जमा झाला आहे.'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setSavedSuccess(false)}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1 active:scale-95"
+            >
+              ➕ पुढील पावती नोंदवा
+            </button>
+            {onSuccessNavigate && (
+              <button
+                type="button"
+                onClick={onSuccessNavigate}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1 active:scale-95"
+              >
+                📋 जमा इतिहास पहा
+              </button>
+            )}
           </div>
         </div>
       )}
