@@ -154,7 +154,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           (taskNameNorm && memberCodeNorm && taskNameNorm.includes(memberCodeNorm))
         );
 
-        if (matchesMemberId || matchesPhone || matchesName) {
+        const isTeamMember = (t.teamMembers || []).some((tm) => {
+          const tmIdMatch = Boolean(currentMember && tm.id === currentMember.id);
+          const tmNameNorm = normalizeText(tm.name);
+          const tmNameMatch = Boolean(
+            (tmNameNorm && userNorm && (tmNameNorm === userNorm || tmNameNorm.includes(userNorm) || userNorm.includes(tmNameNorm))) ||
+            (tmNameNorm && memberNorm && (tmNameNorm === memberNorm || tmNameNorm.includes(memberNorm) || memberNorm.includes(tmNameNorm)))
+          );
+          return tmIdMatch || tmNameMatch;
+        });
+
+        if (matchesMemberId || matchesPhone || matchesName || isTeamMember) {
           myTasks.push({ occasion: occ, task: t });
         }
       });

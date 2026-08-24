@@ -80,6 +80,37 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
     setTasks((prev) => prev.filter((t) => t.id !== id));
   };
 
+  const handleAddTeamMemberToTask = (taskId: string, memberId: string) => {
+    if (!memberId) return;
+    const selectedM = members.find((mem) => mem.id === memberId);
+    if (!selectedM) return;
+
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const currentTeam = t.teamMembers || [];
+        if (currentTeam.some((tm) => tm.id === selectedM.id)) return t;
+        const newTeamMember = {
+          id: selectedM.id,
+          name: selectedM.fullName,
+          role: selectedM.designation || 'सभासद',
+          phone: selectedM.phone || '',
+        };
+        return { ...t, teamMembers: [...currentTeam, newTeamMember] };
+      })
+    );
+  };
+
+  const handleRemoveTeamMemberFromTask = (taskId: string, memberId: string) => {
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const currentTeam = t.teamMembers || [];
+        return { ...t, teamMembers: currentTeam.filter((tm) => tm.id !== memberId) };
+      })
+    );
+  };
+
   const resetForm = () => {
     setEditingId(null);
     setName('');
@@ -422,6 +453,67 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
+
+                        {/* Team Members Section */}
+                        <div className="sm:col-span-12 mt-1 pt-2 border-t border-dashed border-amber-200">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-[10px] font-bold text-slate-700 flex items-center gap-1">
+                              <UserCheck className="w-3.5 h-3.5 text-amber-600" />
+                              सहकार्यकारी सभासद / टीम सदस्य (Team Members):
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <select
+                                defaultValue=""
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    handleAddTeamMemberToTask(task.id, e.target.value);
+                                    e.target.value = "";
+                                  }
+                                }}
+                                className="p-1 border border-slate-300 rounded text-[10px] font-bold text-slate-800 bg-white cursor-pointer"
+                              >
+                                <option value="">+ टीम सदस्य जोडा...</option>
+                                {sortMembersByDesignation(members)
+                                  .filter(
+                                    (m) =>
+                                      m.id !== task.assignedMemberId &&
+                                      !(task.teamMembers || []).some((tm) => tm.id === m.id)
+                                  )
+                                  .map((m) => (
+                                    <option key={m.id} value={m.id}>
+                                      {m.memberCode} - {m.fullName} ({m.designation || 'सभासद'})
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Render Team Member Badges */}
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            {(!task.teamMembers || task.teamMembers.length === 0) ? (
+                              <span className="text-[9px] text-slate-400 italic">
+                                कोणतेही अतिरिक्त टीम सदस्य जोडलेले नाहीत.
+                              </span>
+                            ) : (
+                              task.teamMembers.map((tm) => (
+                                <span
+                                  key={tm.id}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100/80 text-amber-900 border border-amber-200 rounded-md text-[10px] font-bold shadow-2xs"
+                                >
+                                  <span>👤 {tm.name} ({tm.role || 'सभासद'})</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveTeamMemberFromTask(task.id, tm.id)}
+                                    className="text-amber-700 hover:text-rose-700 font-bold ml-0.5"
+                                    title="काढून टाका"
+                                  >
+                                    ✕
+                                  </button>
+                                </span>
+                              ))
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -515,6 +607,19 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                                 <span className="block text-[9px] text-amber-800 font-medium">
                                   प्रमुख: {t.assignedMemberName} ({t.assignedMemberRole || 'सभासद'})
                                 </span>
+                                {t.teamMembers && t.teamMembers.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    <span className="text-[8px] font-bold text-slate-500">टीम सदस्य:</span>
+                                    {t.teamMembers.map((tm) => (
+                                      <span
+                                        key={tm.id}
+                                        className="px-1 py-0.2 bg-amber-50 text-amber-900 border border-amber-200 rounded text-[8px] font-bold"
+                                      >
+                                        👤 {tm.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                               <span
                                 className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
