@@ -11,6 +11,7 @@ import {
   OccasionEvent,
   EventTask,
   CashSettlement,
+  Poll,
 } from '../types';
 import { HeaderStats } from './HeaderStats';
 import { EventGallerySection } from './EventGallerySection';
@@ -44,6 +45,9 @@ import {
   MessageSquare,
   Trash2,
   RefreshCw,
+  Vote,
+  ShieldCheck,
+  Award,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -51,6 +55,7 @@ interface DashboardViewProps {
   incomes: IncomeTransaction[];
   expenses: ExpenseTransaction[];
   cashSettlements?: CashSettlement[];
+  polls?: Poll[];
   members: Member[];
   occasions?: OccasionEvent[];
   currentUser: CurrentUser;
@@ -77,6 +82,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   incomes,
   expenses,
   cashSettlements = [],
+  polls = [],
   members,
   occasions = [],
   currentUser,
@@ -201,6 +207,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
     return myTasks;
   }, [occasions, currentUser, currentMember]);
+
+  const allOccasionTasks = useMemo(() => {
+    const list: { occasion: OccasionEvent; task: EventTask }[] = [];
+    (occasions || []).forEach((occ) => {
+      (occ.tasks || []).forEach((t) => {
+        list.push({ occasion: occ, task: t });
+      });
+    });
+    return list;
+  }, [occasions]);
+
+  const displayTasks = assignedTasksForMe.length > 0 ? assignedTasksForMe : allOccasionTasks;
 
   const canApprove =
     canApproveFinancialTransactions(currentUser.role) ||
@@ -541,7 +559,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       )}
 
       {/* Home Page Notification: Assigned Event Tasks & Work Responsibilities */}
-      {assignedTasksForMe.length > 0 && (
+      {displayTasks.length > 0 && (
         <div className="bg-gradient-to-br from-amber-500/10 via-purple-500/15 to-indigo-600/10 dark:from-slate-900 dark:via-purple-950/70 dark:to-indigo-950/80 p-5 sm:p-6 rounded-3xl border-2 border-purple-400/50 dark:border-purple-500/40 shadow-xl space-y-4">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-purple-200/60 dark:border-purple-900/60">
@@ -552,25 +570,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-400/40 rounded-md text-[11px] font-black uppercase">
-                    कामाची जबाबदारी
+                    कामांची सद्यस्थिती व प्रगती
                   </span>
                   <span className="px-2 py-0.5 bg-purple-600 text-white font-black rounded-full text-[10px] shadow-2xs">
-                    {assignedTasksForMe.length} {assignedTasksForMe.length === 1 ? 'काम' : 'कामे'}
+                    {displayTasks.length} {displayTasks.length === 1 ? 'काम' : 'कामे'}
                   </span>
                 </div>
                 <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-0.5">
-                  तुमच्याकडे सोपवलेली उत्सव कामांची जबाबदारी
+                  {assignedTasksForMe.length > 0
+                    ? 'तुमच्याकडे सोपवलेली उत्सव कामांची जबाबदारी'
+                    : 'उत्सवातील सर्व नियोजित कामे व सद्यस्थिती'}
                 </h3>
               </div>
             </div>
             <p className="text-xs text-slate-600 dark:text-purple-200 font-medium">
-              मंडळ व्यवस्थापनाने उत्सवात तुमच्या नावावर खालील प्रमुख कामांची जबाबदारी दिली आहे:
+              खालील कोणत्याही कामावर क्लिक करून प्रगती नोंदवा किंवा सद्यस्थिती व सूचना पहा:
             </p>
           </div>
 
           {/* Grid of Task Cards */}
-          <div className={`grid gap-4 ${assignedTasksForMe.length === 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
-            {assignedTasksForMe.map(({ occasion, task }) => (
+          <div className={`grid gap-4 ${displayTasks.length === 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
+            {displayTasks.map(({ occasion, task }) => (
               <div
                 key={task.id}
                 className="bg-white/95 dark:bg-slate-900/90 rounded-2xl p-4 sm:p-5 border-2 border-purple-200/80 dark:border-purple-900/60 hover:border-amber-400 dark:hover:border-amber-500/60 shadow-md hover:shadow-xl transition-all space-y-3 flex flex-col justify-between"
@@ -703,6 +723,80 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Active Polls & Decisions Widget */}
+      {polls.length > 0 && (
+        <div className="bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-red-500/10 dark:from-slate-900 dark:via-amber-950/40 dark:to-orange-950/40 p-4 sm:p-5 rounded-2xl border-2 border-amber-400/40 dark:border-amber-600/40 shadow-sm space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-amber-200/60 dark:border-amber-900/60">
+            <div className="flex items-center gap-2 text-amber-950 dark:text-amber-200 font-extrabold text-sm sm:text-base">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-xs">
+                <Vote className="w-4 h-4" />
+              </div>
+              <span>चालू मतदान व ठराव निर्णय (Polls & Decisions)</span>
+              {polls.filter((p) => p.status === 'सक्रिय').length > 0 && (
+                <span className="px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-black rounded-full shadow-2xs animate-pulse">
+                  {polls.filter((p) => p.status === 'सक्रिय').length} सक्रिय
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => onNavigate('polls')}
+              className="text-xs text-amber-800 dark:text-amber-300 hover:text-amber-950 dark:hover:text-white font-bold flex items-center gap-1 cursor-pointer bg-white/70 dark:bg-slate-800 px-3 py-1 rounded-lg border border-amber-300 dark:border-amber-700 shadow-2xs transition-all"
+            >
+              <span>सर्व मतदान पहा</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {polls.slice(0, 2).map((poll) => {
+              const totalVotes = (poll.votes || []).length;
+              return (
+                <div
+                  key={poll.id}
+                  onClick={() => onNavigate('polls')}
+                  className="bg-white dark:bg-slate-800 p-3.5 rounded-xl border border-amber-200 dark:border-amber-800/60 hover:border-amber-400 dark:hover:border-amber-500 shadow-xs hover:shadow-md transition-all cursor-pointer space-y-2 flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 text-[11px] font-bold">
+                      {poll.targetAudience === 'COMMITTEE_ONLY' ? (
+                        <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded-full">
+                          <ShieldCheck className="w-3 h-3" /> फक्त कार्यकारणी
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-950 px-2 py-0.5 rounded-full">
+                          <Users className="w-3 h-3" /> सर्व सभासद
+                        </span>
+                      )}
+
+                      <span className={`px-2 py-0.5 rounded-full ${
+                        poll.status === 'सक्रिय'
+                          ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold'
+                          : 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-bold'
+                      }`}>
+                        {poll.status === 'सक्रिय' ? '🟢 चालू' : '🏆 निकाल जारी'}
+                      </span>
+                    </div>
+
+                    <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 mt-2 line-clamp-2 group-hover:text-amber-600 transition-colors">
+                      {poll.title}
+                    </h4>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+                      <Vote className="w-3.5 h-3.5 text-amber-500" /> {totalVotes} मते नोंदवली
+                    </span>
+                    <span className="text-amber-600 dark:text-amber-400 font-bold text-xs flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                      {poll.status === 'सक्रिय' ? 'मत द्या / पहा' : 'निकाल पहा'} &rsaquo;
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

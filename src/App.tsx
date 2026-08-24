@@ -9,6 +9,7 @@ import {
   CurrentUser,
   CashSettlement,
   UserDesignation,
+  Poll,
 } from './types';
 import {
   getStoredIncomes,
@@ -19,6 +20,9 @@ import {
   getStoredGroupLogo,
   getStoredSuggestions,
   getStoredUser,
+  getStoredPolls,
+  savePolls,
+  INITIAL_POLLS,
   saveUser,
   saveIncomes,
   saveExpenses,
@@ -125,6 +129,7 @@ import {
   subscribeToGroupLogo,
   subscribeToCustomIncomeTypes,
   subscribeToCashSettlements,
+  subscribeToPolls,
   saveIncome,
   deleteIncome,
   saveExpense,
@@ -137,6 +142,8 @@ import {
   deleteGalleryImage,
   saveSuggestion,
   deleteSuggestion,
+  savePoll as savePollFirestore,
+  deletePoll as deletePollFirestore,
   saveGroupLogo as saveGroupLogoFirestore,
   saveCustomIncomeTypes,
   saveCashSettlement,
@@ -158,6 +165,8 @@ import {
   cloudDeleteGalleryImage,
   cloudSaveSuggestion,
   cloudDeleteSuggestion,
+  cloudSavePoll,
+  cloudDeletePoll,
   cloudSaveGroupLogo,
   cloudSaveCustomIncomeTypes,
   cloudClearAllTransactions,
@@ -212,6 +221,7 @@ import { MonthWiseReportsView } from './components/MonthWiseReportsView';
 import { AllYearsDataView } from './components/AllYearsDataView';
 import { CoreSummaryView } from './components/CoreSummaryView';
 import { SuggestionsView } from './components/SuggestionsView';
+import { PollsView } from './components/PollsView';
 import { LoginModal } from './components/LoginModal';
 import { OccasionModal } from './components/OccasionModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -239,6 +249,7 @@ const VALID_TABS = new Set([
   'all-years-data',
   'core-summary',
   'suggestions',
+  'polls',
   'profile',
 ]);
 
@@ -310,6 +321,7 @@ export default function App() {
   const [groupLogo, setGroupLogo] = useState<string>('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [cashSettlements, setCashSettlements] = useState<CashSettlement[]>(getStoredCashSettlements);
+  const [polls, setPolls] = useState<Poll[]>(INITIAL_POLLS);
 
   useEffect(() => {
     saveCashSettlementsToCache(cashSettlements);
@@ -444,6 +456,12 @@ export default function App() {
           });
         }
       }),
+      subscribeToPolls((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setPolls(data);
+          savePolls(data);
+        }
+      }),
     ];
 
     // Central Cloud & Supabase Real-Time Subscriptions (Laptop <-> Mobile Sync)
@@ -561,6 +579,10 @@ export default function App() {
         setSuggestions(clean);
         saveSuggestions(clean);
       }
+      if (Array.isArray(cloudDb.polls) && cloudDb.polls.length > 0) {
+        setPolls(cloudDb.polls);
+        savePolls(cloudDb.polls);
+      }
       if (cloudDb.settings?.groupLogo && cloudDb.settings.groupLogo.trim() !== '') {
         setGroupLogo(cloudDb.settings.groupLogo);
         saveGroupLogo(cloudDb.settings.groupLogo);
@@ -649,6 +671,27 @@ export default function App() {
     });
     deleteSuggestion(id).catch(console.error);
     cloudDeleteSuggestion(id).catch(console.error);
+  };
+
+  const handleSavePoll = (updatedPoll: Poll) => {
+    setPolls((prev) => {
+      const exists = prev.some((p) => p.id === updatedPoll.id);
+      const next = exists ? prev.map((p) => (p.id === updatedPoll.id ? updatedPoll : p)) : [updatedPoll, ...prev];
+      savePolls(next);
+      return next;
+    });
+    savePollFirestore(updatedPoll).catch(console.error);
+    cloudSavePoll(updatedPoll).catch(console.error);
+  };
+
+  const handleDeletePoll = (pollId: string) => {
+    setPolls((prev) => {
+      const next = prev.filter((p) => p.id !== pollId);
+      savePolls(next);
+      return next;
+    });
+    deletePollFirestore(pollId).catch(console.error);
+    cloudDeletePoll(pollId).catch(console.error);
   };
 
   const handleUpdateGroupLogo = async (logoUrl: string) => {
@@ -1328,6 +1371,34 @@ export default function App() {
     [cashSettlements]
   );
 
+  const pendingPollsCount = useMemo(() => {
+    if (currentUser.isLoggedIn === false) return 0;
+    const currentMember = members.find(
+      (m) =>
+        (currentUser.phone && m.phone === currentUser.phone) ||
+        (m.fullName && m.fullName.trim().toLowerCase() === currentUser.name.trim().toLowerCase())
+    );
+    const memberId = currentMember?.id || currentUser.phone || currentUser.name;
+    const isComm = isBadgedMember(currentUser.role) || hasAdminPermissions(currentUser.role);
+
+    return (polls || []).filter((p) => {
+      if (p.status !== 'सक्रिय') return false;
+      if (p.targetAudience === 'COMMITTEE_ONLY' && !isComm) return false;
+      if (p.expiresAt) {
+        const exp = new Date(p.expiresAt);
+        exp.setHours(23, 59, 59, 999);
+        if (new Date() > exp) return false;
+      }
+      const hasVoted = (p.votes || []).some(
+        (v) =>
+          v.memberId === memberId ||
+          (currentUser.phone && v.memberId === currentUser.phone) ||
+          v.memberName.trim().toLowerCase() === currentUser.name.trim().toLowerCase()
+      );
+      return !hasVoted;
+    }).length;
+  }, [polls, currentUser, members]);
+
   return (
     <>
     {isLoading && (
@@ -1353,6 +1424,7 @@ export default function App() {
         members={members}
         pendingExpenseCount={summary.pendingExpensesCount}
         pendingCashSettlementCount={pendingCashSettlementCount}
+        pendingPollsCount={pendingPollsCount}
         groupLogo={groupLogo}
         onUpdateGroupLogo={handleUpdateGroupLogo}
         onResetData={handleResetData}
@@ -1558,6 +1630,7 @@ export default function App() {
                 incomes={formattedIncomes}
                 expenses={formattedExpenses}
                 cashSettlements={formattedCashSettlements}
+                polls={polls}
                 members={members}
                 occasions={occasions}
                 currentUser={currentUser}
@@ -1748,6 +1821,18 @@ export default function App() {
                 onAddSuggestion={handleAddSuggestion}
                 onUpdateSuggestion={handleUpdateSuggestion}
                 onDeleteSuggestion={handleDeleteSuggestion}
+                onNavigate={(tab) => setActiveTab(tab)}
+                onOpenLogin={() => setIsLoginModalOpen(true)}
+              />
+            )}
+
+            {activeTab === 'polls' && (
+              <PollsView
+                polls={polls}
+                currentUser={currentUser}
+                members={members}
+                onSavePoll={handleSavePoll}
+                onDeletePoll={handleDeletePoll}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
               />

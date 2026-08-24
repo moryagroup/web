@@ -1,4 +1,5 @@
-import { Member, OccasionEvent, IncomeTransaction, ExpenseTransaction, CurrentUser, EventGalleryImage, MemberSuggestion } from './types';
+import { Member, OccasionEvent, IncomeTransaction, ExpenseTransaction, CurrentUser, EventGalleryImage, MemberSuggestion, Poll } from './types';
+
 
 export const INITIAL_MEMBERS: Member[] = [
   {
@@ -485,3 +486,95 @@ export const INITIAL_EVENT_GALLERY: EventGalleryImage[] = [
 ];
 
 export const INITIAL_SUGGESTIONS: MemberSuggestion[] = [];
+
+export const INITIAL_POLLS: Poll[] = [
+  {
+    id: 'poll-101',
+    pollNo: 'POLL-2026-001',
+    title: 'गणेशोत्सव २०२६: मुख्य मंडप देखावा व सांस्कृतिक थीम निवड',
+    description: 'यंदाच्या गणेशोत्सवासाठी मुख्य देखावा कोणता करावा यावर सर्व कार्यकारणी सदस्यांचे मत हवे आहे. अंतिम निर्णयानुसार देखावा कंत्राटदाराशी चर्चा केली जाईल.',
+    category: 'उत्सव नियोजन',
+    targetAudience: 'COMMITTEE_ONLY',
+    options: [
+      { id: 'opt-1', text: 'छत्रपती शिवाजी महाराज राज्याभिषेक ३५० वे वर्ष देखावा', color: 'amber' },
+      { id: 'opt-2', text: 'अयोध्येतील श्रीराम मंदिर प्रतिकृती देखावा', color: 'orange' },
+      { id: 'opt-3', text: 'पर्यावरण व जलसंधारण जनजागृती देखावा', color: 'emerald' },
+      { id: 'opt-4', text: 'पारंपरिक विद्युत रोषणाई व भव्य फुलांची आरास', color: 'indigo' },
+    ],
+    votes: [
+      { memberId: 'm-101', memberName: 'राकेश पोटे', memberRole: 'अध्यक्ष', optionId: 'opt-1', votedAt: '2026-08-20T10:00:00.000Z' },
+      { memberId: 'm-103', memberName: 'धनंजय इंगळे', memberRole: 'सचिव', optionId: 'opt-1', votedAt: '2026-08-20T11:30:00.000Z' },
+      { memberId: 'm-104', memberName: 'संकेत कौले', memberRole: 'खजिनदार', optionId: 'opt-2', votedAt: '2026-08-20T12:15:00.000Z' },
+      { memberId: 'm-102', memberName: 'विजय जगताप', memberRole: 'उपाध्यक्ष', optionId: 'opt-1', votedAt: '2026-08-20T14:20:00.000Z' },
+      { memberId: 'm-105', memberName: 'उदय हेरवाडे', memberRole: 'उपखजिनदार', optionId: 'opt-3', votedAt: '2026-08-20T15:00:00.000Z' },
+    ],
+    status: 'सक्रिय',
+    createdByMemberId: 'm-101',
+    createdByName: 'राकेश पोटे',
+    createdByRole: 'अध्यक्ष',
+    createdAt: '2026-08-20T09:30:00.000Z',
+    expiresAt: '2026-08-30',
+    allowChangeVote: true,
+  },
+  {
+    id: 'poll-102',
+    pollNo: 'POLL-2026-002',
+    title: 'महाप्रसाद महाभोजन: मुख्य मिष्टान्न (Sweet) मेनू निवड',
+    description: 'यंदाच्या अनंत चतुर्दशी महाप्रसादासाठी सर्व सभासदांच्या पसंतीनुसार गोड पदार्थाची निवड करायची आहे. सर्व सभासदांनी आपले मत नोंदवावे.',
+    category: 'उत्सव नियोजन',
+    targetAudience: 'ALL_MEMBERS',
+    options: [
+      { id: 'opt-1', text: 'गरमागरम गुलाबजाम', color: 'rose' },
+      { id: 'opt-2', text: 'शुद्ध तुपातील बुंदी लाडू', color: 'amber' },
+      { id: 'opt-3', text: 'केशर बासुंदी व पुरी', color: 'yellow' },
+      { id: 'opt-4', text: 'मोतीचूर लाडू', color: 'orange' },
+    ],
+    votes: [
+      { memberId: 'm-101', memberName: 'राकेश पोटे', memberRole: 'अध्यक्ष', optionId: 'opt-3', votedAt: '2026-08-21T09:00:00.000Z' },
+      { memberId: 'm-107', memberName: 'अमोल शिंदे', memberRole: 'सभासद', optionId: 'opt-3', votedAt: '2026-08-21T10:15:00.000Z' },
+      { memberId: 'm-108', memberName: 'सचिन गायकवाड', memberRole: 'सभासद', optionId: 'opt-1', votedAt: '2026-08-21T11:00:00.000Z' },
+      { memberId: 'm-109', memberName: 'रोहित कदम', memberRole: 'सभासद', optionId: 'opt-3', votedAt: '2026-08-21T11:45:00.000Z' },
+      { memberId: 'm-110', memberName: 'प्रमोद पाटील', memberRole: 'सभासद', optionId: 'opt-2', votedAt: '2026-08-21T12:30:00.000Z' },
+      { memberId: 'm-104', memberName: 'संकेत कौले', memberRole: 'खजिनदार', optionId: 'opt-3', votedAt: '2026-08-21T13:00:00.000Z' },
+    ],
+    status: 'सक्रिय',
+    createdByMemberId: 'm-103',
+    createdByName: 'धनंजय इंगळे',
+    createdByRole: 'सचिव',
+    createdAt: '2026-08-21T08:30:00.000Z',
+    expiresAt: '2026-08-28',
+    allowChangeVote: true,
+  },
+  {
+    id: 'poll-103',
+    pollNo: 'POLL-2026-003',
+    title: 'मंडळाचे नवीन ध्वजस्तंभ व स्वागत कमान उभारणी ठराव',
+    description: 'गोंधळनगर चौकात मंडळाची कायमस्वरूपी आकर्षक मेटल स्वागत कमान व ध्वजस्तंभ उभारण्याचा प्रस्ताव मंजूर करावा का?',
+    category: 'निर्णय / ठराव',
+    targetAudience: 'COMMITTEE_ONLY',
+    options: [
+      { id: 'opt-1', text: 'पूर्णपणे सहमत (मंजूर)', color: 'emerald' },
+      { id: 'opt-2', text: 'असहमत (सध्या नको)', color: 'rose' },
+      { id: 'opt-3', text: 'पुढील वर्षी विचार करू', color: 'amber' },
+    ],
+    votes: [
+      { memberId: 'm-101', memberName: 'राकेश पोटे', memberRole: 'अध्यक्ष', optionId: 'opt-1', votedAt: '2026-08-15T10:00:00.000Z' },
+      { memberId: 'm-102', memberName: 'विजय जगताप', memberRole: 'उपाध्यक्ष', optionId: 'opt-1', votedAt: '2026-08-15T10:05:00.000Z' },
+      { memberId: 'm-103', memberName: 'धनंजय इंगळे', memberRole: 'सचिव', optionId: 'opt-1', votedAt: '2026-08-15T10:10:00.000Z' },
+      { memberId: 'm-104', memberName: 'संकेत कौले', memberRole: 'खजिनदार', optionId: 'opt-1', votedAt: '2026-08-15T10:15:00.000Z' },
+      { memberId: 'm-105', memberName: 'उदय हेरवाडे', memberRole: 'उपखजिनदार', optionId: 'opt-1', votedAt: '2026-08-15T10:20:00.000Z' },
+      { memberId: 'm-106', memberName: 'प्रशांत सुरेकर', memberRole: 'कार्याध्यक्ष', optionId: 'opt-1', votedAt: '2026-08-15T10:25:00.000Z' },
+    ],
+    status: 'निकाली',
+    createdByMemberId: 'm-admin',
+    createdByName: 'सिस्टम ॲडमिन',
+    createdByRole: 'ॲडमिन',
+    createdAt: '2026-08-15T09:00:00.000Z',
+    expiresAt: '2026-08-18',
+    finalDecision: 'सर्व ६ कार्यकारणी सदस्यांच्या १००% बहुमताने कायमस्वरूपी स्वागत कमान व ध्वजस्तंभ उभारण्याचा ठराव एकमुखाने मंजूर करण्यात आला.',
+    finalDecisionBy: 'राकेश पोटे (अध्यक्ष)',
+    finalDecisionByRole: 'अध्यक्ष',
+    finalDecisionAt: '2026-08-18T18:00:00.000Z',
+  }
+];
+

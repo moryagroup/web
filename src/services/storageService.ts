@@ -8,6 +8,7 @@ import {
   EventGalleryImage,
   MemberSuggestion,
   CashSettlement,
+  Poll,
 } from '../types';
 import {
   INITIAL_INCOMES,
@@ -17,9 +18,10 @@ import {
   DEFAULT_USER,
   INITIAL_EVENT_GALLERY,
   INITIAL_SUGGESTIONS,
+  INITIAL_POLLS,
 } from '../mockData';
 
-export { DEFAULT_USER };
+export { DEFAULT_USER, INITIAL_POLLS };
 
 export const STORAGE_KEYS = {
   USER: 'morya_mandal_user_v2',
@@ -33,6 +35,7 @@ export const STORAGE_KEYS = {
   SUGGESTIONS: 'morya_mandal_suggestions_v2',
   CASH_SETTLEMENTS: 'morya_mandal_cash_settlements_v2',
   CUSTOM_INCOME_TYPES: 'morya_mandal_custom_income_types_v2',
+  POLLS: 'morya_mandal_polls_v2',
 };
 
 /**
@@ -82,6 +85,9 @@ export const saveMembers = (_members: Member[]) => {};
 
 export const getStoredOccasions = (): OccasionEvent[] => [];
 export const saveOccasions = (_occasions: OccasionEvent[]) => {};
+
+export const getStoredPolls = (): Poll[] => [];
+export const savePolls = (_polls: Poll[]) => {};
 
 export const getCustomIncomeTypes = (): string[] => [];
 export const saveCustomIncomeType = (_newType: string) => [];

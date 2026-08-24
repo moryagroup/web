@@ -293,3 +293,46 @@ export interface CashSettlement {
   createdAt: string;
   updatedAt?: string;
 }
+
+export type PollTargetAudience = 'COMMITTEE_ONLY' | 'ALL_MEMBERS';
+
+export type PollStatus = 'सक्रिय' | 'बंद' | 'निकाली';
+
+export interface PollOption {
+  id: string;
+  text: string;
+  color?: string;
+}
+
+export interface PollVote {
+  memberId: string;
+  memberName: string;
+  memberRole?: string;
+  optionId: string;
+  votedAt: string;
+  comment?: string;
+}
+
+export interface Poll {
+  id: string;
+  pollNo: string;
+  title: string;
+  description?: string;
+  category: string; // 'निर्णय / ठराव' | 'नवीन चर्चा' | 'उत्सव नियोजन' | 'खर्च / अंदाजपत्रक' | 'इतर'
+  targetAudience: PollTargetAudience; // 'COMMITTEE_ONLY' | 'ALL_MEMBERS'
+  options: PollOption[];
+  votes: PollVote[];
+  status: PollStatus;
+  createdByMemberId?: string;
+  createdByName: string;
+  createdByRole?: string;
+  createdAt: string;
+  expiresAt?: string; // Optional expiry date YYYY-MM-DD or ISO string
+  allowChangeVote?: boolean;
+  finalDecision?: string; // अधिकृत निर्णय / निकाल
+  finalDecisionBy?: string;
+  finalDecisionByRole?: string;
+  finalDecisionAt?: string;
+  updatedAt?: string;
+}
+

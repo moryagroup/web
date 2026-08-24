@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { OccasionEvent, EventTask, TaskStatus, Member, CurrentUser } from '../types';
 import { Calendar, Plus, Edit2, Trash2, X, Check, AlertCircle, CheckCircle2, UserCheck, ListChecks, ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react';
-import { hasAdminPermissions, sortMembersByDesignation } from '../utils/rbac';
+import { hasAdminPermissions, isBadgedMember, sortMembersByDesignation } from '../utils/rbac';
+import { TaskObstacleModal } from './TaskObstacleModal';
 
 interface OccasionModalProps {
   isOpen: boolean;
@@ -48,8 +49,12 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
   const [modalTeamMembers, setModalTeamMembers] = useState<any[]>([]);
   const [taskModalError, setTaskModalError] = useState<string>('');
 
+  // Active Task Obstacle/Progress Modal State
+  const [activeTaskModal, setActiveTaskModal] = useState<{ task: EventTask; occasion: OccasionEvent } | null>(null);
+
   const isLoggedIn = currentUser.isLoggedIn !== false;
   const isAdmin = isLoggedIn && hasAdminPermissions(currentUser.role);
+  const isCommitteeMember = isLoggedIn && (hasAdminPermissions(currentUser.role) || isBadgedMember(currentUser.role));
 
   if (!isOpen) return null;
 
@@ -224,13 +229,17 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
       if (onOpenLogin) onOpenLogin();
       return;
     }
+    if (!isCommitteeMember) {
+      alert('उत्सव/कार्यक्रम व काम जोडण्याचे अधिकार कमिटी सदस्यांना (पदाधिकारी) आहेत.');
+      return;
+    }
     resetForm();
     setIsFormOpen(true);
   };
 
   const handleOpenEdit = (occ: OccasionEvent) => {
-    if (!isAdmin) {
-      alert('उत्सव/कार्यक्रम संपादित करण्याचे अधिकार ॲडमिन यांनाच आहेत.');
+    if (!isCommitteeMember) {
+      alert('उत्सव/कार्यक्रम व काम संपादित करण्याचे अधिकार कमिटी सदस्यांना (पदाधिकारी) आहेत.');
       if (onOpenLogin) onOpenLogin();
       return;
     }
@@ -245,6 +254,18 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
     setTasks(Array.isArray(occ.tasks) ? occ.tasks : []);
     setErrorMessage('');
     setIsFormOpen(true);
+  };
+
+  const handleUpdateTaskFromModal = (updatedTask: EventTask) => {
+    if (!activeTaskModal) return;
+    const currentOcc = activeTaskModal.occasion;
+    const updatedTasksList = (currentOcc.tasks || []).map((t) => (t.id === updatedTask.id ? updatedTask : t));
+    const updatedOccasion: OccasionEvent = {
+      ...currentOcc,
+      tasks: updatedTasksList,
+    };
+    onUpdateOccasion(updatedOccasion);
+    setActiveTaskModal({ task: updatedTask, occasion: updatedOccasion });
   };
 
   const handleDelete = (id: string) => {
@@ -645,46 +666,73 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                     )}
                     {/* Render Tasks List if any */}
                     {occ.tasks && occ.tasks.length > 0 && (
-                      <div className="pt-1.5 space-y-1">
-                        <p className="text-[10px] font-bold text-slate-600">नियोजित कामे व जबाबदार प्रमुख:</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[10px]">
+                      <div className="pt-2 space-y-1.5">
+                        <p className="text-[11px] font-black text-amber-900 flex items-center justify-between">
+                          <span>📌 नियोजित कामे व जबाबदार प्रमुख ({occ.tasks.length}):</span>
+                          <span className="text-[10px] font-normal text-slate-500">कामावर क्लिक करून प्रगती पहा किंवा नोंदवा</span>
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                           {occ.tasks.map((t) => (
                             <div
                               key={t.id}
-                              className="p-1.5 bg-slate-50 rounded-md border border-slate-200 flex justify-between items-center"
+                              onClick={() => setActiveTaskModal({ task: t, occasion: occ })}
+                              className="p-2.5 bg-white rounded-xl border border-slate-200 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-1.5 group"
+                              title="कामाची प्रगती पहा व नवीन नोंदवा"
                             >
-                              <div>
-                                <span className="font-bold text-slate-800">{t.taskTitle}</span>
-                                <span className="block text-[9px] text-amber-800 font-medium">
-                                  प्रमुख: {t.assignedMemberName} ({t.assignedMemberRole || 'सभासद'})
-                                </span>
+                              <div className="space-y-1">
+                                <div className="flex justify-between items-start gap-1">
+                                  <span className="font-extrabold text-slate-900 group-hover:text-amber-800 text-xs">{t.taskTitle}</span>
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[9px] font-black shrink-0 ${
+                                      t.status === 'पूर्ण'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : t.status === 'प्रक्रियेत'
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : t.status === 'अडचण / समस्या'
+                                        ? 'bg-rose-100 text-rose-800 animate-pulse font-black'
+                                        : 'bg-amber-100 text-amber-800'
+                                    }`}
+                                  >
+                                    {t.status}
+                                  </span>
+                                </div>
+
+                                <div className="text-[10px] text-slate-600 font-medium">
+                                  <span className="font-bold text-amber-900">👑 प्रमुख:</span> {t.assignedMemberName} ({t.assignedMemberRole || 'सभासद'})
+                                </div>
+
                                 {t.teamMembers && t.teamMembers.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    <span className="text-[8px] font-bold text-slate-500">टीम सदस्य:</span>
+                                  <div className="flex flex-wrap gap-1 items-center pt-0.5">
+                                    <span className="text-[9px] font-bold text-slate-500">👥 टीम:</span>
                                     {t.teamMembers.map((tm) => (
                                       <span
                                         key={tm.id}
-                                        className="px-1 py-0.2 bg-amber-50 text-amber-900 border border-amber-200 rounded text-[8px] font-bold"
+                                        className="px-1.5 py-0.2 bg-amber-50 text-amber-950 border border-amber-200 rounded text-[9px] font-bold"
                                       >
-                                        👤 {tm.name}
+                                        {tm.name}
                                       </span>
                                     ))}
                                   </div>
                                 )}
+
+                                {/* Latest Progress Note Banner */}
+                                {t.progressUpdates && t.progressUpdates.length > 0 && (
+                                  <div className="mt-1 p-1.5 bg-blue-50/90 border border-blue-200 rounded-lg text-[10px] text-blue-950 font-bold space-y-0.5">
+                                    <div className="flex items-center justify-between text-[9px] text-blue-800">
+                                      <span>🔄 नवीनतम प्रगती:</span>
+                                      <span className="text-slate-400 font-normal">{t.progressUpdates[0].createdAt}</span>
+                                    </div>
+                                    <p className="italic text-[10px] text-slate-800 font-bold">"{t.progressUpdates[0].progressNote}"</p>
+                                  </div>
+                                )}
                               </div>
-                              <span
-                                className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                                  t.status === 'पूर्ण'
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : t.status === 'प्रक्रियेत'
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : t.status === 'अडचण / समस्या'
-                                    ? 'bg-rose-100 text-rose-800 font-black animate-pulse'
-                                    : 'bg-amber-100 text-amber-800'
-                                }`}
-                              >
-                                {t.status}
-                              </span>
+
+                              <div className="pt-1 border-t border-slate-100 flex items-center justify-between text-[10px] text-blue-700 font-bold group-hover:text-blue-900">
+                                <span className="flex items-center gap-1">
+                                  💬 प्रगती पहा व नोंदवा {(t.progressUpdates?.length || 0) > 0 ? `(${t.progressUpdates?.length})` : ''}
+                                </span>
+                                <span className="text-[9px] text-slate-400">क्लिक करा →</span>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -698,20 +746,24 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => handleOpenEdit(occ)}
-                      className="p-1.5 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                      title="संपादित करा"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(occ.id)}
-                      className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                      title="हटवा"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {(isCommitteeMember || isAdmin) && (
+                      <button
+                        onClick={() => handleOpenEdit(occ)}
+                        className="p-1.5 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
+                        title="उत्सव व कामे संपादित करा"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDelete(occ.id)}
+                        className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="हटवा"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))
@@ -879,6 +931,18 @@ export const OccasionModal: React.FC<OccasionModalProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Active Task Progress & Details Modal Overlay */}
+      {activeTaskModal && (
+        <TaskObstacleModal
+          isOpen={true}
+          onClose={() => setActiveTaskModal(null)}
+          task={activeTaskModal.task}
+          occasion={activeTaskModal.occasion}
+          currentUser={currentUser}
+          onUpdateTask={handleUpdateTaskFromModal}
+        />
       )}
     </div>
   );

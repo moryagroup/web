@@ -23,12 +23,14 @@ import {
   EventGalleryImage,
   MemberSuggestion,
   CashSettlement,
+  Poll,
 } from '../types';
 import {
   INITIAL_MEMBERS,
   INITIAL_OCCASIONS,
   INITIAL_EVENT_GALLERY,
   INITIAL_SUGGESTIONS,
+  INITIAL_POLLS,
 } from '../mockData';
 
 // ─── Collection names ────────────────────────────────────────────────────────
@@ -41,6 +43,7 @@ const COLS = {
   suggestions: 'suggestions',
   settings: 'settings',
   cash_settlements: 'cash_settlements',
+  polls: 'polls',
 };
 
 // ─── Non-Destructive Seed Helper ─────────────────────────────────────────────
@@ -76,6 +79,7 @@ export async function seedAllCollections(): Promise<void> {
       seedIfEmpty(COLS.members, INITIAL_MEMBERS),
       seedIfEmpty(COLS.occasions, INITIAL_OCCASIONS),
       seedIfEmpty(COLS.gallery, INITIAL_EVENT_GALLERY),
+      seedIfEmpty(COLS.polls, INITIAL_POLLS),
     ]);
   } catch (err) {
     console.warn('[Firestore] seedAllCollections error:', err);
@@ -172,6 +176,20 @@ export function subscribeToSuggestions(
       callback(data);
     },
     (err) => console.warn('[Firestore] subscribeToSuggestions error:', err)
+  );
+}
+
+export function subscribeToPolls(
+  callback: (data: Poll[]) => void
+): () => void {
+  return onSnapshot(
+    collection(db, COLS.polls),
+    (snap) => {
+      const data = snap.docs.map((d) => d.data() as Poll);
+      data.sort((a, b) => ((b.updatedAt || b.createdAt) > (a.updatedAt || a.createdAt) ? 1 : -1));
+      callback(data);
+    },
+    (err) => console.warn('[Firestore] subscribeToPolls error:', err)
   );
 }
 
@@ -355,6 +373,20 @@ export async function saveSuggestion(sug: MemberSuggestion): Promise<void> {
 
 export async function deleteSuggestion(id: string): Promise<void> {
   await deleteDoc(doc(db, COLS.suggestions, id));
+}
+
+export async function savePoll(poll: Poll): Promise<void> {
+  const timestamp = new Date().toISOString();
+  const payload: Poll = {
+    ...poll,
+    createdAt: poll.createdAt || timestamp,
+    updatedAt: timestamp,
+  };
+  await setDoc(doc(db, COLS.polls, poll.id), cleanObjectForCloud(payload));
+}
+
+export async function deletePoll(id: string): Promise<void> {
+  await deleteDoc(doc(db, COLS.polls, id));
 }
 
 export async function saveGroupLogo(url: string): Promise<void> {

@@ -14,6 +14,7 @@ import {
   MemberSuggestion,
   StoredImageRecord,
   CashSettlement,
+  Poll,
 } from '../types';
 import { cleanObjectForCloud } from './firestoreService';
 import { addDeletedSettlementId, getDeletedSettlementIds } from './storageService';
@@ -37,6 +38,7 @@ export interface MoryaCloudDatabase {
   };
   images: StoredImageRecord[];
   cashSettlements?: CashSettlement[];
+  polls?: Poll[];
 }
 
 let inMemoryCache: MoryaCloudDatabase | null = null;
@@ -439,5 +441,42 @@ export async function cloudDeleteCashSettlement(id: string): Promise<void> {
     console.warn('[CloudDB] Delete Cash Settlement error:', err);
   }
 }
+
+export async function cloudSavePoll(poll: Poll): Promise<void> {
+  try {
+    const cleanPoll: Poll = JSON.parse(JSON.stringify(poll));
+    const currentDb = inMemoryCache || (await fetchCloudDatabase());
+    const timestamp = new Date().toISOString();
+    const updatedPoll: Poll = {
+      ...cleanPoll,
+      createdAt: cleanPoll.createdAt || timestamp,
+      updatedAt: timestamp,
+    };
+    const filtered = (currentDb.polls || []).filter((p) => p.id !== cleanPoll.id);
+    const updatedPolls = [updatedPoll, ...filtered];
+
+    await saveCloudDatabase({
+      ...currentDb,
+      polls: updatedPolls,
+    });
+  } catch (err) {
+    console.warn('[CloudDB] Save Poll error:', err);
+  }
+}
+
+export async function cloudDeletePoll(id: string): Promise<void> {
+  try {
+    const currentDb = inMemoryCache || (await fetchCloudDatabase());
+    const updatedPolls = (currentDb.polls || []).filter((p) => p.id !== id);
+
+    await saveCloudDatabase({
+      ...currentDb,
+      polls: updatedPolls,
+    });
+  } catch (err) {
+    console.warn('[CloudDB] Delete Poll error:', err);
+  }
+}
+
 
 

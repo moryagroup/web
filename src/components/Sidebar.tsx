@@ -34,6 +34,7 @@ import {
   Pin,
   PinOff,
   Menu,
+  Vote,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -44,6 +45,7 @@ interface SidebarProps {
   members: Member[];
   pendingExpenseCount: number;
   pendingCashSettlementCount?: number;
+  pendingPollsCount?: number;
   groupLogo?: string;
   onUpdateGroupLogo?: (logoUrl: string) => void;
   onResetData: () => void;
@@ -66,6 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   members,
   pendingExpenseCount,
   pendingCashSettlementCount = 0,
+  pendingPollsCount = 0,
   groupLogo,
   onUpdateGroupLogo,
   onResetData,
@@ -181,6 +184,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'उत्सव व्यवस्थापन',
       icon: Calendar,
       color: 'text-amber-400',
+    },
+    {
+      id: 'polls',
+      label: 'मतदान व निर्णय',
+      icon: Vote,
+      color: 'text-amber-400',
+      badge: pendingPollsCount > 0 ? pendingPollsCount : null,
     },
     {
       id: 'month-wise-reports',
