@@ -609,6 +609,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     </p>
                   </div>
 
+                  {/* Latest Progress Update Box */}
+                  {task.progressUpdates && task.progressUpdates.length > 0 && (
+                    <div className="p-2.5 bg-blue-50/80 dark:bg-slate-800/80 border border-blue-200 dark:border-slate-700 rounded-xl text-xs space-y-0.5">
+                      <div className="flex items-center justify-between text-[10px] text-blue-900 dark:text-blue-300 font-bold">
+                        <span className="flex items-center gap-1">
+                          <RefreshCw className="w-3 h-3 text-blue-600" />
+                          सद्यस्थिती / प्रगती (नवीनतम):
+                        </span>
+                        <span className="text-[9px] text-slate-400">{task.progressUpdates[0].createdAt}</span>
+                      </div>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 italic">
+                        "{task.progressUpdates[0].progressNote}"
+                        <span className="text-[10px] font-normal text-slate-500 not-italic block mt-0.5">
+                          — {task.progressUpdates[0].memberName} ({task.progressUpdates[0].memberRole || 'सभासद'})
+                        </span>
+                      </p>
+                    </div>
+                  )}
+
                   {/* Obstacle Detail Box */}
                   {task.status === 'अडचण / समस्या' && (
                     <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700/60 rounded-xl space-y-1 text-xs">
@@ -630,11 +649,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setActiveObstacleModal({ task, occasion })}
-                    className="flex-1 px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                    className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>
+                      + प्रगती नोंदवा
+                      {(task.progressUpdates?.length || 0) > 0 ? ` (${task.progressUpdates?.length})` : ''}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveObstacleModal({ task, occasion })}
+                    className="flex-1 px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
                     <span>
-                      {task.status === 'अडचण / समस्या' ? '⚠️ अडचण / सूचना द्या' : '💬 कामाचे तपशील / सूचना'}
+                      {task.status === 'अडचण / समस्या' ? '⚠️ अडचण / सूचना' : '💬 तपशील / सूचना'}
                       {(task.suggestions?.length || 0) > 0 ? ` (${task.suggestions?.length})` : ''}
                     </span>
                   </button>

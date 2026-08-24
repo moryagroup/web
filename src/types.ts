@@ -102,6 +102,14 @@ export interface TeamMember {
   phone?: string;
 }
 
+export interface TaskProgressUpdate {
+  id: string;
+  memberName: string;
+  memberRole?: string;
+  progressNote: string;
+  createdAt: string;
+}
+
 export interface EventTask {
   id: string;
   taskTitle: string; // e.g. "मंडप व सजावट नियोजन"
@@ -114,6 +122,7 @@ export interface EventTask {
   notes?: string;
   obstacleDetails?: string; // Obstacle / Issue description when status is 'अडचण / समस्या'
   suggestions?: TaskSuggestion[]; // List of suggestions posted by committee members
+  progressUpdates?: TaskProgressUpdate[]; // Chronological log of progress updates added by associated members
 }
 
 export interface OccasionEvent {

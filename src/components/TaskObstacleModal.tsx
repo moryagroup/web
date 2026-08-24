@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, AlertTriangle, MessageSquare, Send, CheckCircle2, Clock, RefreshCw, UserCheck } from 'lucide-react';
-import { EventTask, TaskStatus, TaskSuggestion, CurrentUser, OccasionEvent } from '../types';
+import { EventTask, TaskStatus, TaskSuggestion, TaskProgressUpdate, CurrentUser, OccasionEvent } from '../types';
 
 import { notificationService } from '../services/notificationService';
 import { WhatsAppNotifier } from '../utils/whatsAppNotifier';
@@ -27,7 +27,55 @@ export const TaskObstacleModal: React.FC<TaskObstacleModalProps> = ({
   const [suggestionText, setSuggestionText] = useState<string>('');
   const [isAddingSuggestion, setIsAddingSuggestion] = useState<boolean>(false);
 
+  // Work Progress States
+  const [progressText, setProgressText] = useState<string>('');
+  const [isAddingProgress, setIsAddingProgress] = useState<boolean>(false);
+
   if (!isOpen) return null;
+
+  const handleAddProgressUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!progressText.trim()) return;
+
+    const newProgress: TaskProgressUpdate = {
+      id: `prog-${Date.now()}`,
+      memberName: currentUser.name || 'सभासद',
+      memberRole: currentUser.role || 'सभासद',
+      progressNote: progressText.trim(),
+      createdAt: new Date().toLocaleDateString('mr-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    };
+
+    const updatedProgressList = [newProgress, ...(task.progressUpdates || [])];
+    const updated: EventTask = {
+      ...task,
+      status: currentStatus,
+      obstacleDetails: obstacleInput.trim() || task.obstacleDetails,
+      progressUpdates: updatedProgressList,
+    };
+
+    onUpdateTask(updated);
+
+    notificationService.notify({
+      type: 'task_status',
+      title: `कामाची प्रगती नोंदवली: ${task.taskTitle}`,
+      message: `${currentUser.name} (${currentUser.role || 'सभासद'}): "${progressText.trim()}"`,
+      occasionId: occasion.id,
+      occasionName: occasion.name,
+      taskId: task.id,
+      taskTitle: task.taskTitle,
+      memberName: currentUser.name,
+      targetTab: 'dashboard',
+    });
+
+    setProgressText('');
+    setIsAddingProgress(false);
+  };
 
   const handleStatusChange = (newStatus: TaskStatus) => {
     setCurrentStatus(newStatus);
@@ -255,6 +303,83 @@ export const TaskObstacleModal: React.FC<TaskObstacleModalProps> = ({
               placeholder="उदा. मंडप डेकोरेटरकडे कापड कमी पडले आहे / वीज जोडणी परवाना मिळण्यास उशीर होत आहे..."
               className="w-full p-3 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
             />
+          </div>
+
+          {/* Work Progress Updates Section */}
+          <div className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-bold text-sm">
+                <RefreshCw className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span>कामाचा प्रगती अहवाल व सद्यस्थिती ({(task.progressUpdates || []).length} नोंदी)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddingProgress(!isAddingProgress)}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>+ प्रगती नोंदवा</span>
+              </button>
+            </div>
+
+            {/* Input progress update form */}
+            {isAddingProgress && (
+              <form onSubmit={handleAddProgressUpdate} className="p-3 bg-blue-50/70 dark:bg-slate-800/80 rounded-xl border border-blue-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center gap-2 text-xs text-blue-900 dark:text-slate-300 font-bold">
+                  <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                  <span>तुमचे नाव: {currentUser.name} ({currentUser.role || 'सभासद'})</span>
+                </div>
+                <textarea
+                  rows={2}
+                  required
+                  value={progressText}
+                  onChange={(e) => setProgressText(e.target.value)}
+                  placeholder="उदा. मंडपाचे ८०% काम पूर्ण झाले आहे / ध्वनी क्षेपक व लाईट बुकिंग पूर्ण झाली..."
+                  className="w-full p-2.5 bg-white dark:bg-slate-700 border border-blue-300 dark:border-slate-600 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingProgress(false)}
+                    className="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-md cursor-pointer"
+                  >
+                    रद्द करा
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-3.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-md shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Send className="w-3 h-3" />
+                    <span>प्रगती नोंदवा</span>
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Render Progress Updates List */}
+            {(!task.progressUpdates || task.progressUpdates.length === 0) ? (
+              <div className="p-4 text-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-xs italic">
+                या कामाची अद्याप कोणतीही प्रगती नोंदवलेली नाही. वर '+ प्रगती नोंदवा' बटणावर क्लिक करा.
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                {task.progressUpdates.map((prog) => (
+                  <div
+                    key={prog.id}
+                    className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-blue-100 dark:border-slate-700 text-xs shadow-2xs space-y-1"
+                  >
+                    <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                        👤 {prog.memberName} <span className="text-[10px] text-blue-700 dark:text-blue-400 font-semibold">({prog.memberRole})</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400">{prog.createdAt}</span>
+                    </div>
+                    <p className="text-slate-800 dark:text-slate-200 font-bold bg-blue-50/50 dark:bg-slate-900/60 p-2 rounded-lg border border-blue-100 dark:border-slate-700">
+                      "{prog.progressNote}"
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Committee Member Suggestions List Section */}
