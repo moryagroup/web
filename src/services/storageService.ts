@@ -36,6 +36,7 @@ export const STORAGE_KEYS = {
   CASH_SETTLEMENTS: 'morya_mandal_cash_settlements_v2',
   CUSTOM_INCOME_TYPES: 'morya_mandal_custom_income_types_v2',
   POLLS: 'morya_mandal_polls_v2',
+  DISABLED_FEATURES: 'morya_mandal_disabled_features_v1',
 };
 
 /**
@@ -94,6 +95,23 @@ export const savePolls = (_polls: Poll[]) => {};
 
 export const getCustomIncomeTypes = (): string[] => [];
 export const saveCustomIncomeType = (_newType: string) => [];
+
+export const getStoredDisabledFeatures = (): string[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.DISABLED_FEATURES);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+export const saveStoredDisabledFeatures = (features: string[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.DISABLED_FEATURES, JSON.stringify(features));
+  } catch {}
+};
 
 export const getDeletedSettlementIds = (): Set<string> => {
   try {

@@ -1,6 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CurrentUser, IncomeTransaction, ExpenseTransaction } from '../types';
-import { Settings, Plus, Trash2, X, Check, Camera, Tag, Download, Sun, Moon, Upload, PenTool, CheckCircle2, AlertCircle, RefreshCw, Clock, Mail, FileText } from 'lucide-react';
+import { CurrentUser, IncomeTransaction, ExpenseTransaction, APP_FEATURES_CATALOG, AppFeatureId } from '../types';
+import {
+  Settings,
+  Plus,
+  Trash2,
+  X,
+  Check,
+  Camera,
+  Tag,
+  Download,
+  Sun,
+  Moon,
+  Upload,
+  PenTool,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  Clock,
+  Mail,
+  FileText,
+  Sliders,
+  ShieldAlert,
+  Eye,
+  EyeOff,
+  ToggleLeft,
+  ToggleRight,
+  Lock,
+  Unlock,
+} from 'lucide-react';
 import { hasAdminPermissions } from '../utils/rbac';
 import { getGoogleDriveScriptUrl, setGoogleDriveScriptUrl, testGoogleDriveConnection } from '../services/googleDriveService';
 import {
@@ -30,6 +57,9 @@ interface SettingsModalProps {
   currentUser: CurrentUser;
   incomes?: IncomeTransaction[];
   expenses?: ExpenseTransaction[];
+  disabledFeatures?: string[];
+  onToggleFeature?: (featureId: string) => void;
+  onEnableAllFeatures?: () => void;
   onOpenLogin?: () => void;
   onClearAllTransactions?: () => void;
   onDownloadBackup?: () => void;
@@ -48,6 +78,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   currentUser,
   incomes = [],
   expenses = [],
+  disabledFeatures = [],
+  onToggleFeature,
+  onEnableAllFeatures,
   onOpenLogin,
   onClearAllTransactions,
   onDownloadBackup,
@@ -518,6 +551,121 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Admin Feature Controls & Maintenance Section */}
+          {isAdmin && (
+            <div className="space-y-3 pb-4 border-b border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-amber-600" />
+                  <h4 className="font-bold text-slate-800">वैशिष्ट्ये नियंत्रण व दुरुस्ती (Feature Controls & Maintenance)</h4>
+                </div>
+                <div className="flex items-center gap-2">
+                  {disabledFeatures.length > 0 ? (
+                    <span className="text-[10px] bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <ShieldAlert className="w-3 h-3 text-rose-600" />
+                      <span>{disabledFeatures.length} फीचर्स सदस्यांसाठी लपवले</span>
+                    </span>
+                  ) : (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      <span>सर्व फीचर्स चालू (सक्रिय)</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-2.5 bg-amber-50/80 border border-amber-200 rounded-xl text-[11px] text-amber-900 leading-relaxed space-y-1">
+                <p className="font-semibold flex items-center gap-1.5 text-amber-950">
+                  <ShieldAlert className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>ॲडमिन विशेष अधिकार (Special Admin Visibility Control):</span>
+                </p>
+                <p className="text-slate-600">
+                  कोणत्याही फंक्शन किंवा मेनूमध्ये त्रुटी/अपडेट सुरू असल्यास आपण ते तात्पुरते सर्व सदस्यांसाठी लपवू (Hide) शकता.
+                  <strong className="text-amber-900 ml-1">लपवलेले फीचर्स केवळ ॲडमिनलाच चाचणी व दुरुस्तीसाठी दिसतील.</strong>
+                </p>
+              </div>
+
+              {disabledFeatures.length > 0 && onEnableAllFeatures && (
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={onEnableAllFeatures}
+                    className="py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                  >
+                    <Unlock className="w-3.5 h-3.5" />
+                    <span>सर्व वैशिष्ट्ये पूर्ववत चालू करा (Enable All)</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Feature Switch List */}
+              <div className="space-y-2 pt-1">
+                {APP_FEATURES_CATALOG.map((feat) => {
+                  const isHidden = disabledFeatures.includes(feat.id);
+                  return (
+                    <div
+                      key={feat.id}
+                      className={`p-2.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 ${
+                        isHidden
+                          ? 'bg-rose-50/60 border-rose-200 text-rose-950 shadow-2xs'
+                          : 'bg-slate-50/90 border-slate-200 text-slate-800 hover:bg-slate-100/70'
+                      }`}
+                    >
+                      <div className="space-y-0.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-black text-xs text-slate-900">{feat.label}</span>
+                          <span className="text-[10px] text-slate-400 font-medium">({feat.englishLabel})</span>
+                          <span className="text-[9px] bg-slate-200 text-slate-700 font-bold px-1.5 py-0.2 rounded">
+                            {feat.category}
+                          </span>
+                          {isHidden && (
+                            <span className="text-[9px] bg-rose-200 text-rose-900 font-black px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                              <Lock className="w-2.5 h-2.5" />
+                              <span>सदस्यांसाठी लपवले</span>
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10.5px] text-slate-500 line-clamp-1">{feat.description}</p>
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
+                        <span
+                          className={`text-[10px] font-bold ${
+                            isHidden ? 'text-rose-700' : 'text-emerald-700'
+                          }`}
+                        >
+                          {isHidden ? '❌ बंद / लपवले' : '✅ चालू (सक्रिय)'}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => onToggleFeature && onToggleFeature(feat.id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-xs active:scale-95 ${
+                            isHidden
+                              ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                              : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          }`}
+                        >
+                          {isHidden ? (
+                            <>
+                              <EyeOff className="w-3.5 h-3.5" />
+                              <span>चालू करा</span>
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>बंद करा</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

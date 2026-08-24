@@ -19,7 +19,7 @@ import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
 import { ProofLightboxModal } from './ProofLightboxModal';
 import { TaskObstacleModal } from './TaskObstacleModal';
 import { isGoogleDriveUrl } from '../services/googleDriveService';
-import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions, canApproveFinancialTransactions } from '../utils/rbac';
+import { hasFullFinancialAccess, isBadgedMember, canViewRecentGroupTransactions, canApproveFinancialTransactions, hasAdminPermissions } from '../utils/rbac';
 import { isDateInSelectedYear, getCalendarYearFromDate } from '../utils/dateUtils';
 import {
   ArrowDownLeft,
@@ -65,6 +65,7 @@ interface DashboardViewProps {
   selectedYear: string;
   setSelectedYear: (year: string) => void;
   groupLogo?: string;
+  disabledFeatures?: string[];
   onSaveGallery: (gallery: EventGalleryImage[]) => void;
   onNavigate: (tab: string) => void;
   onApproveExpense: (expId: string, name: string, role: any) => void;
@@ -92,6 +93,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   selectedYear,
   setSelectedYear,
   groupLogo,
+  disabledFeatures = [],
   onSaveGallery,
   onNavigate,
   onApproveExpense,
@@ -117,6 +119,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       setProofModalUrl(url);
     }
   };
+  const isAdmin = hasAdminPermissions(currentUser.role) && currentUser.isLoggedIn !== false;
   const isFullAccess = hasFullFinancialAccess(currentUser.role);
   const isBadged = isBadgedMember(currentUser.role);
 
@@ -562,7 +565,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       )}
 
       {/* Home Page Notification: Assigned Event Tasks & Work Responsibilities (Collapsible Down Drawer) */}
-      {displayTasks.length > 0 && (
+      {(isAdmin || !disabledFeatures.includes('occasions')) && displayTasks.length > 0 && (
         <div className="bg-gradient-to-br from-amber-500/10 via-purple-500/15 to-indigo-600/10 dark:from-slate-900 dark:via-purple-950/70 dark:to-indigo-950/80 rounded-3xl border-2 border-purple-400/50 dark:border-purple-500/40 shadow-xl overflow-hidden transition-all duration-300">
           {/* Collapsible Heading Drawer Header Button */}
           <button
@@ -774,7 +777,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       )}
 
       {/* Active Polls & Decisions Widget */}
-      {polls.length > 0 && (
+      {(isAdmin || !disabledFeatures.includes('polls')) && polls.length > 0 && (
         <div className="bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-red-500/10 dark:from-slate-900 dark:via-amber-950/40 dark:to-orange-950/40 p-4 sm:p-5 rounded-2xl border-2 border-amber-400/40 dark:border-amber-600/40 shadow-sm space-y-3">
           <div className="flex items-center justify-between pb-2 border-b border-amber-200/60 dark:border-amber-900/60">
             <div className="flex items-center gap-2 text-amber-950 dark:text-amber-200 font-extrabold text-sm sm:text-base">
@@ -940,7 +943,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       )}
 
       {/* Pending Bank Deposit / Cash Settlement Approvals Banner */}
-      {pendingCashSettlements.length > 0 && (
+      {(isAdmin || !disabledFeatures.includes('cash-settlements')) && pendingCashSettlements.length > 0 && (
         <div className="bg-sky-50 dark:bg-slate-800/90 border border-sky-200 dark:border-sky-700/60 p-4 rounded-2xl shadow-xs">
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-sky-200/60 dark:border-sky-700/60">
             <div className="flex items-center gap-2 text-sky-900 dark:text-sky-300 font-bold text-sm">
@@ -1038,7 +1041,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
       )}
-
       {/* Pending Expense Approvals Banner (If any) */}
       {pendingExpenses.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl shadow-xs">
@@ -1191,77 +1193,80 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-700">
-              <button
-                onClick={() => onNavigate('income-form')}
-                className="w-full py-2 bg-slate-50 dark:bg-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-600 text-emerald-800 dark:text-emerald-300 font-bold text-xs rounded-xl border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer"
-              >
-                + नवीन जमा नोंद जोडा
-              </button>
-            </div>
+            {(isAdmin || !disabledFeatures.includes('income-form')) && (
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-700">
+                <button
+                  onClick={() => onNavigate('income-form')}
+                  className="w-full py-2 bg-slate-50 dark:bg-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-600 text-emerald-800 dark:text-emerald-300 font-bold text-xs rounded-xl border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer"
+                >
+                  + नवीन जमा नोंद जोडा
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Recent Expense Transactions */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-700">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 flex items-center justify-center font-bold">
-                    <ArrowUpRight className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">
-                    अलीकडील खर्च नोंदी
-                  </h3>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-700">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 flex items-center justify-center font-bold">
+                  <ArrowUpRight className="w-5 h-5" />
                 </div>
-                <button
-                  onClick={() => onNavigate('expense-history')}
-                  className="text-xs font-bold text-rose-700 dark:text-rose-400 hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <span>
-                    सर्व खर्च ({displayExpenses.length})
-                  </span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">
+                  अलीकडील खर्च नोंदी
+                </h3>
               </div>
-
-              <div className="divide-y divide-slate-100 dark:divide-slate-700 mt-2">
-                {recentExpenses.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic text-center py-6">
-                    तुमच्याशी संबंधित कोणतीही खर्च नोंद उपलब्ध नाही.
-                  </p>
-                ) : (
-                  recentExpenses.map((item) => (
-                    <div key={item.id} className="py-3 flex justify-between items-center text-xs">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <p className="font-bold text-slate-800 dark:text-slate-100">{item.recipientName}</p>
-                          {item.approvalStatus === 'मंजूर' ? (
-                            <span className="px-2 py-0.5 bg-emerald-600 text-white border border-emerald-500 rounded-md text-[10px] font-black shadow-xs">
-                              ✓ मंजूर
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 bg-amber-500 text-slate-950 border border-amber-400 rounded-md text-[10px] font-black shadow-xs">
-                              ⏳ प्रलंबित
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
-                          <span>{item.expenseCategory}</span>
-                          <span>• {item.reason}</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-black text-rose-700 text-sm">
-                          - ₹{item.amount.toLocaleString('en-IN')}
-                        </p>
-                        <p className="text-[10px] text-slate-400">{item.expenseDate}</p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+              <button
+                onClick={() => onNavigate('expense-history')}
+                className="text-xs font-bold text-rose-700 dark:text-rose-400 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>
+                  सर्व खर्च ({displayExpenses.length})
+                </span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
 
+            <div className="divide-y divide-slate-100 dark:divide-slate-700 mt-2">
+              {recentExpenses.length === 0 ? (
+                <p className="text-xs text-slate-400 italic text-center py-6">
+                  तुमच्याशी संबंधित कोणतीही खर्च नोंद उपलब्ध नाही.
+                </p>
+              ) : (
+                recentExpenses.map((item) => (
+                  <div key={item.id} className="py-3 flex justify-between items-center text-xs">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-bold text-slate-800 dark:text-slate-100">{item.recipientName}</p>
+                        {item.approvalStatus === 'मंजूर' ? (
+                          <span className="px-2 py-0.5 bg-emerald-600 text-white border border-emerald-500 rounded-md text-[10px] font-black shadow-xs">
+                            ✓ मंजूर
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-amber-500 text-slate-950 border border-amber-400 rounded-md text-[10px] font-black shadow-xs">
+                            ⏳ प्रलंबित
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                        <span>{item.expenseCategory}</span>
+                        <span>• {item.reason}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-black text-rose-700 text-sm">
+                        - ₹{item.amount.toLocaleString('en-IN')}
+                      </p>
+                      <p className="text-[10px] text-slate-400">{item.expenseDate}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {(isAdmin || !disabledFeatures.includes('expense-form')) && (
             <div className="pt-3 border-t border-slate-100">
               <button
                 onClick={() => onNavigate('expense-form')}
@@ -1270,9 +1275,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 + नवीन खर्च नोंद जोडा
               </button>
             </div>
-          </div>
+          )}
         </div>
-      ) : (
+      </div>
+    ) : (
         /* Personal Transactions Section for Regular Members */
         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
           <div className="flex justify-between items-center pb-4 border-b border-slate-100 mb-4">
@@ -1345,7 +1351,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       )}
 
       {/* Member Subscription Overview Teaser (Executive Badged Members Only) */}
-      {isBadged && (
+      {isBadged && (isAdmin || !disabledFeatures.includes('member-subscriptions')) && (
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">

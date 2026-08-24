@@ -57,6 +57,7 @@ interface SidebarProps {
   onOpen?: () => void;
   onOpenOccasions?: () => void;
   onOpenSettings?: () => void;
+  disabledFeatures?: string[];
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
 }
@@ -80,6 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpen,
   onOpenOccasions,
   onOpenSettings,
+  disabledFeatures = [],
   theme = 'light',
   onToggleTheme,
 }) => {
@@ -232,6 +234,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isCoreMember = isLoggedIn && isCoreMemberRole(currentUser.role);
 
   const visibleMenuItems = menuItems.filter((item) => {
+    // If not admin, hide any feature that is marked as disabled
+    if (!isAdmin && disabledFeatures.includes(item.id)) {
+      return false;
+    }
     if (!isLoggedIn) {
       if (item.id !== 'dashboard' && item.id !== 'profile') {
         return false;
@@ -425,7 +431,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   />
                   <span>{item.id === 'dashboard' && !isLoggedIn ? '📸 फोटो गॅलरी (Home)' : item.label}</span>
                 </div>
-                {isProtected ? (
+                {isAdmin && disabledFeatures.includes(item.id) ? (
+                  <span className="px-1.5 py-0.5 text-[9px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded flex items-center gap-1 shrink-0">
+                    <Lock className="w-2.5 h-2.5 text-rose-400" />
+                    <span>लपवले</span>
+                  </span>
+                ) : isProtected ? (
                   <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                 ) : item.badge ? (
                   <span className="px-2 py-0.5 text-xs font-bold bg-amber-500 text-slate-950 rounded-full animate-pulse shrink-0">

@@ -35,6 +35,7 @@ export interface MoryaCloudDatabase {
   settings: {
     groupLogo: string;
     customIncomeTypes: string[];
+    disabledFeatures?: string[];
   };
   images: StoredImageRecord[];
   cashSettlements?: CashSettlement[];
@@ -368,6 +369,17 @@ export async function cloudSaveCustomIncomeTypes(types: string[]): Promise<void>
     settings: {
       ...currentDb.settings,
       customIncomeTypes: types,
+    },
+  });
+}
+
+export async function cloudSaveDisabledFeatures(disabledFeatures: string[]): Promise<void> {
+  const currentDb = inMemoryCache || (await fetchCloudDatabase());
+  await saveCloudDatabase({
+    ...currentDb,
+    settings: {
+      ...currentDb.settings,
+      disabledFeatures,
     },
   });
 }

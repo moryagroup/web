@@ -10,6 +10,7 @@ import {
   CashSettlement,
   UserDesignation,
   Poll,
+  APP_FEATURES_CATALOG,
 } from './types';
 import {
   getStoredIncomes,
@@ -43,6 +44,8 @@ import {
   DEFAULT_USER,
   calculateFinancialSummary,
   clearAllTransactionsFromStorage,
+  getStoredDisabledFeatures,
+  saveStoredDisabledFeatures,
   STORAGE_KEYS,
 } from './services/storageService';
 import { createLocalBackupSnapshot, downloadBackupJSON } from './utils/backupUtils';
@@ -172,6 +175,7 @@ import {
   cloudDeletePoll,
   cloudSaveGroupLogo,
   cloudSaveCustomIncomeTypes,
+  cloudSaveDisabledFeatures,
   cloudClearAllTransactions,
   cloudSaveCashSettlement,
   cloudDeleteCashSettlement,
@@ -326,6 +330,7 @@ export default function App() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [cashSettlements, setCashSettlements] = useState<CashSettlement[]>(getStoredCashSettlements);
   const [polls, setPolls] = useState<Poll[]>([]);
+  const [disabledFeatures, setDisabledFeatures] = useState<string[]>(getStoredDisabledFeatures);
 
   useEffect(() => {
     saveCashSettlementsToCache(cashSettlements);
@@ -602,6 +607,10 @@ export default function App() {
       }
       if (Array.isArray(cloudDb.settings?.customIncomeTypes)) {
         setCustomIncomeTypes(cloudDb.settings.customIncomeTypes);
+      }
+      if (Array.isArray(cloudDb.settings?.disabledFeatures)) {
+        setDisabledFeatures(cloudDb.settings.disabledFeatures);
+        saveStoredDisabledFeatures(cloudDb.settings.disabledFeatures);
       }
       if (Array.isArray(cloudDb.cashSettlements)) {
         setCashSettlements((prev) => {
@@ -896,6 +905,56 @@ export default function App() {
     saveCustomIncomeTypes(updated).catch(console.error);
     cloudSaveCustomIncomeTypes(updated).catch(console.error);
   };
+
+  const handleToggleFeature = (featureId: string) => {
+    const isCurrentlyDisabled = disabledFeatures.includes(featureId);
+    const next = isCurrentlyDisabled
+      ? disabledFeatures.filter((f) => f !== featureId)
+      : [...disabledFeatures, featureId];
+
+    setDisabledFeatures(next);
+    saveStoredDisabledFeatures(next);
+    cloudSaveDisabledFeatures(next).catch(console.error);
+
+    const featObj = APP_FEATURES_CATALOG.find((f) => f.id === featureId);
+    const featName = featObj ? `${featObj.label} (${featObj.englishLabel})` : featureId;
+
+    if (!isCurrentlyDisabled) {
+      notificationService.notify({
+        title: '🔒 वैशिष्ट्य लपवले (Feature Hidden)',
+        message: `ॲडमिनद्वारे '${featName}' हे वैशिष्ट्य सर्व सदस्यांसाठी बंद/लपवण्यात आले आहे.`,
+        type: 'system',
+      });
+    } else {
+      notificationService.notify({
+        title: '🔓 वैशिष्ट्य सुरू केले (Feature Restored)',
+        message: `ॲडमिनद्वारे '${featName}' हे वैशिष्ट्य सर्वांसाठी पूर्ववत सुरू करण्यात आले आहे.`,
+        type: 'system',
+      });
+    }
+  };
+
+  const handleEnableAllFeatures = () => {
+    setDisabledFeatures([]);
+    saveStoredDisabledFeatures([]);
+    cloudSaveDisabledFeatures([]).catch(console.error);
+    notificationService.notify({
+      title: '✅ सर्व वैशिष्ट्ये पूर्ववत सुरू केली',
+      message: 'सर्व ११ मुख्य वैशिष्ट्ये सर्व सदस्यांसाठी त्वरित सुरू करण्यात आली आहेत.',
+      type: 'system',
+    });
+  };
+
+  // If currently active tab is disabled and user is not admin, gracefully route back to dashboard
+  useEffect(() => {
+    const isAdmin = hasAdminPermissions(currentUser.role) && currentUser.isLoggedIn !== false;
+    if (!isAdmin && disabledFeatures.includes(activeTab)) {
+      setActiveTab('dashboard');
+      try {
+        localStorage.setItem('morya_active_tab', 'dashboard');
+      } catch {}
+    }
+  }, [activeTab, disabledFeatures, currentUser]);
 
   const handleClearAllTransactions = () => {
     if (!hasAdminPermissions(currentUser.role)) {
@@ -1455,6 +1514,7 @@ export default function App() {
         onOpen={() => setIsMobileMenuOpen(true)}
         onOpenOccasions={() => setIsOccasionModalOpen(true)}
         onOpenSettings={() => setIsSettingsModalOpen(true)}
+        disabledFeatures={disabledFeatures}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -1674,6 +1734,7 @@ export default function App() {
                 selectedYear={selectedYear}
                 setSelectedYear={setSelectedYear}
                 groupLogo={groupLogo}
+                disabledFeatures={disabledFeatures}
                 onSaveGallery={handleSaveGallery}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onApproveExpense={handleApproveExpense}
@@ -1801,6 +1862,7 @@ export default function App() {
                   gallery={gallery}
                   selectedYear={selectedYear}
                   setSelectedYear={setSelectedYear}
+                  disabledFeatures={disabledFeatures}
                   onSaveGallery={handleSaveGallery}
                   onNavigate={(tab) => setActiveTab(tab)}
                   onApproveExpense={handleApproveExpense}
@@ -1942,6 +2004,9 @@ export default function App() {
         currentUser={currentUser}
         incomes={incomes}
         expenses={expenses}
+        disabledFeatures={disabledFeatures}
+        onToggleFeature={handleToggleFeature}
+        onEnableAllFeatures={handleEnableAllFeatures}
         onOpenLogin={handleOpenLogin}
         onClearAllTransactions={handleClearAllTransactions}
         onDownloadBackup={() =>

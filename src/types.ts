@@ -337,3 +337,103 @@ export interface Poll {
   updatedAt?: string;
 }
 
+export type AppFeatureId =
+  | 'income-form'
+  | 'expense-form'
+  | 'income-history'
+  | 'expense-history'
+  | 'cash-settlements'
+  | 'member-subscriptions'
+  | 'occasions'
+  | 'polls'
+  | 'month-wise-reports'
+  | 'all-years-data'
+  | 'suggestions';
+
+export interface AppFeatureDescriptor {
+  id: AppFeatureId;
+  label: string;
+  englishLabel: string;
+  category: 'नोंदणी (Entry)' | 'हिशोब व इतिहास (Financial)' | 'संघटना व नियोजन (Community)' | 'अहवाल (Reports)';
+  description: string;
+}
+
+export const APP_FEATURES_CATALOG: AppFeatureDescriptor[] = [
+  {
+    id: 'income-form',
+    label: 'नवीन जमा नोंद',
+    englishLabel: 'Add Income',
+    category: 'नोंदणी (Entry)',
+    description: 'वर्गणी, देणगी व इतर जमा रकमांची नवीन पावती व नोंदणी करणे.',
+  },
+  {
+    id: 'expense-form',
+    label: 'नवीन खर्च नोंद',
+    englishLabel: 'Add Expense',
+    category: 'नोंदणी (Entry)',
+    description: 'मंडळ व उत्सवाच्या खर्चाची नवीन नोंद व पावती सबमिट करणे.',
+  },
+  {
+    id: 'income-history',
+    label: 'जमा इतिहास',
+    englishLabel: 'Income History',
+    category: 'हिशोब व इतिहास (Financial)',
+    description: 'सर्व पावत्यांची यादी, तपशील, शोध व डाउनलोड.',
+  },
+  {
+    id: 'expense-history',
+    label: 'खर्च इतिहास',
+    englishLabel: 'Expense History',
+    category: 'हिशोब व इतिहास (Financial)',
+    description: 'सर्व खर्चांची यादी, पावत्या, मंजुरी स्थिती व तपशील.',
+  },
+  {
+    id: 'cash-settlements',
+    label: 'रोख संकलन व भरणा हिशोब',
+    englishLabel: 'Cash Settlements',
+    category: 'हिशोब व इतिहास (Financial)',
+    description: 'सभासदांनी संकलित केलेली रोख रक्कम बँक/खजिनदाराकडे भरणा नोंद.',
+  },
+  {
+    id: 'member-subscriptions',
+    label: 'सभासद वर्गणी हिशोब',
+    englishLabel: 'Member Subscriptions',
+    category: 'हिशोब व इतिहास (Financial)',
+    description: 'सभासदांचे वार्षिक वर्गणी टार्गेट, भरलेली वर्गणी व शिल्लक ट्रॅकिंग.',
+  },
+  {
+    id: 'occasions',
+    label: 'उत्सव व्यवस्थापन',
+    englishLabel: 'Occasion Management',
+    category: 'संघटना व नियोजन (Community)',
+    description: 'गणेशोत्सव व इतर सणांचे नियोजन, जबाबदाऱ्या, कमिटी व बजेट.',
+  },
+  {
+    id: 'polls',
+    label: 'मतदान व निर्णय',
+    englishLabel: 'Polls & Decisions',
+    category: 'संघटना व नियोजन (Community)',
+    description: 'मंडळाचे निर्णय, ठराव व विषयांवर सभासदांचे डिजिटल मतदान.',
+  },
+  {
+    id: 'month-wise-reports',
+    label: '१. महिन्यानिहाय व्यवहार अहवाल',
+    englishLabel: 'Monthly Reports',
+    category: 'अहवाल (Reports)',
+    description: 'प्रत्येक महिन्यातील एकूण जमा, खर्च व बॅलन्सचा तपशीलवार चार्ट/अहवाल.',
+  },
+  {
+    id: 'all-years-data',
+    label: '२. सर्व वर्षांचा हिशोब',
+    englishLabel: 'All Years Data',
+    category: 'अहवाल (Reports)',
+    description: 'मागील सर्व आर्थिक वर्षांचा एकत्रित ताळेबंद व हिशोब सारांश.',
+  },
+  {
+    id: 'suggestions',
+    label: 'सूचना व सुचवणी',
+    englishLabel: 'Member Suggestions',
+    category: 'संघटना व नियोजन (Community)',
+    description: 'सभासदांकडून मंडळासाठी महत्त्वाच्या सूचना व अभिप्राय नोंदवणे.',
+  },
+];
