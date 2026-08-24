@@ -25,6 +25,7 @@ import {
   CashSettlement,
   Poll,
 } from '../types';
+import { AppNotification } from '../types/notification';
 import {
   INITIAL_MEMBERS,
   INITIAL_OCCASIONS,
@@ -44,6 +45,7 @@ const COLS = {
   settings: 'settings',
   cash_settlements: 'cash_settlements',
   polls: 'polls',
+  notifications: 'notifications',
 };
 
 // ─── Non-Destructive Seed Helper ─────────────────────────────────────────────
@@ -446,6 +448,69 @@ export async function resetFirestoreToDemo(): Promise<void> {
   ]);
 
   await batch.commit();
+}
+
+// ─── Real-Time Notifications Synchronization ─────────────────────────────────
+
+export function subscribeToNotificationsFirestore(
+  callback: (data: AppNotification[]) => void
+): () => void {
+  return onSnapshot(
+    collection(db, COLS.notifications),
+    (snap) => {
+      const data = snap.docs.map((d) => d.data() as AppNotification);
+      data.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
+      callback(data);
+    },
+    (err) => console.warn('[Firestore] subscribeToNotifications error:', err)
+  );
+}
+
+export async function saveNotificationFirestore(notif: AppNotification): Promise<void> {
+  try {
+    await setDoc(doc(db, COLS.notifications, notif.id), cleanObjectForCloud(notif));
+  } catch (err) {
+    console.warn('[Firestore] saveNotificationFirestore error:', err);
+  }
+}
+
+export async function deleteNotificationFirestore(id: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, COLS.notifications, id));
+  } catch (err) {
+    console.warn('[Firestore] deleteNotificationFirestore error:', err);
+  }
+}
+
+export async function clearAllNotificationsFirestore(): Promise<void> {
+  try {
+    const snap = await getDocs(collection(db, COLS.notifications));
+    const batch = writeBatch(db);
+    snap.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  } catch (err) {
+    console.warn('[Firestore] clearAllNotificationsFirestore error:', err);
+  }
+}
+
+export async function markNotificationAsReadFirestore(id: string): Promise<void> {
+  try {
+    await setDoc(doc(db, COLS.notifications, id), { isRead: true }, { merge: true });
+  } catch (err) {
+    console.warn('[Firestore] markNotificationAsReadFirestore error:', err);
+  }
+}
+
+export async function markAllNotificationsAsReadFirestore(ids: string[]): Promise<void> {
+  try {
+    const batch = writeBatch(db);
+    ids.forEach((id) => {
+      batch.set(doc(db, COLS.notifications, id), { isRead: true }, { merge: true });
+    });
+    await batch.commit();
+  } catch (err) {
+    console.warn('[Firestore] markAllNotificationsAsReadFirestore error:', err);
+  }
 }
 
 // ─── Manual Admin Transaction Wipe Utility (Explicit Admin Action Only) ─────

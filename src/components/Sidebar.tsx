@@ -35,6 +35,7 @@ import {
   PinOff,
   Menu,
   Vote,
+  Smartphone,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -437,8 +438,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
       </div>
 
-      {/* Footer Theme Toggle */}
-      <div className="px-3 py-2 border-t border-slate-800 bg-slate-900/90 shrink-0 pb-3">
+      {/* Footer Theme Toggle & PWA App Button */}
+      <div className="px-3 py-2 border-t border-slate-800 bg-slate-900/90 shrink-0 pb-3 space-y-2">
+        <button
+          onClick={() => {
+            if (onClose) onClose();
+            if (!document.fullscreenElement) {
+              document.documentElement.requestFullscreen().catch(console.warn);
+            }
+          }}
+          className="w-full py-1.5 px-2 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg border border-amber-500/40 text-xs font-bold flex items-center justify-between cursor-pointer transition-all active:scale-95 shadow-xs"
+          title="ॲप फुल स्क्रीनमध्ये चालवा (No Address Bar)"
+        >
+          <span className="flex items-center gap-1.5">
+            <Smartphone className="w-4 h-4 text-amber-400" />
+            <span>होम स्क्रीनवर ॲप जोडा</span>
+          </span>
+          <span className="text-[10px] bg-amber-500 text-slate-950 px-1.5 py-0.2 font-black rounded">PWA</span>
+        </button>
+
         <div className="px-2 py-1.5 bg-slate-900/90 rounded-lg border border-slate-800 text-slate-300 flex items-center justify-between text-xs font-bold">
           <span className="flex items-center gap-1.5 text-amber-400">
             {theme === 'dark' ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-400" />}

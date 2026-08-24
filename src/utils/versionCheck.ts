@@ -93,12 +93,20 @@ export async function checkForAppUpdates(): Promise<boolean> {
   return false;
 }
 
+export function registerPwaServiceWorker(): void {
+  if ('serviceWorker' in navigator && import.meta.env.PROD) {
+    navigator.serviceWorker
+      .register('./sw.js')
+      .then((reg) => console.log('[PWA] Service Worker registered:', reg.scope))
+      .catch((err) => console.warn('[PWA] Service Worker registration failed:', err));
+  }
+}
+
 /**
  * Initializes automatic version monitoring on startup and tab visibility
  */
 export function initAutoVersionUpdate(): () => void {
-  // Initial SW unregister & update check
-  unregisterServiceWorkers();
+  registerPwaServiceWorker();
   checkForAppUpdates();
 
   // Periodic poll

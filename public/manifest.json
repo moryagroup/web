@@ -1,0 +1,24 @@
+{
+  "short_name": "मोरया ग्रुप",
+  "name": "मोरया ग्रुप मित्र मंडळ (ट्रस्ट)",
+  "description": "हडपसर गोंधळनगर - जमा, वर्गणी व खर्चाची अधिकृत डिजिटल हिशोब नोंदणी प्रणाली",
+  "icons": [
+    {
+      "src": "assets/morya_logo-B_Sh9T3V.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/morya_logo-B_Sh9T3V.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#0f172a",
+  "theme_color": "#1c0a00",
+  "display": "standalone",
+  "orientation": "portrait"
+}

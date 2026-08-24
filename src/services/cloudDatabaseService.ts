@@ -72,6 +72,9 @@ export async function fetchCloudDatabase(): Promise<MoryaCloudDatabase> {
     if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
       parsed.suggestions = parsed.suggestions.filter((s) => s && s.id !== 'sug-101' && s.id !== 'sug-102');
     }
+    if (!parsed.polls || !Array.isArray(parsed.polls)) {
+      parsed.polls = [];
+    }
 
     // Update local cache
     inMemoryCache = parsed;

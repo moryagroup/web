@@ -228,15 +228,15 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
                 <button
                   type="button"
                   onClick={() => {
-                    if (window.confirm('सर्व सूचना हटवायच्या आहेत का?')) {
+                    if (window.confirm('सर्व सूचना हटवायच्या आहेत का? (Clear all notifications)')) {
                       notificationService.clearAll();
                     }
                   }}
-                  className="px-2 py-1 bg-rose-950/50 hover:bg-rose-900/70 border border-rose-800/40 text-rose-300 text-xs font-semibold rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
-                  title="सर्व सूचना साफ करा"
+                  className="px-2.5 py-1 bg-rose-900/60 hover:bg-rose-800 border border-rose-600/70 text-rose-200 text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
+                  title="सर्व सूचना कायमच्या साफ करा"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">हटवा</span>
+                  <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                  <span>सर्व हटवा (Clear All)</span>
                 </button>
               )}
             </div>

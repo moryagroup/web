@@ -6,14 +6,23 @@
 import { AppNotification, NotificationType } from '../types/notification';
 import { soundService } from './soundService';
 import { NativeService } from './nativeService';
+import {
+  saveNotificationFirestore,
+  deleteNotificationFirestore,
+  clearAllNotificationsFirestore,
+  markNotificationAsReadFirestore,
+  markAllNotificationsAsReadFirestore,
+} from './firestoreService';
 
 const STORAGE_KEY = 'morya_notifications_v1';
+const SEEN_IDS_KEY = 'morya_notifications_seen_ids_v1';
 const MAX_STORED_NOTIFICATIONS = 50;
 
 type NotificationListener = (notifications: AppNotification[], activeBanner: AppNotification | null) => void;
 
 class NotificationService {
   private notifications: AppNotification[] = [];
+  private seenIds: Set<string> = new Set();
   private listeners: Set<NotificationListener> = new Set();
   private activeBanner: AppNotification | null = null;
   private bannerTimer: any = null;
@@ -28,6 +37,12 @@ class NotificationService {
       if (data) {
         this.notifications = JSON.parse(data);
       }
+      const seen = localStorage.getItem(SEEN_IDS_KEY);
+      if (seen) {
+        this.seenIds = new Set(JSON.parse(seen));
+      } else {
+        this.notifications.forEach((n) => this.seenIds.add(n.id));
+      }
     } catch (e) {
       console.warn('[NotificationService] Failed to load notifications from storage:', e);
       this.notifications = [];
@@ -37,6 +52,7 @@ class NotificationService {
   private saveToStorage(): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.notifications.slice(0, MAX_STORED_NOTIFICATIONS)));
+      localStorage.setItem(SEEN_IDS_KEY, JSON.stringify(Array.from(this.seenIds).slice(-100)));
     } catch (e) {
       console.warn('[NotificationService] Failed to save notifications to storage:', e);
     }
@@ -68,6 +84,51 @@ class NotificationService {
 
   public getUnreadCount(): number {
     return this.notifications.filter((n) => !n.isRead).length;
+  }
+
+  /**
+   * Synchronize notifications received in real-time from Online Firestore Database.
+   * If a new notification was created recently by another member/admin, trigger sound and banner!
+   */
+  public syncFromCloud(cloudList: AppNotification[]): void {
+    if (!Array.isArray(cloudList)) return;
+
+    const prevIds = new Set(this.notifications.map((n) => n.id));
+    const now = Date.now();
+
+    // Check for brand new remote notifications created in the last 2 minutes that haven't been shown yet
+    const newlyReceived = cloudList.filter(
+      (n) => !prevIds.has(n.id) && !this.seenIds.has(n.id)
+    );
+
+    this.notifications = [...cloudList].slice(0, MAX_STORED_NOTIFICATIONS);
+    this.saveToStorage();
+    this.notifyListeners();
+
+    // If there's a fresh notification created by another member in the cloud
+    if (newlyReceived.length > 0) {
+      const latest = newlyReceived[0];
+      const createdTime = new Date(latest.createdAt).getTime();
+      const isRecent = !isNaN(createdTime) && now - createdTime < 2 * 60 * 1000;
+
+      if (isRecent) {
+        this.seenIds.add(latest.id);
+        this.saveToStorage();
+
+        // Play audio chime for this device
+        if (latest.type === 'transaction_income' || latest.type === 'settlement') {
+          soundService.playGPayChime();
+        } else if (latest.type === 'task_assigned' || latest.type === 'task_obstacle' || latest.type === 'task_status') {
+          soundService.playTaskChime();
+        } else {
+          soundService.playWhatsAppPop();
+        }
+
+        NativeService.triggerHaptic();
+        this.triggerSystemNotification(latest);
+        this.showBanner(latest);
+      }
+    }
   }
 
   /**
@@ -117,7 +178,7 @@ class NotificationService {
   }
 
   /**
-   * Dispatches a new notification with sound, haptics, banner, and storage
+   * Dispatches a new notification with sound, haptics, banner, local & online database persistence
    */
   public notify(params: Omit<AppNotification, 'id' | 'createdAt' | 'isRead'> & { id?: string; createdAt?: string }): AppNotification {
     const id = params.id || `notif_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -130,11 +191,16 @@ class NotificationService {
       isRead: false,
     };
 
-    // 1. Prepend to list (deduplicate by ID if already exists)
+    this.seenIds.add(id);
+
+    // 1. Prepend to local list
     this.notifications = [newNotification, ...this.notifications.filter((n) => n.id !== id)].slice(0, MAX_STORED_NOTIFICATIONS);
     this.saveToStorage();
 
-    // 2. Play distinct sound based on notification type
+    // 2. Persist to Online Firestore Database for cross-device real-time sync
+    saveNotificationFirestore(newNotification).catch(console.error);
+
+    // 3. Play distinct sound based on notification type
     if (newNotification.type === 'transaction_income' || newNotification.type === 'settlement') {
       soundService.playGPayChime();
     } else if (newNotification.type === 'task_assigned' || newNotification.type === 'task_obstacle' || newNotification.type === 'task_status') {
@@ -143,13 +209,13 @@ class NotificationService {
       soundService.playWhatsAppPop();
     }
 
-    // 3. Trigger mobile haptic feedback
+    // 4. Trigger mobile haptic feedback
     NativeService.triggerHaptic();
 
-    // 4. Trigger system push notification
+    // 5. Trigger system push notification
     this.triggerSystemNotification(newNotification);
 
-    // 5. Display floating top banner for 6.5 seconds
+    // 6. Display floating top banner for 6.5 seconds
     this.showBanner(newNotification);
 
     this.notifyListeners();
@@ -188,12 +254,17 @@ class NotificationService {
     this.notifications = this.notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n));
     this.saveToStorage();
     this.notifyListeners();
+    markNotificationAsReadFirestore(id).catch(console.error);
   }
 
   public markAllAsRead(): void {
+    const unreadIds = this.notifications.filter((n) => !n.isRead).map((n) => n.id);
     this.notifications = this.notifications.map((n) => ({ ...n, isRead: true }));
     this.saveToStorage();
     this.notifyListeners();
+    if (unreadIds.length > 0) {
+      markAllNotificationsAsReadFirestore(unreadIds).catch(console.error);
+    }
   }
 
   public deleteNotification(id: string): void {
@@ -203,6 +274,7 @@ class NotificationService {
     }
     this.saveToStorage();
     this.notifyListeners();
+    deleteNotificationFirestore(id).catch(console.error);
   }
 
   public clearAll(): void {
@@ -210,6 +282,7 @@ class NotificationService {
     this.dismissBanner();
     this.saveToStorage();
     this.notifyListeners();
+    clearAllNotificationsFirestore().catch(console.error);
   }
 }
 

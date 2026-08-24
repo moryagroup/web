@@ -130,6 +130,7 @@ import {
   subscribeToCustomIncomeTypes,
   subscribeToCashSettlements,
   subscribeToPolls,
+  subscribeToNotificationsFirestore,
   saveIncome,
   deleteIncome,
   saveExpense,
@@ -235,7 +236,8 @@ import { toMarathiDigits } from './utils/receiptCanvasGenerator';
 import { isBadgedMember, hasAdminPermissions, canApproveFinancialTransactions } from './utils/rbac';
 import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo, formatCashSettlementsNo, getCalendarYearFromDate, generateNextIncomeTransactionNo, generateNextExpenseTransactionNo } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
-import { Menu, Home, Sun, Moon, ChevronDown, ChevronRight, ShieldCheck, UserCheck, LogOut, LogIn, Lock, Bell } from 'lucide-react';
+import { PwaInstallPrompt } from './components/PwaInstallPrompt';
+import { Menu, Home, Sun, Moon, ChevronDown, ChevronRight, ShieldCheck, UserCheck, LogOut, LogIn, Lock, Bell, Smartphone } from 'lucide-react';
 
 const VALID_TABS = new Set([
   'dashboard',
@@ -321,7 +323,7 @@ export default function App() {
   const [groupLogo, setGroupLogo] = useState<string>('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [cashSettlements, setCashSettlements] = useState<CashSettlement[]>(getStoredCashSettlements);
-  const [polls, setPolls] = useState<Poll[]>(INITIAL_POLLS);
+  const [polls, setPolls] = useState<Poll[]>([]);
 
   useEffect(() => {
     saveCashSettlementsToCache(cashSettlements);
@@ -460,6 +462,11 @@ export default function App() {
         if (Array.isArray(data) && data.length > 0) {
           setPolls(data);
           savePolls(data);
+        }
+      }),
+      subscribeToNotificationsFirestore((data) => {
+        if (Array.isArray(data)) {
+          notificationService.syncFromCloud(data);
         }
       }),
     ];
@@ -1582,6 +1589,22 @@ export default function App() {
 
                           <button
                             onClick={() => {
+                              setIsProfileMenuOpen(false);
+                              if (!document.fullscreenElement) {
+                                document.documentElement.requestFullscreen().catch(console.warn);
+                              }
+                            }}
+                            className="w-full py-2 px-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 rounded-xl font-bold text-xs flex items-center justify-between border border-amber-500/40 transition-colors cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Smartphone className="w-4 h-4 text-amber-400" />
+                              <span>होम स्क्रीनवर ॲप जोडा</span>
+                            </div>
+                            <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.2 rounded">PWA</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
                               handleLogout();
                               setIsProfileMenuOpen(false);
                             }}
@@ -1968,6 +1991,8 @@ export default function App() {
           }
         }}
       />
+      {/* Mobile PWA Full Screen & Add to Home Screen Prompt */}
+      <PwaInstallPrompt />
     </div>
     </>
   );
