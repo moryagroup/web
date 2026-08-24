@@ -48,6 +48,8 @@ import {
   Vote,
   ShieldCheck,
   Award,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -135,6 +137,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [members, currentUser]);
 
   const memberPhoto = currentMember?.photoUrl;
+  const [isTasksDrawerOpen, setIsTasksDrawerOpen] = useState<boolean>(false);
   const [activeObstacleModal, setActiveObstacleModal] = useState<{ task: EventTask; occasion: OccasionEvent; initialTab?: 'progress' | 'suggestions' | 'details' } | null>(null);
 
   // Helper to normalize strings for robust comparison across English/Marathi names
@@ -558,17 +561,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       )}
 
-      {/* Home Page Notification: Assigned Event Tasks & Work Responsibilities */}
+      {/* Home Page Notification: Assigned Event Tasks & Work Responsibilities (Collapsible Down Drawer) */}
       {displayTasks.length > 0 && (
-        <div className="bg-gradient-to-br from-amber-500/10 via-purple-500/15 to-indigo-600/10 dark:from-slate-900 dark:via-purple-950/70 dark:to-indigo-950/80 p-5 sm:p-6 rounded-3xl border-2 border-purple-400/50 dark:border-purple-500/40 shadow-xl space-y-4">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-purple-200/60 dark:border-purple-900/60">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 text-slate-950 flex items-center justify-center font-black shadow-md shrink-0">
+        <div className="bg-gradient-to-br from-amber-500/10 via-purple-500/15 to-indigo-600/10 dark:from-slate-900 dark:via-purple-950/70 dark:to-indigo-950/80 rounded-3xl border-2 border-purple-400/50 dark:border-purple-500/40 shadow-xl overflow-hidden transition-all duration-300">
+          {/* Collapsible Heading Drawer Header Button */}
+          <button
+            type="button"
+            onClick={() => setIsTasksDrawerOpen((prev) => !prev)}
+            className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left transition-colors hover:bg-purple-500/10 cursor-pointer select-none group"
+            title={isTasksDrawerOpen ? "कामांची माहिती लपवा (Minimise)" : "कामांचे सर्व तपशील पहा (Draw Down)"}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 text-slate-950 flex items-center justify-center font-black shadow-md shrink-0 group-hover:scale-105 transition-transform">
                 <ListChecks className="w-6 h-6" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-400/40 rounded-md text-[11px] font-black uppercase">
                     कामांची सद्यस्थिती व प्रगती
                   </span>
@@ -576,167 +584,192 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     {displayTasks.length} {displayTasks.length === 1 ? 'काम' : 'कामे'}
                   </span>
                 </div>
-                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-0.5">
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-0.5 truncate">
                   {assignedTasksForMe.length > 0
                     ? 'तुमच्याकडे सोपवलेली उत्सव कामांची जबाबदारी'
                     : 'उत्सवातील सर्व नियोजित कामे व सद्यस्थिती'}
                 </h3>
               </div>
             </div>
-            <p className="text-xs text-slate-600 dark:text-purple-200 font-medium">
-              खालील कोणत्याही कामावर क्लिक करून प्रगती नोंदवा किंवा सद्यस्थिती व सूचना पहा:
-            </p>
-          </div>
 
-          {/* Grid of Task Cards */}
-          <div className={`grid gap-4 ${displayTasks.length === 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
-            {displayTasks.map(({ occasion, task }) => (
-              <div
-                key={task.id}
-                onClick={() => setActiveObstacleModal({ task, occasion, initialTab: 'progress' })}
-                className="bg-white/95 dark:bg-slate-900/90 rounded-2xl p-4 sm:p-5 border-2 border-purple-200/80 dark:border-purple-900/60 hover:border-amber-400 dark:hover:border-amber-500/60 shadow-md hover:shadow-xl transition-all space-y-3 flex flex-col justify-between cursor-pointer group"
-                title="कामाचे संपूर्ण तपशील, प्रगती व सूचना पाहण्यासाठी क्लिक करा"
-              >
-                <div className="space-y-2">
-                  {/* Top row: Occasion Badge + Status Pill */}
-                  <div className="flex justify-between items-center flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-1">
-                      🎉 {occasion.name} ({occasion.year})
-                    </span>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-black border shadow-2xs flex items-center gap-1 ${
-                        task.status === 'पूर्ण'
-                          ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
-                          : task.status === 'प्रक्रियेत'
-                          ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700'
-                          : task.status === 'अडचण / समस्या'
-                          ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-700 animate-pulse'
-                          : 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700'
-                      }`}
-                    >
-                      {task.status === 'पूर्ण' && '✓ '}
-                      {task.status === 'अडचण / समस्या' && '⚠️ '}
-                      {task.status}
-                    </span>
-                  </div>
+            {/* Toggle Drawer Indicator Pill */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className={`px-3.5 py-1.5 rounded-xl font-black text-xs hidden sm:flex items-center gap-1.5 transition-all ${
+                isTasksDrawerOpen
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-slate-800 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-700 shadow-xs'
+              }`}>
+                <span>{isTasksDrawerOpen ? 'माहिती लपवा (Minimise)' : 'कामाचे तपशील पहा'}</span>
+                {isTasksDrawerOpen ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 animate-bounce" />
+                )}
+              </span>
+              <div className="sm:hidden p-2 rounded-xl bg-purple-600 text-white shadow-xs">
+                {isTasksDrawerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </div>
+            </div>
+          </button>
 
-                  {/* Task Title */}
-                  <div>
-                    <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-amber-300 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                      {task.taskTitle}
-                    </h4>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1 mt-0.5">
-                      <span className="font-bold text-slate-700 dark:text-slate-300">👤 प्रमुख व्यवस्थापक:</span>
-                      <span className="font-extrabold text-indigo-700 dark:text-amber-200">{task.assignedMemberName}</span>
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500">({task.assignedMemberRole || 'सभासद'})</span>
-                    </p>
-                  </div>
+          {/* Drawer Down Expanded Content */}
+          {isTasksDrawerOpen && (
+            <div className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4 border-t border-purple-200/60 dark:border-purple-900/60 animate-in slide-in-from-top-3 duration-200">
+              <div className="flex items-center justify-between pt-3 text-xs text-slate-600 dark:text-purple-200 font-medium">
+                <span>खालील कोणत्याही कामावर क्लिक करून प्रगती नोंदवा किंवा सद्यस्थिती व सूचना पहा:</span>
+              </div>
 
-                  {/* Latest Progress Update Box */}
-                  {task.progressUpdates && task.progressUpdates.length > 0 && (
-                    <div className="p-2.5 bg-blue-50/80 dark:bg-slate-800/80 border border-blue-200 dark:border-slate-700 rounded-xl text-xs space-y-0.5">
-                      <div className="flex items-center justify-between text-[10px] text-blue-900 dark:text-blue-300 font-bold">
-                        <span className="flex items-center gap-1">
-                          <RefreshCw className="w-3 h-3 text-blue-600" />
-                          सद्यस्थिती / प्रगती (नवीनतम):
+              {/* Grid of Task Cards */}
+              <div className={`grid gap-4 ${displayTasks.length === 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
+                {displayTasks.map(({ occasion, task }) => (
+                  <div
+                    key={task.id}
+                    onClick={() => setActiveObstacleModal({ task, occasion, initialTab: 'progress' })}
+                    className="bg-white/95 dark:bg-slate-900/90 rounded-2xl p-4 sm:p-5 border-2 border-purple-200/80 dark:border-purple-900/60 hover:border-amber-400 dark:hover:border-amber-500/60 shadow-md hover:shadow-xl transition-all space-y-3 flex flex-col justify-between cursor-pointer group"
+                    title="कामाचे संपूर्ण तपशील, प्रगती व सूचना पाहण्यासाठी क्लिक करा"
+                  >
+                    <div className="space-y-2">
+                      {/* Top row: Occasion Badge + Status Pill */}
+                      <div className="flex justify-between items-center flex-wrap gap-2">
+                        <span className="px-3 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-1">
+                          🎉 {occasion.name} ({occasion.year})
                         </span>
-                        <span className="text-[9px] text-slate-400">{task.progressUpdates[0].createdAt}</span>
-                      </div>
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 italic">
-                        "{task.progressUpdates[0].progressNote}"
-                        <span className="text-[10px] font-normal text-slate-500 not-italic block mt-0.5">
-                          — {task.progressUpdates[0].memberName} ({task.progressUpdates[0].memberRole || 'सभासद'})
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-black border shadow-2xs flex items-center gap-1 ${
+                            task.status === 'पूर्ण'
+                              ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                              : task.status === 'प्रक्रियेत'
+                              ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                              : task.status === 'अडचण / समस्या'
+                              ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-700 animate-pulse'
+                              : 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700'
+                          }`}
+                        >
+                          {task.status === 'पूर्ण' && '✓ '}
+                          {task.status === 'अडचण / समस्या' && '⚠️ '}
+                          {task.status}
                         </span>
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Obstacle Detail Box */}
-                  {task.status === 'अडचण / समस्या' && (
-                    <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700/60 rounded-xl space-y-1 text-xs">
-                      <div className="flex items-center gap-1.5 text-rose-800 dark:text-rose-300 font-bold">
-                        <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 animate-bounce" />
-                        <span>कामात अडचण आल्याने थांबले आहे</span>
                       </div>
-                      {task.obstacleDetails && (
-                        <p className="text-xs text-rose-700 dark:text-rose-200 italic font-medium">
-                          "{task.obstacleDetails}"
+
+                      {/* Task Title */}
+                      <div>
+                        <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-amber-300 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                          {task.taskTitle}
+                        </h4>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+                          <span className="font-bold text-slate-700 dark:text-slate-300">👤 प्रमुख व्यवस्थापक:</span>
+                          <span className="font-extrabold text-indigo-700 dark:text-amber-200">{task.assignedMemberName}</span>
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500">({task.assignedMemberRole || 'सभासद'})</span>
                         </p>
+                      </div>
+
+                      {/* Latest Progress Update Box */}
+                      {task.progressUpdates && task.progressUpdates.length > 0 && (
+                        <div className="p-2.5 bg-blue-50/80 dark:bg-slate-800/80 border border-blue-200 dark:border-slate-700 rounded-xl text-xs space-y-0.5">
+                          <div className="flex items-center justify-between text-[10px] text-blue-900 dark:text-blue-300 font-bold">
+                            <span className="flex items-center gap-1">
+                              <RefreshCw className="w-3 h-3 text-blue-600" />
+                              सद्यस्थिती / प्रगती (नवीनतम):
+                            </span>
+                            <span className="text-[9px] text-slate-400">{task.progressUpdates[0].createdAt}</span>
+                          </div>
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 italic">
+                            "{task.progressUpdates[0].progressNote}"
+                            <span className="text-[10px] font-normal text-slate-500 not-italic block mt-0.5">
+                              — {task.progressUpdates[0].memberName} ({task.progressUpdates[0].memberRole || 'सभासद'})
+                            </span>
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Obstacle Detail Box */}
+                      {task.status === 'अडचण / समस्या' && (
+                        <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700/60 rounded-xl space-y-1 text-xs">
+                          <div className="flex items-center gap-1.5 text-rose-800 dark:text-rose-300 font-bold">
+                            <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 animate-bounce" />
+                            <span>कामात अडचण आल्याने थांबले आहे</span>
+                          </div>
+                          {task.obstacleDetails && (
+                            <p className="text-xs text-rose-700 dark:text-rose-200 italic font-medium">
+                              "{task.obstacleDetails}"
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
 
-                {/* Action Buttons Row */}
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveObstacleModal({ task, occasion, initialTab: 'progress' });
-                    }}
-                    className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>
-                      + प्रगती नोंदवा
-                      {(task.progressUpdates?.length || 0) > 0 ? ` (${task.progressUpdates?.length})` : ''}
-                    </span>
-                  </button>
+                    {/* Action Buttons Row */}
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveObstacleModal({ task, occasion, initialTab: 'progress' });
+                        }}
+                        className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>
+                          + प्रगती नोंदवा
+                          {(task.progressUpdates?.length || 0) > 0 ? ` (${task.progressUpdates?.length})` : ''}
+                        </span>
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveObstacleModal({
-                        task,
-                        occasion,
-                        initialTab: task.status === 'अडचण / समस्या' ? 'details' : 'suggestions',
-                      });
-                    }}
-                    className="flex-1 px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>
-                      {task.status === 'अडचण / समस्या' ? '⚠️ अडचण / स्वरूप' : '💬 तपशील / सूचना'}
-                      {(task.suggestions?.length || 0) > 0 ? ` (${task.suggestions?.length})` : ''}
-                    </span>
-                  </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveObstacleModal({
+                            task,
+                            occasion,
+                            initialTab: task.status === 'अडचण / समस्या' ? 'details' : 'suggestions',
+                          });
+                        }}
+                        className="flex-1 px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>
+                          {task.status === 'अडचण / समस्या' ? '⚠️ अडचण / स्वरूप' : '💬 तपशील / सूचना'}
+                          {(task.suggestions?.length || 0) > 0 ? ` (${task.suggestions?.length})` : ''}
+                        </span>
+                      </button>
 
-                  {onUpdateOccasion && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const newStatus = task.status === 'पूर्ण' ? 'प्रलंबित' : 'पूर्ण';
-                        let updatedTasks = [...(occasion.tasks || [])];
-                        if (task.id.startsWith('occ-main-')) {
-                          const existingIdx = updatedTasks.findIndex((t) => t.id === task.id);
-                          if (existingIdx >= 0) {
-                            updatedTasks[existingIdx] = { ...updatedTasks[existingIdx], status: newStatus as any };
-                          } else {
-                            updatedTasks.push({ ...task, status: newStatus as any });
-                          }
-                        } else {
-                          updatedTasks = updatedTasks.map((t) =>
-                            t.id === task.id ? { ...t, status: newStatus as any } : t
-                          );
-                        }
-                        onUpdateOccasion({ ...occasion, tasks: updatedTasks });
-                      }}
-                      className={`px-3.5 py-2 font-black text-xs rounded-xl border shadow-sm transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
-                        task.status === 'पूर्ण'
-                          ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500 shadow-md'
-                      }`}
-                    >
-                      {task.status === 'पूर्ण' ? 'पुन्हा उघडा' : '✓ पूर्ण म्हणून चिन्हांकित करा'}
-                    </button>
-                  )}
-                </div>
+                      {onUpdateOccasion && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newStatus = task.status === 'पूर्ण' ? 'प्रलंबित' : 'पूर्ण';
+                            let updatedTasks = [...(occasion.tasks || [])];
+                            if (task.id.startsWith('occ-main-')) {
+                              const existingIdx = updatedTasks.findIndex((t) => t.id === task.id);
+                              if (existingIdx >= 0) {
+                                updatedTasks[existingIdx] = { ...updatedTasks[existingIdx], status: newStatus as any };
+                              } else {
+                                updatedTasks.push({ ...task, status: newStatus as any });
+                              }
+                            } else {
+                              updatedTasks = updatedTasks.map((t) =>
+                                t.id === task.id ? { ...t, status: newStatus as any } : t
+                              );
+                            }
+                            onUpdateOccasion({ ...occasion, tasks: updatedTasks });
+                          }}
+                          className={`px-3.5 py-2 font-black text-xs rounded-xl border shadow-sm transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
+                            task.status === 'पूर्ण'
+                              ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700'
+                              : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500 shadow-md'
+                          }`}
+                        >
+                          {task.status === 'पूर्ण' ? 'पुन्हा उघडा' : '✓ पूर्ण म्हणून चिन्हांकित करा'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
