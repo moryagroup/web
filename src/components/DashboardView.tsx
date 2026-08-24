@@ -43,6 +43,7 @@ import {
   AlertTriangle,
   MessageSquare,
   Trash2,
+  RefreshCw,
 } from 'lucide-react';
 
 interface DashboardViewProps {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { OccasionEvent, EventTask, Member, CurrentUser } from '../types';
+import { OccasionEvent, EventTask, TaskStatus, Member, CurrentUser } from '../types';
 import { Calendar, Plus, Edit2, Trash2, X, Check, AlertCircle, CheckCircle2, UserCheck, ListChecks, ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react';
 import { hasAdminPermissions, sortMembersByDesignation } from '../utils/rbac';
 
