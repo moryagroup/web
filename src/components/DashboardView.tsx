@@ -135,7 +135,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [members, currentUser]);
 
   const memberPhoto = currentMember?.photoUrl;
-  const [activeObstacleModal, setActiveObstacleModal] = useState<{ task: EventTask; occasion: OccasionEvent } | null>(null);
+  const [activeObstacleModal, setActiveObstacleModal] = useState<{ task: EventTask; occasion: OccasionEvent; initialTab?: 'progress' | 'suggestions' | 'details' } | null>(null);
 
   // Helper to normalize strings for robust comparison across English/Marathi names
   const normalizeText = (str?: string) =>
@@ -218,7 +218,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return list;
   }, [occasions]);
 
-  const displayTasks = assignedTasksForMe.length > 0 ? assignedTasksForMe : allOccasionTasks;
+  const displayTasks = assignedTasksForMe;
 
   const canApprove =
     canApproveFinancialTransactions(currentUser.role) ||
@@ -593,7 +593,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {displayTasks.map(({ occasion, task }) => (
               <div
                 key={task.id}
-                className="bg-white/95 dark:bg-slate-900/90 rounded-2xl p-4 sm:p-5 border-2 border-purple-200/80 dark:border-purple-900/60 hover:border-amber-400 dark:hover:border-amber-500/60 shadow-md hover:shadow-xl transition-all space-y-3 flex flex-col justify-between"
+                onClick={() => setActiveObstacleModal({ task, occasion, initialTab: 'progress' })}
+                className="bg-white/95 dark:bg-slate-900/90 rounded-2xl p-4 sm:p-5 border-2 border-purple-200/80 dark:border-purple-900/60 hover:border-amber-400 dark:hover:border-amber-500/60 shadow-md hover:shadow-xl transition-all space-y-3 flex flex-col justify-between cursor-pointer group"
+                title="कामाचे संपूर्ण तपशील, प्रगती व सूचना पाहण्यासाठी क्लिक करा"
               >
                 <div className="space-y-2">
                   {/* Top row: Occasion Badge + Status Pill */}
@@ -620,7 +622,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                   {/* Task Title */}
                   <div>
-                    <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-amber-300">
+                    <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-amber-300 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                       {task.taskTitle}
                     </h4>
                     <p className="text-xs text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1 mt-0.5">
@@ -669,7 +671,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setActiveObstacleModal({ task, occasion })}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveObstacleModal({ task, occasion, initialTab: 'progress' });
+                    }}
                     className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
@@ -681,12 +686,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => setActiveObstacleModal({ task, occasion })}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveObstacleModal({
+                        task,
+                        occasion,
+                        initialTab: task.status === 'अडचण / समस्या' ? 'details' : 'suggestions',
+                      });
+                    }}
                     className="flex-1 px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
                     <span>
-                      {task.status === 'अडचण / समस्या' ? '⚠️ अडचण / सूचना' : '💬 तपशील / सूचना'}
+                      {task.status === 'अडचण / समस्या' ? '⚠️ अडचण / स्वरूप' : '💬 तपशील / सूचना'}
                       {(task.suggestions?.length || 0) > 0 ? ` (${task.suggestions?.length})` : ''}
                     </span>
                   </button>
@@ -694,7 +706,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   {onUpdateOccasion && (
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         const newStatus = task.status === 'पूर्ण' ? 'प्रलंबित' : 'पूर्ण';
                         let updatedTasks = [...(occasion.tasks || [])];
                         if (task.id.startsWith('occ-main-')) {
@@ -1353,7 +1366,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         imageUrl={proofModalUrl || ''}
       />
 
-      {/* Task Obstacle & Committee Suggestions Modal */}
+      {/* Task Details, Progress & Obstacles Right Slide-over Drawer */}
       {activeObstacleModal && (
         <TaskObstacleModal
           isOpen={Boolean(activeObstacleModal)}
@@ -1361,6 +1374,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           task={activeObstacleModal.task}
           occasion={activeObstacleModal.occasion}
           currentUser={currentUser}
+          initialTab={activeObstacleModal.initialTab || 'progress'}
           onUpdateTask={(updatedTask) => {
             if (!onUpdateOccasion) return;
             const targetOccasion = activeObstacleModal.occasion;
@@ -1379,7 +1393,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             }
             const updatedOccasion = { ...targetOccasion, tasks: updatedTasks };
             onUpdateOccasion(updatedOccasion);
-            setActiveObstacleModal({ task: updatedTask, occasion: updatedOccasion });
+            setActiveObstacleModal({
+              task: updatedTask,
+              occasion: updatedOccasion,
+              initialTab: activeObstacleModal.initialTab,
+            });
           }}
         />
       )}

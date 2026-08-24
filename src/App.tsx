@@ -37,6 +37,8 @@ import {
   saveCashSettlementsToCache,
   getDeletedSettlementIds,
   addDeletedSettlementId,
+  getDeletedPollIds,
+  addDeletedPollId,
   purgeLegacyLocalStorage,
   DEFAULT_USER,
   calculateFinancialSummary,
@@ -459,9 +461,11 @@ export default function App() {
         }
       }),
       subscribeToPolls((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setPolls(data);
-          savePolls(data);
+        if (Array.isArray(data)) {
+          const deletedIds = getDeletedPollIds();
+          const clean = data.filter((p) => p && p.id && !deletedIds.has(p.id));
+          setPolls(clean);
+          savePolls(clean);
         }
       }),
       subscribeToNotificationsFirestore((data) => {
@@ -586,9 +590,11 @@ export default function App() {
         setSuggestions(clean);
         saveSuggestions(clean);
       }
-      if (Array.isArray(cloudDb.polls) && cloudDb.polls.length > 0) {
-        setPolls(cloudDb.polls);
-        savePolls(cloudDb.polls);
+      if (Array.isArray(cloudDb.polls)) {
+        const deletedIds = getDeletedPollIds();
+        const clean = cloudDb.polls.filter((p) => p && p.id && !deletedIds.has(p.id));
+        setPolls(clean);
+        savePolls(clean);
       }
       if (cloudDb.settings?.groupLogo && cloudDb.settings.groupLogo.trim() !== '') {
         setGroupLogo(cloudDb.settings.groupLogo);
@@ -692,6 +698,7 @@ export default function App() {
   };
 
   const handleDeletePoll = (pollId: string) => {
+    addDeletedPollId(pollId);
     setPolls((prev) => {
       const next = prev.filter((p) => p.id !== pollId);
       savePolls(next);

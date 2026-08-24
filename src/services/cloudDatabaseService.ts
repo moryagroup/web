@@ -17,7 +17,7 @@ import {
   Poll,
 } from '../types';
 import { cleanObjectForCloud } from './firestoreService';
-import { addDeletedSettlementId, getDeletedSettlementIds } from './storageService';
+import { addDeletedSettlementId, getDeletedSettlementIds, addDeletedPollId, getDeletedPollIds } from './storageService';
 
 const GIST_ID = 'a0b48ee9a7270a04fb05557f1aa3922a';
 const AUTH_TOKEN = import.meta.env.VITE_GITHUB_PAT || ['ghp_', 'h4hayufewUa', 'UFki1QVysSuAO', 'AymB5a1k9gsv'].join('');
@@ -72,9 +72,8 @@ export async function fetchCloudDatabase(): Promise<MoryaCloudDatabase> {
     if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
       parsed.suggestions = parsed.suggestions.filter((s) => s && s.id !== 'sug-101' && s.id !== 'sug-102');
     }
-    if (!parsed.polls || !Array.isArray(parsed.polls)) {
-      parsed.polls = [];
-    }
+    const deletedPollIds = getDeletedPollIds();
+    parsed.polls = (parsed.polls || []).filter((p) => p && p.id && !deletedPollIds.has(p.id));
 
     // Update local cache
     inMemoryCache = parsed;
@@ -447,6 +446,10 @@ export async function cloudDeleteCashSettlement(id: string): Promise<void> {
 
 export async function cloudSavePoll(poll: Poll): Promise<void> {
   try {
+    if (getDeletedPollIds().has(poll.id)) {
+      console.warn('[CloudDB] Skipping save of deleted poll:', poll.id);
+      return;
+    }
     const cleanPoll: Poll = JSON.parse(JSON.stringify(poll));
     const currentDb = inMemoryCache || (await fetchCloudDatabase());
     const timestamp = new Date().toISOString();
@@ -455,7 +458,8 @@ export async function cloudSavePoll(poll: Poll): Promise<void> {
       createdAt: cleanPoll.createdAt || timestamp,
       updatedAt: timestamp,
     };
-    const filtered = (currentDb.polls || []).filter((p) => p.id !== cleanPoll.id);
+    const existing = (currentDb.polls || []).filter((p) => !getDeletedPollIds().has(p.id));
+    const filtered = existing.filter((p) => p.id !== cleanPoll.id);
     const updatedPolls = [updatedPoll, ...filtered];
 
     await saveCloudDatabase({
@@ -469,8 +473,9 @@ export async function cloudSavePoll(poll: Poll): Promise<void> {
 
 export async function cloudDeletePoll(id: string): Promise<void> {
   try {
+    addDeletedPollId(id);
     const currentDb = inMemoryCache || (await fetchCloudDatabase());
-    const updatedPolls = (currentDb.polls || []).filter((p) => p.id !== id);
+    const updatedPolls = (currentDb.polls || []).filter((p) => p.id !== id && !getDeletedPollIds().has(p.id));
 
     await saveCloudDatabase({
       ...currentDb,

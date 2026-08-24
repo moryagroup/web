@@ -33,6 +33,7 @@ import {
   INITIAL_SUGGESTIONS,
   INITIAL_POLLS,
 } from '../mockData';
+import { getDeletedPollIds, addDeletedPollId } from './storageService';
 
 // ─── Collection names ────────────────────────────────────────────────────────
 const COLS = {
@@ -187,7 +188,10 @@ export function subscribeToPolls(
   return onSnapshot(
     collection(db, COLS.polls),
     (snap) => {
-      const data = snap.docs.map((d) => d.data() as Poll);
+      const deletedIds = getDeletedPollIds();
+      const data = snap.docs
+        .map((d) => d.data() as Poll)
+        .filter((p) => p && p.id && !deletedIds.has(p.id));
       data.sort((a, b) => ((b.updatedAt || b.createdAt) > (a.updatedAt || a.createdAt) ? 1 : -1));
       callback(data);
     },
@@ -378,6 +382,10 @@ export async function deleteSuggestion(id: string): Promise<void> {
 }
 
 export async function savePoll(poll: Poll): Promise<void> {
+  if (getDeletedPollIds().has(poll.id)) {
+    console.warn('[Firestore] Skipping save of deleted poll:', poll.id);
+    return;
+  }
   const timestamp = new Date().toISOString();
   const payload: Poll = {
     ...poll,
@@ -388,6 +396,7 @@ export async function savePoll(poll: Poll): Promise<void> {
 }
 
 export async function deletePoll(id: string): Promise<void> {
+  addDeletedPollId(id);
   await deleteDoc(doc(db, COLS.polls, id));
 }
 

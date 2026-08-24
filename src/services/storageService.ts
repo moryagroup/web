@@ -115,6 +115,26 @@ export const addDeletedSettlementId = (id: string) => {
   } catch {}
 };
 
+export const getDeletedPollIds = (): Set<string> => {
+  try {
+    const raw = localStorage.getItem('morya_deleted_poll_ids');
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    return new Set();
+  }
+};
+
+export const addDeletedPollId = (id: string) => {
+  if (!id) return;
+  try {
+    const set = getDeletedPollIds();
+    set.add(id);
+    localStorage.setItem('morya_deleted_poll_ids', JSON.stringify(Array.from(set)));
+  } catch {}
+};
+
 export const getStoredCashSettlements = (): CashSettlement[] => {
   try {
     const data = localStorage.getItem('morya_settlements_cache');
