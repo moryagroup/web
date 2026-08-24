@@ -197,7 +197,9 @@ export const clearAllTransactionsFromStorage = () => {};
 // Financial Calculation Helpers
 export const calculateFinancialSummary = (
   incomes: IncomeTransaction[],
-  expenses: ExpenseTransaction[]
+  expenses: ExpenseTransaction[],
+  priorIncomes: IncomeTransaction[] = [],
+  priorExpenses: ExpenseTransaction[] = []
 ): FinancialYearSummary => {
   const activeIncomes = incomes.filter((i) => i.approvalStatus !== 'रद्द');
   const totalIncome = activeIncomes.reduce((sum, item) => sum + item.amount, 0);
@@ -207,7 +209,15 @@ export const calculateFinancialSummary = (
 
   const approvedExpensesTotal = approvedExpenses.reduce((sum, item) => sum + item.amount, 0);
   const totalExpense = approvedExpensesTotal;
-  const netBalance = totalIncome - totalExpense;
+
+  // Opening Balance from prior years
+  const activePriorIncomes = priorIncomes.filter((i) => i.approvalStatus !== 'रद्द');
+  const approvedPriorExpenses = priorExpenses.filter((e) => e.approvalStatus === 'मंजूर');
+  const priorIncomeTotal = activePriorIncomes.reduce((sum, item) => sum + item.amount, 0);
+  const priorExpenseTotal = approvedPriorExpenses.reduce((sum, item) => sum + item.amount, 0);
+  const openingBalance = priorIncomeTotal - priorExpenseTotal;
+
+  const netBalance = openingBalance + totalIncome - totalExpense;
 
   const totalSubscriptionsCollected = activeIncomes
     .filter((item) => {
@@ -237,6 +247,7 @@ export const calculateFinancialSummary = (
     .reduce((sum, item) => sum + item.amount, 0);
 
   return {
+    openingBalance,
     totalIncome,
     totalExpense,
     netBalance,

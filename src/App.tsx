@@ -236,7 +236,7 @@ import { WhatsAppNotifier } from './utils/whatsAppNotifier';
 import { AppNotification } from './types/notification';
 import { toMarathiDigits } from './utils/receiptCanvasGenerator';
 import { isBadgedMember, hasAdminPermissions, canApproveFinancialTransactions } from './utils/rbac';
-import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo, formatCashSettlementsNo, getCalendarYearFromDate, generateNextIncomeTransactionNo, generateNextExpenseTransactionNo } from './utils/dateUtils';
+import { isDateInSelectedYear, isDateBeforeSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo, formatCashSettlementsNo, getCalendarYearFromDate, generateNextIncomeTransactionNo, generateNextExpenseTransactionNo } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
 import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { Menu, Home, Sun, Moon, ChevronDown, ChevronRight, ShieldCheck, UserCheck, LogOut, LogIn, Lock, Bell, Smartphone } from 'lucide-react';
@@ -781,7 +781,13 @@ export default function App() {
     const yearExpenses = formattedExpenses.filter((e) =>
       isDateInSelectedYear(e.expenseDate, selectedYear, e.financialYear)
     );
-    return calculateFinancialSummary(yearIncomes, yearExpenses);
+    const priorIncomes = selectedYear === 'ALL' ? [] : formattedIncomes.filter((i) =>
+      isDateBeforeSelectedYear(i.transactionDate, selectedYear, i.financialYear)
+    );
+    const priorExpenses = selectedYear === 'ALL' ? [] : formattedExpenses.filter((e) =>
+      isDateBeforeSelectedYear(e.expenseDate, selectedYear, e.financialYear)
+    );
+    return calculateFinancialSummary(yearIncomes, yearExpenses, priorIncomes, priorExpenses);
   }, [formattedIncomes, formattedExpenses, selectedYear]);
 
   // Add Income Transaction

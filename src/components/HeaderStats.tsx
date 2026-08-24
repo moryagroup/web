@@ -98,7 +98,9 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({
             {formatCurrency(summary.netBalance)}
           </p>
           <p className="text-[11px] text-blue-600 mt-1 font-medium">
-            एकूण जमा - मंजूर खर्च
+            {summary.openingBalance && summary.openingBalance > 0
+              ? `(मागील: ₹${summary.openingBalance.toLocaleString('en-IN')} + चालू जमा - खर्च)`
+              : 'एकूण जमा - मंजूर खर्च'}
           </p>
         </div>
       </div>

@@ -11,7 +11,7 @@ import {
   RecipientType,
   PaymentMethod,
 } from '../types';
-import { isDateInSelectedYear, getFinancialYearFromDate, generateNextExpenseTransactionNo, generateNextCashSettlementNo } from '../utils/dateUtils';
+import { isDateInSelectedYear, isDateBeforeSelectedYear, getFinancialYearFromDate, generateNextExpenseTransactionNo, generateNextCashSettlementNo } from '../utils/dateUtils';
 import { ProofLightboxModal } from './ProofLightboxModal';
 import { uploadFileToGoogleDrive } from '../services/googleDriveService';
 import { fetchCloudDatabase } from '../services/cloudDatabaseService';
@@ -210,7 +210,29 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
             isDateInSelectedYear(s.depositDate, activeYear, s.financialYear)
           );
 
+    // Prior Year Filtered Transactions (for Opening Balance carryforward)
+    const priorIncomes =
+      activeYear === 'ALL'
+        ? []
+        : incomes.filter((i) =>
+            isDateBeforeSelectedYear(i.transactionDate, activeYear, i.financialYear)
+          );
+    const priorExpenses =
+      activeYear === 'ALL'
+        ? []
+        : expenses.filter((e) =>
+            isDateBeforeSelectedYear(e.expenseDate, activeYear, e.financialYear)
+          );
+    const priorSettlements =
+      activeYear === 'ALL'
+        ? []
+        : settlementsList.filter((s) =>
+            isDateBeforeSelectedYear(s.depositDate, activeYear, s.financialYear)
+          );
+
+    let totalOpeningCashAll = 0;
     let totalCashReceivedAll = 0;
+    let totalAvailableCashAll = 0;
     let totalCashSettledAll = 0;
     let totalCashDebitedAll = 0;
     let totalNetCashAll = 0;
@@ -219,7 +241,9 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
       string,
       {
         member: Member;
+        openingCashBalance: number;
         cashReceived: number;
+        totalAvailableCash: number;
         cashSettled: number;
         cashDebited: number;
         netCashInHand: number;
@@ -229,22 +253,52 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
     > = {};
 
     members.forEach((m) => {
-      // 1. Cash Inflows: cash receipts accepted by this member
-      const received = filteredIncomesByYear
+      // 0. Prior Period Opening Balance: Net cash remaining in hand prior to selected year
+      const priorReceived = priorIncomes
         .filter(
           (i) =>
             i.paymentMethod === 'रोख' &&
+            i.approvalStatus !== 'रद्द' &&
             (i.cashReceiverMemberId === m.id ||
               (i.cashReceiverName && i.cashReceiverName.trim().toLowerCase() === m.fullName.trim().toLowerCase()))
         )
         .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
 
-      // 2. Cash Outflows - Bank/Trust Handover Settlements (Approved)
+      const priorSettled = priorSettlements
+        .filter((s) => s.memberId === m.id && s.approvalStatus === 'मंजूर')
+        .reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+
+      const priorDebited = priorExpenses
+        .filter(
+          (e) =>
+            e.paymentMethod === 'रोख' &&
+            e.approvalStatus !== 'रद्द' &&
+            (e.paidByMemberId === m.id ||
+              (e.paidByMemberName && e.paidByMemberName.trim().toLowerCase() === m.fullName.trim().toLowerCase()))
+        )
+        .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+      const openingCash = Math.max(0, priorReceived - priorSettled - priorDebited);
+
+      // 1. Current Year Cash Inflows
+      const received = filteredIncomesByYear
+        .filter(
+          (i) =>
+            i.paymentMethod === 'रोख' &&
+            i.approvalStatus !== 'रद्द' &&
+            (i.cashReceiverMemberId === m.id ||
+              (i.cashReceiverName && i.cashReceiverName.trim().toLowerCase() === m.fullName.trim().toLowerCase()))
+        )
+        .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+
+      const totalAvailable = openingCash + received;
+
+      // 2. Current Year Cash Outflows - Bank/Trust Handover Settlements (Approved)
       const approvedSettled = yearSettlements
         .filter((s) => s.memberId === m.id && s.approvalStatus === 'मंजूर')
         .reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
 
-      // 3. Cash Outflows - Direct Expense Debits made from cash in hand (Approved or Recorded)
+      // 3. Current Year Cash Outflows - Direct Expense Debits made from cash in hand (Approved or Recorded)
       const approvedDebited = filteredExpensesByYear
         .filter(
           (e) =>
@@ -263,11 +317,13 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
         (s) => s.memberId === m.id && s.approvalStatus === 'प्रलंबित'
       ).length;
 
-      const netInHand = Math.max(0, received - approvedSettled - approvedDebited);
+      const netInHand = Math.max(0, totalAvailable - approvedSettled - approvedDebited);
 
       memberMap[m.id] = {
         member: m,
+        openingCashBalance: openingCash,
         cashReceived: received,
+        totalAvailableCash: totalAvailable,
         cashSettled: approvedSettled,
         cashDebited: approvedDebited,
         netCashInHand: netInHand,
@@ -275,7 +331,9 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
         pendingCount,
       };
 
+      totalOpeningCashAll += openingCash;
       totalCashReceivedAll += received;
+      totalAvailableCashAll += totalAvailable;
       totalCashSettledAll += approvedSettled;
       totalCashDebitedAll += approvedDebited;
       totalNetCashAll += netInHand;
@@ -287,7 +345,14 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
     const activeCashMembers = Object.values(memberMap)
       .filter((item) => {
         if (!searchQuery.trim()) {
-          return item.cashReceived > 0 || item.cashSettled > 0 || item.cashDebited > 0 || item.netCashInHand > 0 || item.pendingCount > 0;
+          return (
+            item.openingCashBalance > 0 ||
+            item.cashReceived > 0 ||
+            item.cashSettled > 0 ||
+            item.cashDebited > 0 ||
+            item.netCashInHand > 0 ||
+            item.pendingCount > 0
+          );
         }
         const q = searchQuery.toLowerCase();
         return (
@@ -301,13 +366,15 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
     return {
       memberMap,
       activeCashMembers,
+      totalOpeningCashAll,
       totalCashReceivedAll,
+      totalAvailableCashAll,
       totalCashSettledAll,
       totalCashDebitedAll,
       totalNetCashAll,
       pendingApprovalsList,
     };
-  }, [members, filteredIncomesByYear, filteredExpensesByYear, cashSettlements, activeYear, searchQuery]);
+  }, [members, incomes, expenses, filteredIncomesByYear, filteredExpensesByYear, cashSettlements, activeYear, searchQuery]);
 
   // Open Deposit Modal
   const handleOpenAddSettlement = (memberId?: string) => {
@@ -639,13 +706,22 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
           <div className="w-12 h-12 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 rounded-2xl flex items-center justify-center shrink-0">
             <ArrowDownCircle className="w-6 h-6" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              १. एकूण रोख संकलन (Received)
+              १. एकूण उपलब्ध रोख (Available)
             </p>
             <p className="text-xl font-black text-amber-600 dark:text-amber-400 mt-0.5">
-              ₹{memberCashStats.totalCashReceivedAll.toLocaleString('en-IN')}
+              ₹{memberCashStats.totalAvailableCashAll.toLocaleString('en-IN')}
             </p>
+            {activeYear !== 'ALL' && memberCashStats.totalOpeningCashAll > 0 ? (
+              <p className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold mt-0.5 truncate" title={`मागील शिल्लक: ₹${memberCashStats.totalOpeningCashAll.toLocaleString('en-IN')} + चालू: ₹${memberCashStats.totalCashReceivedAll.toLocaleString('en-IN')}`}>
+                (मागील: ₹{memberCashStats.totalOpeningCashAll.toLocaleString('en-IN')} + चालू: ₹{memberCashStats.totalCashReceivedAll.toLocaleString('en-IN')})
+              </p>
+            ) : (
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                चालू संकलन: ₹{memberCashStats.totalCashReceivedAll.toLocaleString('en-IN')}
+              </p>
+            )}
           </div>
         </div>
 
@@ -914,26 +990,34 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                     </div>
 
                     <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700/60 space-y-1.5 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500 dark:text-slate-400">एकूण स्वीकारलेली रोख:</span>
+                      {activeYear !== 'ALL' && (
+                        <div className="flex justify-between items-center bg-amber-50/80 dark:bg-amber-950/30 px-2 py-1 rounded-lg border border-amber-200/60 dark:border-amber-800/40">
+                          <span className="text-amber-800 dark:text-amber-300 font-bold">१. मागील वर्षाची शिल्लक (Opening):</span>
+                          <span className="font-black text-amber-900 dark:text-amber-200">
+                            ₹{item.openingCashBalance.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between px-1">
+                        <span className="text-slate-500 dark:text-slate-400">२. चालू वर्षात स्वीकारलेली रोख:</span>
                         <span className="font-bold text-slate-800 dark:text-slate-200">
                           ₹{item.cashReceived.toLocaleString('en-IN')}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500 dark:text-slate-400">बँकेत/ट्रस्टकडे जमा (भरणा):</span>
+                      <div className="flex justify-between px-1">
+                        <span className="text-slate-500 dark:text-slate-400">३. बँकेत/ट्रस्टकडे जमा (भरणा):</span>
                         <span className="font-bold text-blue-600 dark:text-blue-400">
                           - ₹{item.cashSettled.toLocaleString('en-IN')}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500 dark:text-slate-400">रोखीतून केलेला खर्च (Audit Debit):</span>
+                      <div className="flex justify-between px-1">
+                        <span className="text-slate-500 dark:text-slate-400">४. रोखीतून केलेला खर्च (Audit Debit):</span>
                         <span className="font-bold text-rose-600 dark:text-rose-400">
                           - ₹{item.cashDebited.toLocaleString('en-IN')}
                         </span>
                       </div>
-                      <div className="pt-1.5 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-sm font-black">
-                        <span className="text-emerald-800 dark:text-emerald-300">शिल्लक रोख रक्कम:</span>
+                      <div className="pt-1.5 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-sm font-black px-1">
+                        <span className="text-emerald-800 dark:text-emerald-300">५. शिल्लक रोख रक्कम (Net in Hand):</span>
                         <span className="text-emerald-600 dark:text-emerald-400">
                           ₹{item.netCashInHand.toLocaleString('en-IN')}
                         </span>

@@ -177,6 +177,68 @@ export function isDateInSelectedYear(
 }
 
 /**
+ * Checks if a transaction date falls before the start of the selected year
+ * (e.g. before 1 Jan 2026 for Calendar Year 2026, or before 1 Apr 2026 for Financial Year 2026-27).
+ */
+export function isDateBeforeSelectedYear(
+  transactionDateStr?: string,
+  selectedYearStr?: string,
+  fallbackFinancialYearStr?: string
+): boolean {
+  if (!selectedYearStr || selectedYearStr === 'ALL') return false;
+
+  const convertedSelected = convertMarathiToEnglishDigits(selectedYearStr).trim();
+  const isFinancialYear = convertedSelected.includes('-');
+
+  if (isFinancialYear) {
+    const fyStartYear = parseYearNumber(convertedSelected);
+    if (transactionDateStr) {
+      const parts = transactionDateStr.split('-');
+      if (parts.length >= 2) {
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (!isNaN(y) && !isNaN(m)) {
+          const transFYStart = m >= 4 ? y : y - 1;
+          return transFYStart < fyStartYear;
+        }
+      }
+      const d = new Date(transactionDateStr);
+      if (!isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        const transFYStart = m >= 4 ? y : y - 1;
+        return transFYStart < fyStartYear;
+      }
+    }
+    if (fallbackFinancialYearStr) {
+      return parseYearNumber(fallbackFinancialYearStr) < fyStartYear;
+    }
+    return false;
+  }
+
+  const targetYear = parseYearNumber(convertedSelected);
+  if (transactionDateStr) {
+    const parts = transactionDateStr.split('-');
+    if (parts.length >= 1) {
+      const y = parseInt(parts[0], 10);
+      if (!isNaN(y)) {
+        return y < targetYear;
+      }
+    }
+    const d = new Date(transactionDateStr);
+    if (!isNaN(d.getTime())) {
+      return d.getFullYear() < targetYear;
+    }
+  }
+
+  if (fallbackFinancialYearStr) {
+    return parseYearNumber(fallbackFinancialYearStr) < targetYear;
+  }
+
+  return false;
+}
+
+/**
  * Safely parses any date/timestamp string (ISO, YYYY-MM-DD, DD/MM/YYYY, Marathi digits) into Unix time (ms).
  * Returns 0 if invalid or empty.
  */

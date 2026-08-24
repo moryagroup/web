@@ -76,13 +76,16 @@ export const CoreSummaryView: React.FC<CoreSummaryViewProps> = ({
     const headers = ['घटक / शीर्षक', 'रक्कम (₹)', 'वर्ष', 'विवरण / टीप'];
 
     const rows: (string | number | boolean)[][] = [
-      ['एकूण जमा (Total Deposit)', summary.totalIncome, selectedYear, 'एकूण सर्व उत्पन्नाचा जमा हिशोब'],
+      ...(summary.openingBalance !== undefined && summary.openingBalance > 0
+        ? [['मागील वर्षांची आरंभीची शिल्लक (Opening Balance)', summary.openingBalance, selectedYear, 'मागील वर्षांतून पुढे आणलेली शिल्लक']]
+        : []),
+      ['एकूण चालू जमा (Current Year Deposit)', summary.totalIncome, selectedYear, 'चालू वर्षातील सर्व उत्पन्नाचा जमा हिशोब'],
       [' - सभासद वर्गणी (Subscriptions)', subscriptionIncome, selectedYear, 'सभासदांकडून जमा वर्गणी'],
       [' - देणगी व प्रायोजकत्व (Donations)', donationIncome, selectedYear, 'दानशूर व्यक्ती व प्रायोजकांची देणगी'],
       [' - इतर उत्पन्न (Other Income)', otherIncome, selectedYear, 'इतर जमा रकमा'],
       ['एकूण मंजूर खर्च (Approved Expense)', summary.approvedExpensesTotal, selectedYear, 'मंजूर झालेला एकूण खर्च'],
       ['प्रलंबित खर्च (Pending Approval)', pendingAmount, selectedYear, `प्रलंबित खर्च नोंदी: ${pendingExpenses.length}`],
-      ['सध्याची निव्वळ शिल्लक (Net Balance)', summary.netBalance, selectedYear, 'एकूण जमा minus एकूण मंजूर खर्च'],
+      ['सध्याची निव्वळ शिल्लक (Net Balance)', summary.netBalance, selectedYear, 'मागील शिल्लक + एकूण जमा - एकूण मंजूर खर्च'],
     ];
 
     exportToCSV(filename, headers, rows);
@@ -228,10 +231,26 @@ export const CoreSummaryView: React.FC<CoreSummaryViewProps> = ({
           <p className="text-3xl font-black text-blue-950 tracking-tight">
             {formatCurrency(summary.netBalance)}
           </p>
-          <div className="pt-2 border-t border-blue-200/80 text-xs text-blue-900 font-medium">
-            <p className="text-[11px] text-blue-800">
-              सध्याची शिल्लक = एकूण जमा रक्कमेतून सर्व मंजूर खर्च वजा करून उरलेली बँक/रोख शिल्लक.
-            </p>
+          <div className="space-y-1 pt-2 border-t border-blue-200/80 text-xs text-blue-900 font-medium">
+            {summary.openingBalance !== undefined && summary.openingBalance > 0 ? (
+              <>
+                <div className="flex justify-between">
+                  <span>मागील वर्षाची शिल्लक (Opening):</span>
+                  <span className="font-bold">{formatCurrency(summary.openingBalance)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>चालू वर्षाची बचत (Net Flow):</span>
+                  <span className="font-bold">{formatCurrency(summary.totalIncome - summary.approvedExpensesTotal)}</span>
+                </div>
+                <p className="text-[10px] text-blue-800 pt-0.5">
+                  एकूण शिल्लक = मागील शिल्लक + चालू जमा - चालू खर्च.
+                </p>
+              </>
+            ) : (
+              <p className="text-[11px] text-blue-800">
+                सध्याची शिल्लक = एकूण जमा रक्कमेतून सर्व मंजूर खर्च वजा करून उरलेली बँक/रोख शिल्लक.
+              </p>
+            )}
           </div>
         </div>
       </div>

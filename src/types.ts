@@ -229,6 +229,7 @@ export interface CurrentUser {
 }
 
 export interface FinancialYearSummary {
+  openingBalance?: number;
   totalIncome: number;
   totalExpense: number;
   netBalance: number;
