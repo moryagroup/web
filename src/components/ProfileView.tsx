@@ -6,6 +6,7 @@ import { hasAdminPermissions } from '../utils/rbac';
 import { ImageCropModal } from './ImageCropModal';
 import { LogoLightboxModal } from './LogoLightboxModal';
 import { ProfilePhotoLightboxModal } from './ProfilePhotoLightboxModal';
+import { WhatsAppNotifier } from '../utils/whatsAppNotifier';
 import {
   User,
   Calendar,
@@ -29,6 +30,7 @@ import {
   Maximize2,
   ArrowLeft,
   ListChecks,
+  Share2,
 } from 'lucide-react';
 
 interface ProfileViewProps {
@@ -863,32 +865,59 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                               <th className="p-2.5">जमाकर्ते नाव</th>
                               <th className="p-2.5 text-right">रक्कम</th>
                               <th className="p-2.5 text-center">स्थिती</th>
+                              <th className="p-2.5 text-center">WhatsApp</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
-                            {memberIncomes.map((inc) => (
-                              <tr key={inc.id} className="hover:bg-slate-50/80 transition-colors">
-                                <td className="p-2.5 whitespace-nowrap text-slate-500 font-mono text-[11px]">
-                                  {inc.transactionDate}
-                                </td>
-                                <td className="p-2.5 font-bold text-slate-700">{inc.incomeType}</td>
-                                <td className="p-2.5 font-bold">{inc.depositorName}</td>
-                                <td className="p-2.5 text-right font-black text-emerald-700">
-                                  + ₹{inc.amount.toLocaleString('en-IN')}
-                                </td>
-                                <td className="p-2.5 text-center">
-                                  {inc.approvalStatus === 'मंजूर' ? (
-                                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">
-                                      ✓ मंजूर
-                                    </span>
-                                  ) : (
-                                    <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded font-bold text-[10px]">
-                                      ⏳ प्रलंबित
-                                    </span>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
+                            {memberIncomes.map((inc) => {
+                              const waMsg = WhatsAppNotifier.formatIncomeReceiptMessage({
+                                receiptNo: inc.receiptNumber,
+                                transactionNo: inc.transactionNo,
+                                memberName: currentProfile.fullName,
+                                depositorName: inc.depositorName,
+                                amount: inc.amount,
+                                incomeType: inc.incomeType,
+                                paymentMethod: inc.paymentMethod,
+                                dateStr: inc.transactionDate,
+                                financialYear: inc.financialYear,
+                                receiverName: inc.cashReceiverName,
+                              });
+
+                              return (
+                                <tr key={inc.id} className="hover:bg-slate-50/80 transition-colors">
+                                  <td className="p-2.5 whitespace-nowrap text-slate-500 font-mono text-[11px]">
+                                    {inc.transactionDate}
+                                  </td>
+                                  <td className="p-2.5 font-bold text-slate-700">{inc.incomeType}</td>
+                                  <td className="p-2.5 font-bold">{inc.depositorName}</td>
+                                  <td className="p-2.5 text-right font-black text-emerald-700">
+                                    + ₹{inc.amount.toLocaleString('en-IN')}
+                                  </td>
+                                  <td className="p-2.5 text-center">
+                                    {inc.approvalStatus === 'मंजूर' ? (
+                                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">
+                                        ✓ मंजूर
+                                      </span>
+                                    ) : (
+                                      <span className="px-2 py-0.5 bg-amber-100 text-amber-900 rounded font-bold text-[10px]">
+                                        ⏳ प्रलंबित
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="p-2.5 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => WhatsAppNotifier.shareToWhatsApp(waMsg, currentProfile.phone)}
+                                      className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs active:scale-95"
+                                      title="पावती WhatsApp वर पाठवा"
+                                    >
+                                      <Share2 className="w-3.5 h-3.5" />
+                                      <span className="text-[10px] font-bold hidden sm:inline">पावती</span>
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>

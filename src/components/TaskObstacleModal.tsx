@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { X, AlertTriangle, MessageSquare, Send, CheckCircle2, Clock, RefreshCw, UserCheck } from 'lucide-react';
 import { EventTask, TaskStatus, TaskSuggestion, CurrentUser, OccasionEvent } from '../types';
 
+import { notificationService } from '../services/notificationService';
+import { WhatsAppNotifier } from '../utils/whatsAppNotifier';
+
 interface TaskObstacleModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -34,15 +37,69 @@ export const TaskObstacleModal: React.FC<TaskObstacleModalProps> = ({
       obstacleDetails: newStatus === 'अडचण / समस्या' ? obstacleInput : task.obstacleDetails,
     };
     onUpdateTask(updated);
+
+    if (newStatus === 'अडचण / समस्या') {
+      notificationService.notify({
+        type: 'task_obstacle',
+        title: `कामात अडचण: ${task.taskTitle}`,
+        message: `${task.assignedMemberName} यांनी '${occasion.name}' मधील कामात अडचण नोंदवली.`,
+        occasionId: occasion.id,
+        occasionName: occasion.name,
+        taskId: task.id,
+        taskTitle: task.taskTitle,
+        memberName: task.assignedMemberName,
+        targetTab: 'dashboard',
+        priority: 'high',
+        whatsAppMessage: WhatsAppNotifier.formatTaskObstacleMessage({
+          occasionName: occasion.name,
+          taskTitle: task.taskTitle,
+          assignedMemberName: task.assignedMemberName,
+          obstacleDetails: obstacleInput || task.obstacleDetails || 'कामात अडचण निर्माण झाली आहे.',
+        }),
+      });
+    } else {
+      notificationService.notify({
+        type: 'task_status',
+        title: `कामाचा दर्जा बदलला: ${task.taskTitle}`,
+        message: `सध्याचा दर्जा: ${newStatus} (${task.assignedMemberName})`,
+        occasionId: occasion.id,
+        occasionName: occasion.name,
+        taskId: task.id,
+        taskTitle: task.taskTitle,
+        targetTab: 'dashboard',
+      });
+    }
   };
 
   const handleSaveObstacleDetails = () => {
+    const details = obstacleInput.trim() || undefined;
     const updated: EventTask = {
       ...task,
       status: currentStatus,
-      obstacleDetails: obstacleInput.trim() || undefined,
+      obstacleDetails: details,
     };
     onUpdateTask(updated);
+
+    if (details) {
+      notificationService.notify({
+        type: 'task_obstacle',
+        title: `कामात अडचण: ${task.taskTitle}`,
+        message: `${task.assignedMemberName}: ${details}`,
+        occasionId: occasion.id,
+        occasionName: occasion.name,
+        taskId: task.id,
+        taskTitle: task.taskTitle,
+        memberName: task.assignedMemberName,
+        targetTab: 'dashboard',
+        priority: 'high',
+        whatsAppMessage: WhatsAppNotifier.formatTaskObstacleMessage({
+          occasionName: occasion.name,
+          taskTitle: task.taskTitle,
+          assignedMemberName: task.assignedMemberName,
+          obstacleDetails: details,
+        }),
+      });
+    }
   };
 
   const handleAddSuggestion = (e: React.FormEvent) => {
@@ -72,6 +129,18 @@ export const TaskObstacleModal: React.FC<TaskObstacleModalProps> = ({
     };
 
     onUpdateTask(updated);
+
+    notificationService.notify({
+      type: 'suggestion',
+      title: `कामावर नवीन सूचना: ${task.taskTitle}`,
+      message: `${currentUser.name} (${currentUser.role || 'सभासद'}) यांनी उपाय/सूचना नोंदवली: "${suggestionText.trim()}"`,
+      occasionId: occasion.id,
+      occasionName: occasion.name,
+      taskId: task.id,
+      taskTitle: task.taskTitle,
+      targetTab: 'dashboard',
+    });
+
     setSuggestionText('');
     setIsAddingSuggestion(false);
   };

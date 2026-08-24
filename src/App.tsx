@@ -216,10 +216,16 @@ import { LoginModal } from './components/LoginModal';
 import { OccasionModal } from './components/OccasionModal';
 import { SettingsModal } from './components/SettingsModal';
 import { LogoLightboxModal } from './components/LogoLightboxModal';
+import { NotificationBanner } from './components/NotificationBanner';
+import { NotificationCenterModal } from './components/NotificationCenterModal';
+import { notificationService } from './services/notificationService';
+import { WhatsAppNotifier } from './utils/whatsAppNotifier';
+import { AppNotification } from './types/notification';
+import { toMarathiDigits } from './utils/receiptCanvasGenerator';
 import { isBadgedMember, hasAdminPermissions, canApproveFinancialTransactions } from './utils/rbac';
 import { isDateInSelectedYear, formatIncomeTransactionsNo, formatExpenseTransactionsNo, formatCashSettlementsNo, getCalendarYearFromDate, generateNextIncomeTransactionNo, generateNextExpenseTransactionNo } from './utils/dateUtils';
 import { NetworkStatusNotifier } from './components/NetworkStatusNotifier';
-import { Menu, Home, Sun, Moon, ChevronDown, ChevronRight, ShieldCheck, UserCheck, LogOut, LogIn, Lock } from 'lucide-react';
+import { Menu, Home, Sun, Moon, ChevronDown, ChevronRight, ShieldCheck, UserCheck, LogOut, LogIn, Lock, Bell } from 'lucide-react';
 
 const VALID_TABS = new Set([
   'dashboard',
@@ -271,10 +277,27 @@ export default function App() {
   const [isOccasionModalOpen, setIsOccasionModalOpen] = useState<boolean>(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
   const [isAdminClearModalOpen, setIsAdminClearModalOpen] = useState<boolean>(false);
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState<boolean>(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => notificationService.getNotifications());
+  const [activeBanner, setActiveBanner] = useState<AppNotification | null>(null);
   const [loginModalMemberId, setLoginModalMemberId] = useState<string | undefined>(undefined);
   const [loginModalType, setLoginModalType] = useState<'admin' | 'member'>('member');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Subscribe to real-time notification updates & sound alerts
+  useEffect(() => {
+    const unsubscribe = notificationService.subscribe((list, banner) => {
+      setNotifications(list);
+      setActiveBanner(banner);
+    });
+    return unsubscribe;
+  }, []);
+
+  const unreadNotificationsCount = useMemo(
+    () => notifications.filter((n) => !n.isRead).length,
+    [notifications]
+  );
 
   // Application states — populated strictly by online databases (Firestore, Cloud Gist, Supabase)
   const [incomes, setIncomes] = useState<IncomeTransaction[]>([]);
@@ -727,6 +750,34 @@ export default function App() {
     if (isApproved) {
       dispatchApprovedTransaction(finalIncome, 'INCOME').catch(console.error);
     }
+
+    // Trigger instant GPay-style audio chime, banner & WhatsApp notification
+    const waReceiptMsg = WhatsAppNotifier.formatIncomeReceiptMessage({
+      receiptNo: finalIncome.receiptNumber,
+      transactionNo: finalIncome.transactionNo,
+      memberName: finalIncome.linkedMemberName,
+      depositorName: finalIncome.depositorName,
+      amount: finalIncome.amount,
+      incomeType: finalIncome.incomeType,
+      paymentMethod: finalIncome.paymentMethod,
+      dateStr: finalIncome.transactionDate,
+      financialYear: finalIncome.financialYear,
+      receiverName: finalIncome.cashReceiverName,
+    });
+
+    notificationService.notify({
+      type: 'transaction_income',
+      title: `₹ ${toMarathiDigits(Number(finalIncome.amount).toLocaleString('en-IN'))}/- जमा झाले!`,
+      message: `${finalIncome.depositorName || 'सभासद'} यांच्याकडून ${finalIncome.incomeType} (पावती: ${finalIncome.receiptNumber ? '#' + finalIncome.receiptNumber : finalIncome.transactionNo}) जमा झाली.`,
+      amount: finalIncome.amount,
+      depositorName: finalIncome.depositorName,
+      memberId: finalIncome.linkedMemberId,
+      memberName: finalIncome.linkedMemberName,
+      transactionId: finalIncome.id,
+      receiptNo: finalIncome.receiptNumber || finalIncome.transactionNo,
+      targetTab: 'income-history',
+      whatsAppMessage: waReceiptMsg,
+    });
   };
 
   // Update Income Transaction (Admin Only)
@@ -857,6 +908,37 @@ export default function App() {
     saveOccasion(finalOccasion).catch(console.error);
     cloudSaveOccasion(finalOccasion).catch(console.error);
     saveOccasionToSupabase(finalOccasion).catch(console.error);
+
+    // Notify assigned members about new event tasks
+    if (finalOccasion.tasks && finalOccasion.tasks.length > 0) {
+      finalOccasion.tasks.forEach((t) => {
+        if (t.taskTitle && t.assignedMemberName) {
+          const waTaskMsg = WhatsAppNotifier.formatTaskAssignmentMessage({
+            occasionName: finalOccasion.name,
+            taskTitle: t.taskTitle,
+            assignedMemberName: t.assignedMemberName,
+            assignedMemberRole: t.assignedMemberRole,
+            teamMembersCount: t.teamMembers?.length,
+            notes: t.notes,
+          });
+
+          notificationService.notify({
+            type: 'task_assigned',
+            title: `कामाचे नियोजन: ${t.taskTitle}`,
+            message: `${finalOccasion.name} - जबाबदार: ${t.assignedMemberName} (${t.assignedMemberRole || 'सभासद'})`,
+            occasionId: finalOccasion.id,
+            occasionName: finalOccasion.name,
+            taskId: t.id,
+            taskTitle: t.taskTitle,
+            memberId: t.assignedMemberId,
+            memberName: t.assignedMemberName,
+            memberPhone: t.assignedMemberPhone,
+            targetTab: 'dashboard',
+            whatsAppMessage: waTaskMsg,
+          });
+        }
+      });
+    }
   };
 
   const handleUpdateOccasion = async (updatedOccasion: OccasionEvent) => {
@@ -877,6 +959,37 @@ export default function App() {
     saveOccasion(finalOccasion).catch(console.error);
     cloudSaveOccasion(finalOccasion).catch(console.error);
     saveOccasionToSupabase(finalOccasion).catch(console.error);
+
+    // Notify assigned members about updated tasks
+    if (finalOccasion.tasks && finalOccasion.tasks.length > 0) {
+      finalOccasion.tasks.forEach((t) => {
+        if (t.taskTitle && t.assignedMemberName) {
+          const waTaskMsg = WhatsAppNotifier.formatTaskAssignmentMessage({
+            occasionName: finalOccasion.name,
+            taskTitle: t.taskTitle,
+            assignedMemberName: t.assignedMemberName,
+            assignedMemberRole: t.assignedMemberRole,
+            teamMembersCount: t.teamMembers?.length,
+            notes: t.notes,
+          });
+
+          notificationService.notify({
+            type: 'task_assigned',
+            title: `कामाचे नियोजन: ${t.taskTitle}`,
+            message: `${finalOccasion.name} - जबाबदार: ${t.assignedMemberName} (${t.assignedMemberRole || 'सभासद'})`,
+            occasionId: finalOccasion.id,
+            occasionName: finalOccasion.name,
+            taskId: t.id,
+            taskTitle: t.taskTitle,
+            memberId: t.assignedMemberId,
+            memberName: t.assignedMemberName,
+            memberPhone: t.assignedMemberPhone,
+            targetTab: 'dashboard',
+            whatsAppMessage: waTaskMsg,
+          });
+        }
+      });
+    }
   };
 
   const handleDeleteOccasion = (occasionId: string) => {
@@ -911,6 +1024,17 @@ export default function App() {
     if (isApproved) {
       dispatchApprovedTransaction(finalExpense, 'EXPENSE').catch(console.error);
     }
+
+    // Trigger expense notification
+    notificationService.notify({
+      type: 'transaction_expense',
+      title: `₹ ${toMarathiDigits(Number(finalExpense.amount).toLocaleString('en-IN'))}/- खर्च नोंदवला!`,
+      message: `${finalExpense.recipientName} यांना ${finalExpense.expenseCategory} अंतर्गत रक्कम अदा (${finalExpense.transactionNo}).`,
+      amount: finalExpense.amount,
+      recipientName: finalExpense.recipientName,
+      transactionId: finalExpense.id,
+      targetTab: 'expense-history',
+    });
   };
 
   // Update Expense Transaction (Admin Only)
@@ -1045,6 +1169,22 @@ export default function App() {
     saveMember(finalMember).catch(console.error);
     cloudSaveMember(finalMember).catch(console.error);
     saveMemberToSupabase(finalMember).catch(console.error);
+
+    // Notify profile update
+    notificationService.notify({
+      type: 'profile_update',
+      title: `सभासद प्रोफाइल: ${finalMember.fullName}`,
+      message: `${finalMember.fullName} (${finalMember.designation || 'सभासद'}) यांची प्रोफाइल माहिती अद्ययावत झाली.`,
+      memberId: finalMember.id,
+      memberName: finalMember.fullName,
+      memberPhone: finalMember.phone,
+      targetTab: 'profile',
+      whatsAppMessage: WhatsAppNotifier.formatProfileUpdateMessage({
+        memberName: finalMember.fullName,
+        updateType: 'प्रोफाइल अद्ययावत',
+        details: `पद: ${finalMember.designation || 'सभासद'}, मोबाईल: ${finalMember.phone || '---'}`,
+      }),
+    });
   };
 
   // Delete Member
@@ -1070,6 +1210,26 @@ export default function App() {
     saveCashSettlement(finalSettlement).catch(console.error);
     cloudSaveCashSettlement(finalSettlement).catch(console.error);
     saveCashSettlementToSupabase(finalSettlement).catch(console.error);
+
+    // Trigger settlement notification
+    const waSettlementMsg = WhatsAppNotifier.formatSettlementMessage({
+      memberName: finalSettlement.memberName,
+      amount: finalSettlement.amount,
+      destination: finalSettlement.destination,
+      dateStr: finalSettlement.depositDate,
+      bankRefNo: finalSettlement.bankRefNo,
+    });
+
+    notificationService.notify({
+      type: 'settlement',
+      title: `कॅश भरणा: ₹ ${toMarathiDigits(Number(finalSettlement.amount).toLocaleString('en-IN'))}/-`,
+      message: `${finalSettlement.memberName} यांनी ${finalSettlement.destination} येथे रक्कम भरणा नोंदवला.`,
+      amount: finalSettlement.amount,
+      memberId: finalSettlement.memberId,
+      memberName: finalSettlement.memberName,
+      targetTab: 'cash-settlements',
+      whatsAppMessage: waSettlementMsg,
+    });
   };
 
   const handleApproveCashSettlement = (
@@ -1246,6 +1406,22 @@ export default function App() {
               title="मुख्य डॅशबोर्डवर परत जा (Home)"
             >
               <Home className="w-4 h-4 text-amber-400 shrink-0" />
+            </button>
+
+            {/* Notification Bell Center Button */}
+            <button
+              type="button"
+              onClick={() => setIsNotificationCenterOpen(true)}
+              className="relative p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 active:scale-95 transition-all cursor-pointer flex items-center justify-center shadow-xs"
+              title={`सूचना केंद्र (${toMarathiDigits(unreadNotificationsCount)} न वाचलेल्या सूचना)`}
+              aria-label="Notification Center"
+            >
+              <Bell className="w-4 h-4 text-amber-400 shrink-0" />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-rose-600 text-white text-[10px] font-black rounded-full shadow-md animate-pulse border border-rose-400">
+                  {toMarathiDigits(unreadNotificationsCount)}
+                </span>
+              )}
             </button>
 
             {/* Top Right Profile Logo & Popover Menu */}
@@ -1685,6 +1861,28 @@ export default function App() {
       {import.meta.env.DEV && currentUser?.isLoggedIn && hasAdminPermissions(currentUser?.role) && (
         <Agentation />
       )}
+
+      {/* Real-Time Floating Notification Banner (GPay / WhatsApp Style) */}
+      <NotificationBanner
+        banner={activeBanner}
+        onNavigate={(tab) => {
+          if (VALID_TABS.has(tab)) {
+            setActiveTab(tab);
+          }
+        }}
+      />
+
+      {/* Notification Center Modal (Notification History, Filters & Settings) */}
+      <NotificationCenterModal
+        isOpen={isNotificationCenterOpen}
+        onClose={() => setIsNotificationCenterOpen(false)}
+        notifications={notifications}
+        onNavigate={(tab) => {
+          if (VALID_TABS.has(tab)) {
+            setActiveTab(tab);
+          }
+        }}
+      />
     </div>
     </>
   );

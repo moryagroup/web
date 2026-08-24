@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { MemberSuggestion, CurrentUser, Member } from '../types';
 import { isCoreMemberRole, isBadgedMember } from '../utils/rbac';
+import { notificationService } from '../services/notificationService';
 import {
   MessageSquarePlus,
   Send,
@@ -118,6 +119,17 @@ export const SuggestionsView: React.FC<SuggestionsViewProps> = ({
     };
 
     onAddSuggestion(newSug);
+
+    notificationService.notify({
+      type: 'suggestion',
+      title: `नवीन सूचना: ${newSug.title}`,
+      message: `${newSug.memberName} (${newSug.memberRole || 'सभासद'}) यांनी '${newSug.category}' अंतर्गत नवीन सूचना मांडली.`,
+      memberId: newSug.memberId,
+      memberName: newSug.memberName,
+      memberPhone: newSug.memberPhone,
+      targetTab: 'suggestions',
+    });
+
     setTitle('');
     setDescription('');
     setShowAddModal(false);
@@ -139,6 +151,16 @@ export const SuggestionsView: React.FC<SuggestionsViewProps> = ({
     };
 
     onUpdateSuggestion(updated);
+
+    notificationService.notify({
+      type: 'suggestion',
+      title: `सूचनेवर प्रतिसाद: ${updated.title}`,
+      message: `${currentUser.name} यांनी प्रतिउत्तर दिले: "${replyText.trim()}" (स्थिती: ${replyStatus})`,
+      memberId: updated.memberId,
+      memberName: updated.memberName,
+      targetTab: 'suggestions',
+    });
+
     setReplyingSuggestion(null);
     setReplyText('');
   };
