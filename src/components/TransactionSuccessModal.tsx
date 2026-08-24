@@ -72,6 +72,13 @@ export const TransactionSuccessModal: React.FC<TransactionSuccessModalProps> = (
     if (isIncome && inc?.cashReceiverName && inc.paymentMethod === 'रोख') {
       text += `🔹 *रोख स्वीकारणारे:* ${inc.cashReceiverName}\n`;
     }
+    if (isIncome) {
+      if (inc?.paymentStatus === 'PENDING') {
+        text += `🔹 *रक्कम स्थिती:* ⏳ रक्कम येणे बाकी (Pending Collection)\n`;
+      } else {
+        text += `🔹 *रक्कम स्थिती:* ✅ रक्कम जमा (Received)\n`;
+      }
+    }
     text += `🔹 *स्थिती:* ${isApproved ? '✅ मंजूर (Approved)' : '⏳ प्रलंबित (Pending Approval)'}\n`;
     text += `━━━━━━━━━━━━━━━━━━━━\n`;
     text += `_मोरया ग्रुप मित्र मंडळ, हडपसर गोंधळनगर, पुणे._\n`;
@@ -108,7 +115,9 @@ export const TransactionSuccessModal: React.FC<TransactionSuccessModalProps> = (
           </h2>
           <p className="text-xs sm:text-sm text-white/90 mt-1 font-medium">
             {isApproved
-              ? 'व्यवहार मंजूर झाला असून खात्यात नोंदवला गेला आहे.'
+              ? (isIncome && inc?.paymentStatus === 'PENDING'
+                  ? 'पावती नोंद झाली असून रक्कम येणे बाकी (Pending) म्हणून नोंदवली आहे.'
+                  : 'व्यवहार मंजूर झाला असून खात्यात नोंदवला गेला आहे.')
               : 'व्यवहार नोंदवला असून खजिनदार / ॲडमिन मंजुरीसाठी प्रलंबित आहे.'}
           </p>
         </div>
@@ -185,6 +194,22 @@ export const TransactionSuccessModal: React.FC<TransactionSuccessModalProps> = (
                   <span className="text-slate-500 dark:text-slate-400 block text-[10px] font-bold uppercase">पावती अनुक्रमांक</span>
                   <span className="font-bold text-slate-800 dark:text-slate-200 block mt-0.5">
                     {inc.receiptNumber}
+                  </span>
+                </div>
+              )}
+
+              {isIncome && (
+                <div className={`p-2.5 rounded-lg border col-span-2 flex items-center justify-between ${
+                  inc?.paymentStatus === 'PENDING' 
+                    ? 'bg-amber-100 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 text-amber-950 dark:text-amber-100' 
+                    : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-700 text-emerald-900 dark:text-emerald-100'
+                }`}>
+                  <span className="font-bold text-xs flex items-center gap-1.5">
+                    {inc?.paymentStatus === 'PENDING' ? <Clock className="w-3.5 h-3.5 text-amber-600" /> : <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                    <span>रक्कम स्थिती:</span>
+                  </span>
+                  <span className="font-black text-xs">
+                    {inc?.paymentStatus === 'PENDING' ? '⏳ रक्कम येणे बाकी (Pending Collection)' : '✅ रक्कम जमा (Received)'}
                   </span>
                 </div>
               )}

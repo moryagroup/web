@@ -11,7 +11,7 @@ import {
 import { hasFullFinancialAccess, sortMembersByDesignation, canApproveFinancialTransactions } from '../utils/rbac';
 import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextIncomeTransactionNo, convertMarathiToEnglishDigits } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
-import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft, ShieldCheck, BookOpen, BookMarked } from 'lucide-react';
+import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft, ShieldCheck, BookOpen, BookMarked, Clock } from 'lucide-react';
 import { uploadFileToGoogleDrive, isGoogleDriveUrl } from '../services/googleDriveService';
 import { getNextSerialForReceiptBook, formatPhysicalReceiptNumber } from '../utils/physicalReceiptUtils';
 import { TransactionSuccessModal } from './TransactionSuccessModal';
@@ -99,6 +99,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [createdTransaction, setCreatedTransaction] = useState<IncomeTransaction | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
+  const [paymentStatus, setPaymentStatus] = useState<'RECEIVED' | 'PENDING'>('RECEIVED');
 
   // Default cash receiver to logged-in user or first member
   useEffect(() => {
@@ -245,6 +246,8 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       receiptBookNo: isPhysicalReceipt ? receiptBookNo : undefined,
       receiptSerialNo: isPhysicalReceipt ? receiptSerialNo : undefined,
       isPhysicalReceipt,
+      paymentStatus: isPhysicalReceipt ? paymentStatus : 'RECEIVED',
+      receivedDate: isPhysicalReceipt && paymentStatus === 'PENDING' ? undefined : transactionDate,
       attachmentUrl: attachmentUrl || undefined,
       notes: notes.trim() || 'नमूद नाही',
       financialYear: getFinancialYearFromDate(transactionDate),
@@ -276,6 +279,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
     setReceiptNumber('');
     setAttachmentUrl('');
     setNotes('');
+    setPaymentStatus('RECEIVED');
     if (currentLoggedInMember) {
       setCashReceiverMemberId(currentLoggedInMember.id);
       setCashReceiverName(currentLoggedInMember.fullName);
@@ -653,6 +657,44 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
                   />
                   <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 font-semibold">
                     तयार होणारा पावती संदर्भ: <strong className="text-amber-900 dark:text-amber-200">{formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo)}</strong>
+                  </p>
+                </div>
+
+                {/* Payment Collection Status (Received vs Pending) */}
+                <div className="col-span-1 sm:col-span-2 pt-2 border-t border-amber-200/80 dark:border-amber-700/80">
+                  <label className="block text-xs font-bold text-amber-900 dark:text-amber-200 uppercase mb-1.5">
+                    रक्कम स्थिती (Payment Status) <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentStatus('RECEIVED')}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        paymentStatus === 'RECEIVED'
+                          ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs ring-2 ring-emerald-400'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-amber-200 hover:bg-amber-100/60'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>💵 रक्कम जमा (Received)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentStatus('PENDING')}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        paymentStatus === 'PENDING'
+                          ? 'bg-amber-500 text-slate-900 border-amber-600 shadow-xs ring-2 ring-amber-400 font-black'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-amber-200 hover:bg-amber-100/60'
+                      }`}
+                    >
+                      <Clock className="w-4 h-4" />
+                      <span>⏳ रक्कम येणे बाकी (Pending)</span>
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-1 font-medium">
+                    {paymentStatus === 'RECEIVED'
+                      ? '✓ रक्कम प्रत्यक्षात जमा झाली असून मुख्य जमा हिशोबात समाविष्ट होईल.'
+                      : '⚠️ पावती नोंद होईल, परंतु रक्कम प्रत्यक्षात मिळेपर्यंत एकूण जमेत धरली जाणार नाही (येणे बाकी राहील).'}
                   </p>
                 </div>
               </div>

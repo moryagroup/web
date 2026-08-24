@@ -174,6 +174,9 @@ export interface IncomeTransaction {
   receiptBookNo?: string; // e.g. "1", "2", "3" (पावती पुस्तक क्र.)
   receiptSerialNo?: string; // e.g. "1", "2", "3", "4" (पावती अनुक्रमांक)
   isPhysicalReceipt?: boolean; // true if entered from physical receipt book
+  paymentStatus?: 'RECEIVED' | 'PENDING'; // 'RECEIVED' (रक्कम जमा) | 'PENDING' (रक्कम येणे बाकी)
+  receivedDate?: string; // Date when pending payment was actually received
+  receivedNotes?: string;
   attachmentUrl?: string; // Proof image or doc
   notes?: string;
   financialYear: string; // e.g., '2026-2027'
@@ -237,6 +240,8 @@ export interface FinancialYearSummary {
   totalDonationsCollected: number;
   totalOnlineIncome: number;
   totalCashIncome: number;
+  totalPendingIncome?: number;
+  totalPendingIncomeCount?: number;
   pendingExpensesCount: number;
   approvedExpensesTotal: number;
 }

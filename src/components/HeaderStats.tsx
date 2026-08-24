@@ -56,6 +56,11 @@ export const HeaderStats: React.FC<HeaderStatsProps> = ({
             <span className="text-emerald-400">|</span>
             <span>रोख: {formatCurrency(summary.totalCashIncome || 0)}</span>
           </p>
+          {(summary.totalPendingIncome || 0) > 0 && (
+            <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-1 font-bold flex items-center gap-1 bg-amber-100/70 dark:bg-amber-950/60 px-1.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
+              <span>⏳ येणे बाकी: {formatCurrency(summary.totalPendingIncome || 0)} ({summary.totalPendingIncomeCount} पावत्या)</span>
+            </p>
+          )}
         </div>
       </div>
 

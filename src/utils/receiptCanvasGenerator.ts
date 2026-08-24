@@ -460,10 +460,20 @@ export async function generateReceiptImageCanvas(
     '#0F172A'  // Slate for entry maker
   );
 
-  // Row 6 (Optional): Physical Receipt Book or Payment Proof Reference
+  // Row 6 (Optional): Physical Receipt Book or Payment Proof Reference & Payment Collection Status
   if (isIncome && (inc?.isPhysicalReceipt || inc?.receiptBookNo)) {
-    const bookRef = `पुस्तक क्र. ${toMarathiDigits(inc.receiptBookNo || '1')} (पावती अनुक्रमांक: #${toMarathiDigits(inc.receiptSerialNo || '1')})`;
-    drawFullRow('पावती पुस्तक संदर्भ:', bookRef);
+    const isPending = inc.paymentStatus === 'PENDING';
+    const statusText = isPending ? '⏳ रक्कम येणे बाकी (Pending)' : '✅ रक्कम जमा (Received)';
+    const statusColor = isPending ? '#D97706' : '#059669';
+    const bookRef = `पु. क्र. ${toMarathiDigits(inc.receiptBookNo || '1')} (पावती #${toMarathiDigits(inc.receiptSerialNo || '1')})`;
+    drawTwoColumnRow(
+      'पावती पुस्तक संदर्भ:',
+      bookRef,
+      'रक्कम स्थिती:',
+      statusText,
+      '#0F172A',
+      statusColor
+    );
   } else if (transaction.attachmentUrl) {
     drawFullRow('संलग्न पेमेंट पुरावा:', '📁 Google Drive वर मूळ पावती/पुरावा सुरक्षित जतन');
   }

@@ -75,6 +75,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
   const [financialYear, setFinancialYear] = useState<string>('2026-2027');
   const [autoApprove, setAutoApprove] = useState<boolean>(false);
   const [savedSuccessMsg, setSavedSuccessMsg] = useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<'RECEIVED' | 'PENDING'>('RECEIVED');
 
   // Default cash receiver
   useEffect(() => {
@@ -191,6 +192,8 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       receiptBookNo: isPhysicalReceipt ? receiptBookNo : undefined,
       receiptSerialNo: isPhysicalReceipt ? receiptSerialNo : undefined,
       isPhysicalReceipt,
+      paymentStatus: isPhysicalReceipt ? paymentStatus : 'RECEIVED',
+      receivedDate: isPhysicalReceipt && paymentStatus === 'PENDING' ? undefined : transactionDate,
       notes: notes.trim() || 'नमूद नाही',
       financialYear: getFinancialYearFromDate(transactionDate),
       approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
@@ -210,6 +213,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       setReason('');
       setPaymentReference('');
       setNotes('');
+      setPaymentStatus('RECEIVED');
       setSavedSuccessMsg(`पावती (${finalTransNo}) यशस्वीरित्या नोंदवली गेली. पुढील नोंद करा.`);
       setTimeout(() => setSavedSuccessMsg(null), 3500);
     } else {
@@ -552,6 +556,37 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
                   <p className="text-[10px] text-amber-800 mt-1 font-semibold">
                     पावती: <strong>{formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo)}</strong>
                   </p>
+                </div>
+
+                {/* Payment Status (Received vs Pending) */}
+                <div className="col-span-2 pt-2 border-t border-amber-200">
+                  <label className="block text-[11px] font-bold text-amber-900 mb-1">
+                    रक्कम स्थिती (Payment Status) *
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentStatus('RECEIVED')}
+                      className={`py-1.5 px-2 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                        paymentStatus === 'RECEIVED'
+                          ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                          : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-100'
+                      }`}
+                    >
+                      💵 रक्कम जमा (Received)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentStatus('PENDING')}
+                      className={`py-1.5 px-2 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                        paymentStatus === 'PENDING'
+                          ? 'bg-amber-500 text-slate-900 border-amber-600 font-black shadow-xs'
+                          : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-100'
+                      }`}
+                    >
+                      ⏳ रक्कम येणे बाकी (Pending)
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

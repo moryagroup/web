@@ -26,6 +26,7 @@ import {
   RefreshCw,
   BookOpen,
   BookMarked,
+  Clock,
 } from 'lucide-react';
 import { NativeService } from '../services/nativeService';
 import { ProofLightboxModal } from './ProofLightboxModal';
@@ -64,10 +65,18 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
   const [selectedMemberId, setSelectedMemberId] = useState('ALL');
   const [selectedCashReceiverId, setSelectedCashReceiverId] = useState('ALL');
   const [selectedSource, setSelectedSource] = useState<'ALL' | 'PHYSICAL' | 'DIGITAL'>('ALL');
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<'ALL' | 'RECEIVED' | 'PENDING'>('ALL');
   const [selectedYear, setSelectedYear] = useState(financialYear);
   const [selectedIncomeDetail, setSelectedIncomeDetail] = useState<IncomeTransaction | null>(null);
   const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
   const [dispatchStatus, setDispatchStatus] = useState<{ loading: boolean; message?: string; success?: boolean } | null>(null);
+
+  // Quick Mark As Received Modal State
+  const [receivingIncome, setReceivingIncome] = useState<IncomeTransaction | null>(null);
+  const [receivePaymentMethod, setReceivePaymentMethod] = useState<PaymentMethod>('रोख');
+  const [receiveCashReceiverId, setReceiveCashReceiverId] = useState<string>('');
+  const [receivePaymentRef, setReceivePaymentRef] = useState<string>('');
+  const [receiveDate, setReceiveDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   const [showFilters, setShowFilters] = useState(false);
 
@@ -80,8 +89,9 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     if (selectedMemberId !== 'ALL') count++;
     if (selectedCashReceiverId !== 'ALL') count++;
     if (selectedSource !== 'ALL') count++;
+    if (selectedPaymentStatus !== 'ALL') count++;
     return count;
-  }, [selectedYear, selectedType, selectedDepositorType, selectedPaymentMethod, selectedMemberId, selectedCashReceiverId, selectedSource]);
+  }, [selectedYear, selectedType, selectedDepositorType, selectedPaymentMethod, selectedMemberId, selectedCashReceiverId, selectedSource, selectedPaymentStatus]);
 
   const handleResetFilters = () => {
     setSelectedYear('ALL');
@@ -91,6 +101,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     setSelectedMemberId('ALL');
     setSelectedCashReceiverId('ALL');
     setSelectedSource('ALL');
+    setSelectedPaymentStatus('ALL');
   };
 
   const handleProofClick = (url: string) => {
@@ -227,6 +238,8 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
       }
       if (selectedSource === 'PHYSICAL' && !item.isPhysicalReceipt && !item.receiptBookNo) return false;
       if (selectedSource === 'DIGITAL' && (item.isPhysicalReceipt || item.receiptBookNo)) return false;
+      if (selectedPaymentStatus === 'RECEIVED' && item.paymentStatus === 'PENDING') return false;
+      if (selectedPaymentStatus === 'PENDING' && item.paymentStatus !== 'PENDING') return false;
 
       return true;
     });
@@ -256,8 +269,37 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     selectedMemberId,
     selectedCashReceiverId,
     selectedSource,
+    selectedPaymentStatus,
     selectedYear,
   ]);
+
+  const handleOpenReceiveModal = (item: IncomeTransaction) => {
+    setReceivingIncome(item);
+    setReceivePaymentMethod(item.paymentMethod || 'रोख');
+    setReceiveCashReceiverId(item.cashReceiverMemberId || currentMember?.id || (members[0]?.id || ''));
+    setReceivePaymentRef(item.paymentReference || '');
+    setReceiveDate(new Date().toISOString().split('T')[0]);
+  };
+
+  const handleConfirmReceive = () => {
+    if (!receivingIncome || !onUpdateIncome) return;
+    const selectedCashRec = members.find((m) => m.id === receiveCashReceiverId);
+    const updated: IncomeTransaction = {
+      ...receivingIncome,
+      paymentStatus: 'RECEIVED',
+      receivedDate: receiveDate,
+      paymentMethod: receivePaymentMethod,
+      cashReceiverMemberId: receivePaymentMethod === 'रोख' ? receiveCashReceiverId : undefined,
+      cashReceiverName: receivePaymentMethod === 'रोख' ? (selectedCashRec?.fullName || undefined) : undefined,
+      paymentReference: receivePaymentRef.trim() || receivingIncome.paymentReference,
+      updatedAt: new Date().toISOString(),
+    };
+    onUpdateIncome(updated);
+    if (selectedIncomeDetail?.id === receivingIncome.id) {
+      setSelectedIncomeDetail(updated);
+    }
+    setReceivingIncome(null);
+  };
 
   const totalFilteredAmount = useMemo(() => {
     return filteredIncomes.reduce((sum, item) => sum + item.amount, 0);
@@ -628,6 +670,22 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                   <option value="DIGITAL">⚡ थेट डिजिटल नोंदी</option>
                 </select>
               </div>
+
+              {/* Payment Collection Status Filter */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">
+                  रक्कम स्थिती (Payment Status):
+                </label>
+                <select
+                  value={selectedPaymentStatus}
+                  onChange={(e) => setSelectedPaymentStatus(e.target.value as any)}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="ALL">सर्व (जमा + येणे बाकी)</option>
+                  <option value="RECEIVED">💵 रक्कम जमा (Received)</option>
+                  <option value="PENDING">⏳ रक्कम येणे बाकी (Pending)</option>
+                </select>
+              </div>
             </div>
           </div>
         )}
@@ -737,27 +795,49 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                         </div>
                       )}
                     </td>
-                    <td className="p-3.5 text-[11px] text-slate-500">{item.createdBy}</td>
                     <td className="p-3.5">
-                      {item.approvalStatus === 'मंजूर' ? (
-                        <span className="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-black shadow-2xs border border-emerald-500 whitespace-nowrap">
-                          ✓ मंजूर
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 bg-amber-500 text-slate-950 rounded text-[10px] font-black shadow-2xs border border-amber-400 whitespace-nowrap">
-                          ⏳ प्रलंबित
-                        </span>
-                      )}
+                      <div className="flex flex-col gap-1 items-start">
+                        {item.approvalStatus === 'मंजूर' ? (
+                          <span className="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-black shadow-2xs border border-emerald-500 whitespace-nowrap">
+                            ✓ मंजूर
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-amber-500 text-slate-950 rounded text-[10px] font-black shadow-2xs border border-amber-400 whitespace-nowrap">
+                            ⏳ प्रलंबित
+                          </span>
+                        )}
+                        {item.paymentStatus === 'PENDING' ? (
+                          <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 rounded text-[9px] font-bold border border-amber-300 dark:border-amber-700 whitespace-nowrap flex items-center gap-0.5">
+                            <Clock className="w-2.5 h-2.5 text-amber-600" />
+                            <span>येणे बाकी</span>
+                          </span>
+                        ) : (
+                          (item.isPhysicalReceipt || item.receiptBookNo) && (
+                            <span className="px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded text-[9px] font-bold border border-emerald-200 dark:border-emerald-700 whitespace-nowrap">
+                              ✓ जमा
+                            </span>
+                          )
+                        )}
+                      </div>
                     </td>
                     <td className="p-3.5 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
                           onClick={() => setSelectedIncomeDetail(item)}
-                          className="p-1.5 hover:bg-slate-100 text-slate-600 hover:text-emerald-700 rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-emerald-700 rounded-lg transition-colors cursor-pointer"
                           title="संपूर्ण पावती/तपशील पहा"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
+                        {item.paymentStatus === 'PENDING' && onUpdateIncome && (
+                          <button
+                            onClick={() => handleOpenReceiveModal(item)}
+                            className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-[10px] rounded-lg transition-all shadow-xs cursor-pointer flex items-center gap-1 whitespace-nowrap active:scale-95"
+                            title="रक्कम प्रत्यक्ष प्राप्त झाली म्हणून नोंदवा"
+                          >
+                            <span>💵 रक्कम मिळाली</span>
+                          </button>
+                        )}
                         {item.approvalStatus === 'प्रलंबित' && canApprove && currentUser && (
                           <div className="flex items-center gap-1">
                             {onApproveIncome && (
@@ -951,6 +1031,44 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                   पावती अनुक्रमांक: <strong>#{selectedIncomeDetail.receiptSerialNo || '---'}</strong> | संदर्भ: <strong>{selectedIncomeDetail.receiptNumber}</strong>
                 </p>
               </div>
+            )}
+
+            {/* Payment Collection Status Banner & Action */}
+            {selectedIncomeDetail.paymentStatus === 'PENDING' ? (
+              <div className="p-3 bg-amber-100 dark:bg-amber-950/60 border-2 border-amber-400 dark:border-amber-600 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                <div>
+                  <span className="text-xs font-black text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-amber-600" />
+                    <span>रक्कम स्थिती: ⏳ रक्कम येणे बाकी (Pending)</span>
+                  </span>
+                  <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-0.5">
+                    ही पावती नोंदवली आहे, परंतु रक्कम प्रत्यक्षात मिळणे बाकी आहे.
+                  </p>
+                </div>
+                {onUpdateIncome && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenReceiveModal(selectedIncomeDetail)}
+                    className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl shadow-xs cursor-pointer transition-all active:scale-95 whitespace-nowrap flex items-center gap-1"
+                  >
+                    <span>💵 रक्कम मिळाली म्हणून नोंदवा</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              (selectedIncomeDetail.isPhysicalReceipt || selectedIncomeDetail.receiptBookNo) && (
+                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-xl flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>रक्कम स्थिती: ✅ रक्कम जमा (Received)</span>
+                  </span>
+                  {selectedIncomeDetail.receivedDate && (
+                    <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-semibold">
+                      जमा दिनांक: {selectedIncomeDetail.receivedDate}
+                    </span>
+                  )}
+                </div>
+              )
             )}
 
             {/* Approval Action Bar for Pending Income (Treasurer / Admin) */}
@@ -1266,6 +1384,18 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 </div>
               )}
 
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">रक्कम स्थिती (Payment Status)</label>
+                <select
+                  value={editingIncome.paymentStatus || 'RECEIVED'}
+                  onChange={(e) => setEditingIncome({ ...editingIncome, paymentStatus: e.target.value as any })}
+                  className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 outline-none"
+                >
+                  <option value="RECEIVED">💵 रक्कम जमा (Received)</option>
+                  <option value="PENDING">⏳ रक्कम येणे बाकी (Pending)</option>
+                </select>
+              </div>
+
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
@@ -1282,6 +1412,111 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Mark-As-Received Modal */}
+      {receivingIncome && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setReceivingIncome(null)}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-700 pb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">रक्कम प्रत्यक्षात जमा म्हणून नोंदवा</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  पावती क्र: <strong className="text-slate-800 dark:text-slate-200">{receivingIncome.transactionNo}</strong> | रक्कम: <strong className="text-emerald-600 dark:text-emerald-400">₹{receivingIncome.amount.toLocaleString('en-IN')}</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">प्रत्यक्ष जमा तारीख (Received Date) *</label>
+                <input
+                  type="date"
+                  required
+                  value={receiveDate}
+                  onChange={(e) => setReceiveDate(e.target.value)}
+                  className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl font-bold bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">पेमेंट पद्धत *</label>
+                <select
+                  value={receivePaymentMethod}
+                  onChange={(e) => setReceivePaymentMethod(e.target.value as PaymentMethod)}
+                  className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+                >
+                  <option value="रोख">रोख (Cash)</option>
+                  <option value="UPI">UPI / PhonePe / GPay</option>
+                  <option value="बँक ट्रान्सफर">बँक ट्रान्सफर (NEFT/IMPS)</option>
+                  <option value="चेक">चेक</option>
+                </select>
+              </div>
+
+              {receivePaymentMethod === 'रोख' && (
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">रोख रक्कम स्वीकारणारा सभासद *</label>
+                  <select
+                    value={receiveCashReceiverId}
+                    onChange={(e) => setReceiveCashReceiverId(e.target.value)}
+                    className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  >
+                    <option value="">-- सभासद निवडा --</option>
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.memberCode} - {m.fullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {receivePaymentMethod !== 'रोख' && (
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">UTR / UPI रेफरन्स क्र.</label>
+                  <input
+                    type="text"
+                    value={receivePaymentRef}
+                    onChange={(e) => setReceivePaymentRef(e.target.value)}
+                    placeholder="उदा. UPI-12345678"
+                    className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
+              )}
+
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-800 dark:text-emerald-300">
+                ✓ ही पावती 'रक्कम जमा (Received)' म्हणून अपडेट होईल आणि मुख्य जमा खात्यात समाविष्ट होईल.
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setReceivingIncome(null)}
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold rounded-xl"
+                >
+                  रद्द करा
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmReceive}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow cursor-pointer transition-all active:scale-95"
+                >
+                  ✓ रक्कम जमा झाली (Confirm)
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

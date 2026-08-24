@@ -220,7 +220,12 @@ export const calculateFinancialSummary = (
   priorExpenses: ExpenseTransaction[] = []
 ): FinancialYearSummary => {
   const activeIncomes = incomes.filter((i) => i.approvalStatus !== 'रद्द');
-  const totalIncome = activeIncomes.reduce((sum, item) => sum + item.amount, 0);
+  const receivedIncomes = activeIncomes.filter((i) => i.paymentStatus !== 'PENDING');
+  const pendingIncomes = activeIncomes.filter((i) => i.paymentStatus === 'PENDING');
+
+  const totalIncome = receivedIncomes.reduce((sum, item) => sum + item.amount, 0);
+  const totalPendingIncome = pendingIncomes.reduce((sum, item) => sum + item.amount, 0);
+  const totalPendingIncomeCount = pendingIncomes.length;
 
   const approvedExpenses = expenses.filter((e) => e.approvalStatus === 'मंजूर');
   const pendingExpenses = expenses.filter((e) => e.approvalStatus === 'प्रलंबित');
@@ -229,7 +234,7 @@ export const calculateFinancialSummary = (
   const totalExpense = approvedExpensesTotal;
 
   // Opening Balance from prior years
-  const activePriorIncomes = priorIncomes.filter((i) => i.approvalStatus !== 'रद्द');
+  const activePriorIncomes = priorIncomes.filter((i) => i.approvalStatus !== 'रद्द' && i.paymentStatus !== 'PENDING');
   const approvedPriorExpenses = priorExpenses.filter((e) => e.approvalStatus === 'मंजूर');
   const priorIncomeTotal = activePriorIncomes.reduce((sum, item) => sum + item.amount, 0);
   const priorExpenseTotal = approvedPriorExpenses.reduce((sum, item) => sum + item.amount, 0);
@@ -237,14 +242,14 @@ export const calculateFinancialSummary = (
 
   const netBalance = openingBalance + totalIncome - totalExpense;
 
-  const totalSubscriptionsCollected = activeIncomes
+  const totalSubscriptionsCollected = receivedIncomes
     .filter((item) => {
       const type = (item.incomeType || '').toLowerCase();
       return type.includes('वर्गणी') || type.includes('subscription');
     })
     .reduce((sum, item) => sum + item.amount, 0);
 
-  const totalDonationsCollected = activeIncomes
+  const totalDonationsCollected = receivedIncomes
     .filter((item) => {
       const type = (item.incomeType || '').toLowerCase();
       return (
@@ -256,11 +261,11 @@ export const calculateFinancialSummary = (
     })
     .reduce((sum, item) => sum + item.amount, 0);
 
-  const totalOnlineIncome = activeIncomes
+  const totalOnlineIncome = receivedIncomes
     .filter((item) => item.paymentMethod !== 'रोख')
     .reduce((sum, item) => sum + item.amount, 0);
 
-  const totalCashIncome = activeIncomes
+  const totalCashIncome = receivedIncomes
     .filter((item) => item.paymentMethod === 'रोख')
     .reduce((sum, item) => sum + item.amount, 0);
 
@@ -273,6 +278,8 @@ export const calculateFinancialSummary = (
     totalDonationsCollected,
     totalOnlineIncome,
     totalCashIncome,
+    totalPendingIncome,
+    totalPendingIncomeCount,
     pendingExpensesCount: pendingExpenses.length,
     approvedExpensesTotal,
   };
