@@ -171,6 +171,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: pendingExpenseCount > 0 ? pendingExpenseCount : null,
     },
     {
+      id: 'daily-transactions',
+      label: '📅 दैनिक व्यवहार इतिहास',
+      icon: Calendar,
+      color: 'text-amber-400',
+    },
+    {
       id: 'cash-settlements',
       label: 'रोख संकलन व भरणा हिशोब',
       icon: Wallet,

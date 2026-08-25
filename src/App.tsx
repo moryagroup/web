@@ -226,6 +226,7 @@ import { CashSettlementsView } from './components/CashSettlementsView';
 import { ProfileView } from './components/ProfileView';
 import { MonthWiseReportsView } from './components/MonthWiseReportsView';
 import { AllYearsDataView } from './components/AllYearsDataView';
+import { DailyTransactionsView } from './components/DailyTransactionsView';
 import { CoreSummaryView } from './components/CoreSummaryView';
 import { SuggestionsView } from './components/SuggestionsView';
 import { PollsView } from './components/PollsView';
@@ -1809,6 +1810,18 @@ export default function App() {
                 onDeleteExpense={handleDeleteExpense}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onOpenLogin={() => setIsLoginModalOpen(true)}
+              />
+            )}
+
+            {activeTab === 'daily-transactions' && (
+              <DailyTransactionsView
+                incomes={formattedIncomes}
+                expenses={formattedExpenses}
+                members={members}
+                currentUser={currentUser}
+                selectedYear={selectedYear}
+                groupLogo={groupLogo}
+                onNavigate={(tab) => setActiveTab(tab)}
               />
             )}
 
