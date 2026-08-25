@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { IncomeTransaction, ExpenseTransaction, Member, CurrentUser } from '../types';
 import { convertEnglishToMarathiDigits } from '../utils/dateUtils';
 import { formatCompactReceiptDisplay } from '../utils/physicalReceiptUtils';
+import { isBadgedMember, canApproveFinancialTransactions, hasFullFinancialAccess } from '../utils/rbac';
 import {
   Calendar,
   ChevronLeft,
@@ -21,6 +22,8 @@ import {
   Filter,
   RefreshCw,
   FileSpreadsheet,
+  Users,
+  User,
 } from 'lucide-react';
 import moryaLogo from '../assets/morya_logo.jpg';
 
@@ -60,6 +63,34 @@ export const DailyTransactionsView: React.FC<DailyTransactionsViewProps> = ({
   groupLogo,
   onNavigate,
 }) => {
+  // Identify logged in member
+  const currentMember = useMemo(() => {
+    if (!currentUser?.name) return null;
+    const nameNorm = currentUser.name.trim().toLowerCase();
+    return members.find(
+      (m) =>
+        m.fullName.trim().toLowerCase() === nameNorm ||
+        (currentUser.phone && m.phone === currentUser.phone)
+    );
+  }, [members, currentUser]);
+
+  // Committee members (पदाधिकारी / Admin) can see all transactions and toggle between All and My/Member.
+  // Regular members can only see their own transactions.
+  const isCommitteeMember = currentUser?.isLoggedIn
+    ? isBadgedMember(currentUser.role) ||
+      (currentMember && isBadgedMember(currentMember.designation)) ||
+      canApproveFinancialTransactions(currentUser.role) ||
+      hasFullFinancialAccess(currentUser.role)
+    : false;
+
+  // Scope filter: 'ALL' (सर्व व्यवहार) or 'MY' (माझे व्यवहार) or specific member ID
+  const [scopeFilter, setScopeFilter] = useState<'ALL' | 'MY' | string>(
+    isCommitteeMember ? 'ALL' : 'MY'
+  );
+
+  // Active scope is strictly forced to 'MY' if user is not a committee member
+  const activeScope = isCommitteeMember ? scopeFilter : 'MY';
+
   // Default to today's date YYYY-MM-DD
   const todayStr = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
@@ -79,18 +110,60 @@ export const DailyTransactionsView: React.FC<DailyTransactionsViewProps> = ({
     setSelectedDate(d.toISOString().split('T')[0]);
   };
 
-  // Filter transactions for selected date
+  const userNameNorm = (currentUser?.name || '').trim().toLowerCase();
+
+  // Filter transactions for selected date & active scope
   const dailyIncomes = useMemo(() => {
-    return incomes.filter(
-      (i) => i.approvalStatus !== 'रद्द' && i.transactionDate === selectedDate
-    );
-  }, [incomes, selectedDate]);
+    return incomes.filter((i) => {
+      if (i.approvalStatus === 'रद्द') return false;
+      if (i.transactionDate !== selectedDate) return false;
+
+      if (activeScope === 'ALL') return true;
+
+      if (activeScope === 'MY') {
+        const isLinkedMember = currentMember && i.linkedMemberId === currentMember.id;
+        const isCashReceiver = currentMember && i.cashReceiverMemberId === currentMember.id;
+        const isDepositor = (i.depositorName || '').trim().toLowerCase().includes(userNameNorm);
+        const isCreator = (i.createdBy || '').trim().toLowerCase().includes(userNameNorm);
+        return isLinkedMember || isCashReceiver || isDepositor || isCreator;
+      }
+
+      // If activeScope is a specific memberId
+      const targetMember = members.find((m) => m.id === activeScope);
+      const targetName = (targetMember?.fullName || '').trim().toLowerCase();
+      const isLinked = i.linkedMemberId === activeScope;
+      const isCashRec = i.cashReceiverMemberId === activeScope;
+      const isDep = targetName ? (i.depositorName || '').trim().toLowerCase().includes(targetName) : false;
+      const isCre = targetName ? (i.createdBy || '').trim().toLowerCase().includes(targetName) : false;
+      return isLinked || isCashRec || isDep || isCre;
+    });
+  }, [incomes, selectedDate, activeScope, currentMember, userNameNorm, members]);
 
   const dailyExpenses = useMemo(() => {
-    return expenses.filter(
-      (e) => e.approvalStatus !== 'रद्द' && e.expenseDate === selectedDate
-    );
-  }, [expenses, selectedDate]);
+    return expenses.filter((e) => {
+      if (e.approvalStatus === 'रद्द') return false;
+      if (e.expenseDate !== selectedDate) return false;
+
+      if (activeScope === 'ALL') return true;
+
+      if (activeScope === 'MY') {
+        const isLinkedMember = currentMember && (e.linkedMemberId === currentMember.id || e.paidByMemberId === currentMember.id);
+        const isPaidBy = (e.paidByMemberName || '').trim().toLowerCase().includes(userNameNorm);
+        const isRecipient = (e.recipientName || '').trim().toLowerCase().includes(userNameNorm);
+        const isCreator = (e.createdBy || '').trim().toLowerCase().includes(userNameNorm);
+        return isLinkedMember || isPaidBy || isRecipient || isCreator;
+      }
+
+      // If activeScope is a specific memberId
+      const targetMember = members.find((m) => m.id === activeScope);
+      const targetName = (targetMember?.fullName || '').trim().toLowerCase();
+      const isLinked = e.linkedMemberId === activeScope || e.paidByMemberId === activeScope;
+      const isPaid = targetName ? (e.paidByMemberName || '').trim().toLowerCase().includes(targetName) : false;
+      const isRec = targetName ? (e.recipientName || '').trim().toLowerCase().includes(targetName) : false;
+      const isCre = targetName ? (e.createdBy || '').trim().toLowerCase().includes(targetName) : false;
+      return isLinked || isPaid || isRec || isCre;
+    });
+  }, [expenses, selectedDate, activeScope, currentMember, userNameNorm, members]);
 
   // Combine into unified timeline
   const combinedTransactions = useMemo<CombinedTransactionItem[]>(() => {
@@ -345,6 +418,78 @@ export const DailyTransactionsView: React.FC<DailyTransactionsViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Scope Filter (Only for Committee Members: All vs My vs Member filter; Regular members see personal notice) */}
+      {isCommitteeMember ? (
+        <div className="bg-amber-50/80 dark:bg-slate-800/90 p-3.5 rounded-2xl border border-amber-200 dark:border-amber-700/60 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
+              <Filter className="w-4 h-4 text-amber-600" />
+              <span>व्यवहार व्याप्ती (Scope):</span>
+            </span>
+            <div className="inline-flex bg-white dark:bg-slate-700 p-1 rounded-xl border border-amber-200 dark:border-slate-600 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setScopeFilter('ALL')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  scopeFilter === 'ALL'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>सर्व व्यवहार (All Transactions)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setScopeFilter('MY')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  scopeFilter === 'MY'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>माझे व्यवहार (My Transactions)</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-amber-950 dark:text-amber-200 whitespace-nowrap">
+              विशिष्ट सभासद:
+            </label>
+            <select
+              value={scopeFilter === 'ALL' || scopeFilter === 'MY' ? '' : scopeFilter}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setScopeFilter(e.target.value);
+                } else {
+                  setScopeFilter('ALL');
+                }
+              }}
+              className="px-3 py-1.5 bg-white dark:bg-slate-700 border border-amber-300 dark:border-slate-600 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
+            >
+              <option value="">-- सर्व सभासद --</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.memberCode} - {m.fullName} {m.designation ? `(${m.designation})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-blue-50 dark:bg-blue-950/40 p-3 rounded-2xl border border-blue-200 dark:border-blue-700 text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="p-1 bg-blue-600 text-white rounded-lg text-xs">👤</span>
+            <span>तुम्ही फक्त तुमचे स्वतःचे दैनिक व्यवहार पाहत आहात (My Transactions Only).</span>
+          </div>
+          <span className="text-[11px] text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/60 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-800">
+            {currentUser?.name || 'सभासद'}
+          </span>
+        </div>
+      )}
 
       {/* Filter & Search Toolbar */}
       <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-3">
