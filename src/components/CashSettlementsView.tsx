@@ -43,6 +43,15 @@ import {
   Upload,
   Trash2,
   RefreshCw,
+  BookOpen,
+  Share2,
+  Printer,
+  ChevronRight,
+  Eye,
+  Filter,
+  ArrowUpCircle,
+  Download,
+  ArrowUpDown,
 } from 'lucide-react';
 
 interface CashSettlementsViewProps {
@@ -139,6 +148,14 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
   const [debitError, setDebitError] = useState<string | null>(null);
   const [debitSuccessMsg, setDebitSuccessMsg] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Member Daily Cash Passbook Modal State
+  const [dailyPassbookMember, setDailyPassbookMember] = useState<Member | null>(null);
+  const [passbookTypeFilter, setPassbookTypeFilter] = useState<'ALL' | 'INCOME' | 'SETTLE' | 'DEBIT'>('ALL');
+  const [passbookDateFilter, setPassbookDateFilter] = useState<string>('');
+  const [passbookSearch, setPassbookSearch] = useState<string>('');
+  const [passbookSortOrder, setPassbookSortOrder] = useState<'DESC' | 'ASC'>('DESC');
+  const [passbookCopied, setPassbookCopied] = useState<boolean>(false);
 
   const handleManualSync = async () => {
     setIsSyncing(true);
@@ -396,6 +413,313 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
       pendingApprovalsList,
     };
   }, [members, incomes, expenses, filteredIncomesByYear, filteredExpensesByYear, cashSettlements, activeYear, searchQuery, isCommittee, isTreasurerOrVice, loggedMember, currentUser]);
+
+  // Compute Daily Chronological Cash Ledger for Selected Member (Passbook)
+  const memberDailyLedger = useMemo(() => {
+    if (!dailyPassbookMember) return { entries: [], filteredEntries: [], stats: null };
+    const m = dailyPassbookMember;
+    const stats = memberCashStats.memberMap[m.id] || {
+      openingCashBalance: 0,
+      cashReceived: 0,
+      totalAvailableCash: 0,
+      cashSettled: 0,
+      cashDebited: 0,
+      netCashInHand: 0,
+      pendingSettlement: 0,
+      pendingCount: 0,
+    };
+
+    // Prior transactions for Opening Balance if activeYear !== 'ALL'
+    const priorIncomes =
+      activeYear === 'ALL'
+        ? []
+        : incomes.filter((i) =>
+            isDateBeforeSelectedYear(i.transactionDate, activeYear, i.financialYear)
+          );
+    const priorSettlements =
+      activeYear === 'ALL'
+        ? []
+        : (cashSettlements || []).filter((s) =>
+            isDateBeforeSelectedYear(s.depositDate, activeYear, s.financialYear)
+          );
+    const priorExpenses =
+      activeYear === 'ALL'
+        ? []
+        : expenses.filter((e) =>
+            isDateBeforeSelectedYear(e.expenseDate, activeYear, e.financialYear)
+          );
+
+    const priorReceived = priorIncomes
+      .filter(
+        (i) =>
+          i.paymentMethod === 'रोख' &&
+          i.approvalStatus !== 'रद्द' &&
+          (i.cashReceiverMemberId === m.id ||
+            (i.cashReceiverName && i.cashReceiverName.trim().toLowerCase() === m.fullName.trim().toLowerCase()))
+      )
+      .reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+
+    const priorSettled = priorSettlements
+      .filter((s) => s.memberId === m.id && s.approvalStatus === 'मंजूर')
+      .reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+
+    const priorDebited = priorExpenses
+      .filter(
+        (e) =>
+          e.paymentMethod === 'रोख' &&
+          e.approvalStatus !== 'रद्द' &&
+          (e.paidByMemberId === m.id ||
+            (e.paidByMemberName && e.paidByMemberName.trim().toLowerCase() === m.fullName.trim().toLowerCase()))
+      )
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    const openingCash = Math.max(0, priorReceived - priorSettled - priorDebited);
+
+    // Current year transactions:
+    const currentIncomes = filteredIncomesByYear.filter(
+      (i) =>
+        i.paymentMethod === 'रोख' &&
+        i.approvalStatus !== 'रद्द' &&
+        (i.cashReceiverMemberId === m.id ||
+          (i.cashReceiverName && i.cashReceiverName.trim().toLowerCase() === m.fullName.trim().toLowerCase()))
+    );
+
+    const settlementsList = cashSettlements || [];
+    const currentSettlements = (activeYear === 'ALL'
+      ? settlementsList
+      : settlementsList.filter((s) => isDateInSelectedYear(s.depositDate, activeYear, s.financialYear))
+    ).filter((s) => s.memberId === m.id);
+
+    const currentDebits = filteredExpensesByYear.filter(
+      (e) =>
+        e.paymentMethod === 'रोख' &&
+        e.approvalStatus !== 'रद्द' &&
+        (e.paidByMemberId === m.id ||
+          (e.paidByMemberName && e.paidByMemberName.trim().toLowerCase() === m.fullName.trim().toLowerCase()))
+    );
+
+    interface DailyLedgerEntry {
+      id: string;
+      date: string;
+      rawDate: string;
+      type: 'INCOME' | 'SETTLE' | 'DEBIT' | 'OPENING';
+      title: string;
+      category: string;
+      refNo: string;
+      notes?: string;
+      proofUrl?: string;
+      amount: number;
+      signedAmount: number;
+      status?: string;
+      runningBalance: number;
+      extraInfo?: string;
+    }
+
+    const rawEntries: Omit<DailyLedgerEntry, 'runningBalance'>[] = [];
+
+    currentIncomes.forEach((i) => {
+      rawEntries.push({
+        id: `inc-${i.id}`,
+        date: i.transactionDate,
+        rawDate: i.transactionDate,
+        type: 'INCOME',
+        title: i.depositorName || 'वर्गणी / देणगीदार',
+        category: i.incomeType || 'रोख संकलन',
+        refNo: i.receiptNumber || i.transactionNo || i.id,
+        notes: i.notes || i.reason,
+        proofUrl: i.attachmentUrl,
+        amount: Number(i.amount) || 0,
+        signedAmount: Number(i.amount) || 0,
+        status: i.approvalStatus,
+        extraInfo: i.receiptBookNo ? `पावती पुस्तक क्र. ${i.receiptBookNo}` : undefined,
+      });
+    });
+
+    currentSettlements.forEach((s) => {
+      const isApproved = s.approvalStatus === 'मंजूर';
+      rawEntries.push({
+        id: `set-${s.id}`,
+        date: s.depositDate,
+        rawDate: s.depositDate,
+        type: 'SETTLE',
+        title: `बँक भरणा (${s.destination})`,
+        category: 'बँक/ट्रस्ट भरणा',
+        refNo: s.bankRefNo && s.bankRefNo !== 'नमूद नाही' ? s.bankRefNo : (s.settlementNo || s.id),
+        notes: s.notes,
+        proofUrl: s.slipPhotoUrl,
+        amount: Number(s.amount) || 0,
+        signedAmount: isApproved ? -(Number(s.amount) || 0) : 0,
+        status: s.approvalStatus,
+        extraInfo: isApproved ? `मंजूर (Approved by ${s.approvedBy || 'खजिनदार'})` : `मंजुरी प्रलंबित (Pending Approval)`,
+      });
+    });
+
+    currentDebits.forEach((e) => {
+      rawEntries.push({
+        id: `deb-${e.id}`,
+        date: e.expenseDate,
+        rawDate: e.expenseDate,
+        type: 'DEBIT',
+        title: `खर्च: ${e.recipientName || 'अधिकृत खर्च'}`,
+        category: e.expenseCategory,
+        refNo: e.billNumber || e.transactionNo || e.id,
+        notes: e.notes || e.reason,
+        proofUrl: e.attachmentUrl,
+        amount: Number(e.amount) || 0,
+        signedAmount: -(Number(e.amount) || 0),
+        status: e.approvalStatus,
+        extraInfo: e.reason ? e.reason : undefined,
+      });
+    });
+
+    // Sort chronologically ascending to compute accurate running balance
+    rawEntries.sort((a, b) => a.rawDate.localeCompare(b.rawDate));
+
+    let running = openingCash;
+    const computedEntries: DailyLedgerEntry[] = [];
+
+    if (activeYear !== 'ALL' && openingCash > 0) {
+      computedEntries.push({
+        id: 'opening-balance-entry',
+        date: `${activeYear} वर्षारंभी शिल्लक`,
+        rawDate: '0000-00-00',
+        type: 'OPENING',
+        title: 'मागील वर्षातून पुढे आणलेली शिल्लक (Opening Cash Balance)',
+        category: 'Opening Carryforward',
+        refNo: 'CARRYFORWARD',
+        amount: openingCash,
+        signedAmount: openingCash,
+        runningBalance: openingCash,
+      });
+    }
+
+    rawEntries.forEach((entry) => {
+      running += entry.signedAmount;
+      computedEntries.push({
+        ...entry,
+        runningBalance: Math.max(0, running),
+      });
+    });
+
+    // Apply type filter, date filter, search, and sort order for display
+    let filtered = [...computedEntries];
+
+    if (passbookTypeFilter === 'INCOME') {
+      filtered = filtered.filter((e) => e.type === 'INCOME' || e.type === 'OPENING');
+    } else if (passbookTypeFilter === 'SETTLE') {
+      filtered = filtered.filter((e) => e.type === 'SETTLE');
+    } else if (passbookTypeFilter === 'DEBIT') {
+      filtered = filtered.filter((e) => e.type === 'DEBIT');
+    }
+
+    if (passbookDateFilter) {
+      filtered = filtered.filter((e) => e.rawDate.startsWith(passbookDateFilter) || e.date.includes(passbookDateFilter));
+    }
+
+    if (passbookSearch.trim()) {
+      const q = passbookSearch.toLowerCase();
+      filtered = filtered.filter(
+        (e) =>
+          e.title.toLowerCase().includes(q) ||
+          e.category.toLowerCase().includes(q) ||
+          e.refNo.toLowerCase().includes(q) ||
+          (e.notes && e.notes.toLowerCase().includes(q))
+      );
+    }
+
+    if (passbookSortOrder === 'DESC') {
+      filtered.reverse();
+    }
+
+    return {
+      entries: computedEntries,
+      filteredEntries: filtered,
+      stats: {
+        openingCash,
+        totalReceived: currentIncomes.reduce((s, i) => s + (Number(i.amount) || 0), 0),
+        totalSettled: currentSettlements.filter(s => s.approvalStatus === 'मंजूर').reduce((s, item) => s + (Number(item.amount) || 0), 0),
+        totalDebited: currentDebits.reduce((s, e) => s + (Number(e.amount) || 0), 0),
+        netInHand: Math.max(0, running),
+        pendingSettlementsCount: currentSettlements.filter(s => s.approvalStatus === 'प्रलंबित').length,
+        pendingSettlementsAmount: currentSettlements.filter(s => s.approvalStatus === 'प्रलंबित').reduce((s, item) => s + (Number(item.amount) || 0), 0),
+      }
+    };
+  }, [
+    dailyPassbookMember,
+    incomes,
+    expenses,
+    cashSettlements,
+    filteredIncomesByYear,
+    filteredExpensesByYear,
+    activeYear,
+    memberCashStats,
+    passbookTypeFilter,
+    passbookDateFilter,
+    passbookSearch,
+    passbookSortOrder,
+  ]);
+
+  // Share Daily Passbook Statement via WhatsApp
+  const handleShareDailyPassbookWhatsApp = () => {
+    if (!dailyPassbookMember || !memberDailyLedger.stats) return;
+    const m = dailyPassbookMember;
+    const st = memberDailyLedger.stats;
+
+    let text = `🚩 *मोरया ग्रुप मित्र मंडळ (ट्रस्ट)* 🚩\n`;
+    text += `*दैनिक रोख हिशोब व व्यवहार पासबुक (Cash Ledger)*\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `👤 *सभासद:* ${m.fullName} (${m.designation || 'सभासद'})\n`;
+    text += `🏷️ *कोड:* ${m.memberCode} | 📱 *मो:* ${m.phone}\n`;
+    text += `📅 *आर्थिक वर्ष:* ${activeYear}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    if (st.openingCash > 0) {
+      text += `१️⃣ मागील वर्षाची शिल्लक: ₹${st.openingCash.toLocaleString('en-IN')}\n`;
+    }
+    text += `२️⃣ एकूण स्वीकारलेली रोख: +₹${st.totalReceived.toLocaleString('en-IN')}\n`;
+    text += `३️⃣ बँकेत/ट्रस्टकडे भरणा: -₹${st.totalSettled.toLocaleString('en-IN')}\n`;
+    text += `४️⃣ रोखीतून केलेला खर्च: -₹${st.totalDebited.toLocaleString('en-IN')}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `💰 *निव्वळ शिल्लक रोख रक्कम: ₹${st.netInHand.toLocaleString('en-IN')}* 💰\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    text += `📋 *दैनिक व्यवहारांचा तपशील (${memberDailyLedger.entries.length} नोंदी):*\n`;
+    const recent = [...memberDailyLedger.entries].reverse().slice(0, 15);
+    recent.forEach((item, idx) => {
+      const sign = item.type === 'INCOME' || item.type === 'OPENING' ? '🟢 +' : '🔴 -';
+      text += `${idx + 1}. [${item.date}] ${sign}₹${item.amount.toLocaleString('en-IN')} - ${item.title} (${item.category})\n`;
+    });
+
+    text += `\n🔗 *अधिक माहितीसाठी ॲपमध्ये पहा:*\n${window.location.origin}`;
+
+    const cleanPhone = m.phone ? '91' + m.phone.replace(/\D/g, '').slice(-10) : '';
+    const url = cleanPhone
+      ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`
+      : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
+  // Copy Daily Passbook Text to Clipboard
+  const handleCopyDailyPassbook = () => {
+    if (!dailyPassbookMember || !memberDailyLedger.stats) return;
+    const m = dailyPassbookMember;
+    const st = memberDailyLedger.stats;
+
+    let text = `🚩 मोरया ग्रुप मित्र मंडळ (ट्रस्ट) 🚩\n`;
+    text += `दैनिक रोख हिशोब व व्यवहार पासबुक\n`;
+    text += `सभासद: ${m.fullName} (${m.designation || 'सभासद'}) | कोड: ${m.memberCode}\n`;
+    text += `वर्ष: ${activeYear}\n`;
+    text += `----------------------------------------\n`;
+    if (st.openingCash > 0) text += `१. मागील शिल्लक: ₹${st.openingCash.toLocaleString('en-IN')}\n`;
+    text += `२. स्वीकारलेली रोख: +₹${st.totalReceived.toLocaleString('en-IN')}\n`;
+    text += `३. बँक भरणा: -₹${st.totalSettled.toLocaleString('en-IN')}\n`;
+    text += `४. रोख खर्च: -₹${st.totalDebited.toLocaleString('en-IN')}\n`;
+    text += `५. निव्वळ शिल्लक रोख: ₹${st.netInHand.toLocaleString('en-IN')}\n`;
+    text += `----------------------------------------\n`;
+
+    navigator.clipboard.writeText(text);
+    setPassbookCopied(true);
+    setTimeout(() => setPassbookCopied(false), 2000);
+  };
 
   // Open Deposit Modal
   const handleOpenAddSettlement = (memberId?: string) => {
@@ -1046,32 +1370,80 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
 
                     <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700/60 space-y-1.5 text-xs">
                       {activeYear !== 'ALL' && (
-                        <div className="flex justify-between items-center bg-amber-50/80 dark:bg-amber-950/30 px-2 py-1 rounded-lg border border-amber-200/60 dark:border-amber-800/40">
+                        <div
+                          onClick={() => {
+                            setDailyPassbookMember(item.member);
+                            setPassbookTypeFilter('ALL');
+                            setPassbookDateFilter('');
+                            setPassbookSearch('');
+                          }}
+                          className="flex justify-between items-center bg-amber-50/80 dark:bg-amber-950/30 px-2 py-1 rounded-lg border border-amber-200/60 dark:border-amber-800/40 cursor-pointer hover:bg-amber-100/80 transition-colors"
+                          title="मागील वर्षाची शिल्लक तपशील पहा"
+                        >
                           <span className="text-amber-800 dark:text-amber-300 font-bold">१. मागील वर्षाची शिल्लक (Opening):</span>
                           <span className="font-black text-amber-900 dark:text-amber-200">
                             ₹{item.openingCashBalance.toLocaleString('en-IN')}
                           </span>
                         </div>
                       )}
-                      <div className="flex justify-between px-1">
-                        <span className="text-slate-500 dark:text-slate-400">२. चालू वर्षात स्वीकारलेली रोख:</span>
-                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                      <div
+                        onClick={() => {
+                          setDailyPassbookMember(item.member);
+                          setPassbookTypeFilter('INCOME');
+                          setPassbookDateFilter('');
+                          setPassbookSearch('');
+                        }}
+                        className="flex justify-between px-1.5 py-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                        title="स्वीकारलेल्या रोख रकमेचा तपशील पहा"
+                      >
+                        <span className="text-slate-600 dark:text-slate-300">२. चालू वर्षात स्वीकारलेली रोख:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
                           ₹{item.cashReceived.toLocaleString('en-IN')}
+                          <ChevronRight className="w-3 h-3 text-slate-400" />
                         </span>
                       </div>
-                      <div className="flex justify-between px-1">
-                        <span className="text-slate-500 dark:text-slate-400">३. बँकेत/ट्रस्टकडे जमा (भरणा):</span>
-                        <span className="font-bold text-blue-600 dark:text-blue-400">
+                      <div
+                        onClick={() => {
+                          setDailyPassbookMember(item.member);
+                          setPassbookTypeFilter('SETTLE');
+                          setPassbookDateFilter('');
+                          setPassbookSearch('');
+                        }}
+                        className="flex justify-between px-1.5 py-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                        title="बँक भरणा इतिहास पहा"
+                      >
+                        <span className="text-slate-600 dark:text-slate-300">३. बँकेत/ट्रस्टकडे जमा (भरणा):</span>
+                        <span className="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
                           - ₹{item.cashSettled.toLocaleString('en-IN')}
+                          <ChevronRight className="w-3 h-3 text-blue-400" />
                         </span>
                       </div>
-                      <div className="flex justify-between px-1">
-                        <span className="text-slate-500 dark:text-slate-400">४. रोखीतून केलेला खर्च (Audit Debit):</span>
-                        <span className="font-bold text-rose-600 dark:text-rose-400">
+                      <div
+                        onClick={() => {
+                          setDailyPassbookMember(item.member);
+                          setPassbookTypeFilter('DEBIT');
+                          setPassbookDateFilter('');
+                          setPassbookSearch('');
+                        }}
+                        className="flex justify-between px-1.5 py-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                        title="रोखीतून केलेल्या खर्चाचा तपशील पहा"
+                      >
+                        <span className="text-slate-600 dark:text-slate-300">४. रोखीतून केलेला खर्च (Audit Debit):</span>
+                        <span className="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
                           - ₹{item.cashDebited.toLocaleString('en-IN')}
+                          <ChevronRight className="w-3 h-3 text-rose-400" />
                         </span>
                       </div>
-                      <div className="pt-1.5 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-sm font-black px-1">
+                      <div
+                        onClick={() => {
+                          setDailyPassbookMember(item.member);
+                          setPassbookTypeFilter('ALL');
+                          setPassbookDateFilter('');
+                          setPassbookSearch('');
+                        }}
+                        className="pt-1.5 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center text-sm font-black px-1.5 py-0.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/30 cursor-pointer transition-colors"
+                        title="संपूर्ण दैनिक रोख पासबूक उघडा"
+                      >
                         <span className="text-emerald-800 dark:text-emerald-300">५. शिल्लक रोख रक्कम (Net in Hand):</span>
                         <span className="text-emerald-600 dark:text-emerald-400">
                           ₹{item.netCashInHand.toLocaleString('en-IN')}
@@ -1085,23 +1457,40 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex gap-2">
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex flex-col gap-2">
+                    {/* Primary Button: Daily Transaction Ledger / Passbook */}
                     <button
                       type="button"
-                      onClick={() => handleOpenAddSettlement(item.member.id)}
-                      className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
+                      onClick={() => {
+                        setDailyPassbookMember(item.member);
+                        setPassbookTypeFilter('ALL');
+                        setPassbookDateFilter('');
+                        setPassbookSearch('');
+                      }}
+                      className="w-full py-2 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:from-slate-800 hover:to-slate-700 text-amber-300 font-black text-xs rounded-xl shadow flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 border border-amber-500/30"
                     >
-                      <Landmark className="w-3.5 h-3.5" />
-                      <span>बँक भरणा</span>
+                      <BookOpen className="w-4 h-4 text-amber-400" />
+                      <span>📋 दैनिक रोख व्यवहार (Daily Passbook)</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenAddDebit(item.member.id)}
-                      className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
-                    >
-                      <ReceiptIndianRupee className="w-3.5 h-3.5" />
-                      <span>रोखीतून खर्च</span>
-                    </button>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenAddSettlement(item.member.id)}
+                        className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
+                      >
+                        <Landmark className="w-3.5 h-3.5" />
+                        <span>बँक भरणा</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenAddDebit(item.member.id)}
+                        className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1 cursor-pointer transition-all active:scale-95"
+                      >
+                        <ReceiptIndianRupee className="w-3.5 h-3.5" />
+                        <span>रोखीतून खर्च</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1808,6 +2197,420 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Member Daily Cash Passbook Modal ─── */}
+      {dailyPassbookMember && memberDailyLedger.stats && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-700">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-12 h-12 rounded-2xl border-2 border-amber-400 p-0.5 bg-slate-950 flex items-center justify-center text-amber-300 font-bold text-sm shrink-0 shadow">
+                  {dailyPassbookMember.photoUrl ? (
+                    <img
+                      src={dailyPassbookMember.photoUrl}
+                      alt={dailyPassbookMember.fullName}
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                  ) : (
+                    dailyPassbookMember.fullName.slice(0, 2)
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2 py-0.5 bg-amber-400/20 text-amber-300 border border-amber-400/40 rounded-md font-mono font-black text-[11px]">
+                      {dailyPassbookMember.memberCode}
+                    </span>
+                    <span className="px-2.5 py-0.5 bg-slate-800 text-slate-200 border border-slate-700 rounded-md font-bold text-[11px]">
+                      {dailyPassbookMember.designation || 'सभासद'}
+                    </span>
+                    <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-md font-bold text-[11px]">
+                      वर्ष: {activeYear}
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black text-white mt-1 truncate">
+                    {dailyPassbookMember.fullName} - दैनिक रोख पासबुक
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    मो: {dailyPassbookMember.phone || 'नमूद नाही'} | एकूण {memberDailyLedger.entries.length} रोख व्यवहार नोंदी
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons: WhatsApp Share, Copy, Close */}
+              <div className="flex items-center gap-2 self-end sm:self-center shrink-0 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleShareDailyPassbookWhatsApp}
+                  className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
+                  title="व्हॉट्सॲपवर पाठवा"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">व्हॉट्सॲप</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopyDailyPassbook}
+                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow transition-all active:scale-95"
+                  title="हिशोब कॉपी करा"
+                >
+                  {passbookCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <BookOpen className="w-3.5 h-3.5" />}
+                  <span>{passbookCopied ? 'कॉपी झाले!' : 'कॉपी'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDailyPassbookMember(null)}
+                  className="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl cursor-pointer transition-colors"
+                  title="बंद करा"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+              {/* Summary 5-Box Metric Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+                {activeYear !== 'ALL' && (
+                  <div className="bg-amber-50/90 dark:bg-amber-950/30 p-3 rounded-2xl border border-amber-200 dark:border-amber-800/50">
+                    <p className="text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider">
+                      १. मागील शिल्लक (Opening)
+                    </p>
+                    <p className="text-base font-black text-amber-900 dark:text-amber-200 mt-0.5">
+                      ₹{memberDailyLedger.stats.openingCash.toLocaleString('en-IN')}
+                    </p>
+                    <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
+                      मागील वर्षाची शिल्लक
+                    </p>
+                  </div>
+                )}
+
+                <div className="bg-emerald-50/90 dark:bg-emerald-950/30 p-3 rounded-2xl border border-emerald-200 dark:border-emerald-800/50">
+                  <p className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                    २. स्वीकारलेली रोख (+)
+                  </p>
+                  <p className="text-base font-black text-emerald-700 dark:text-emerald-300 mt-0.5">
+                    + ₹{memberDailyLedger.stats.totalReceived.toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    चालू वर्षात जमा
+                  </p>
+                </div>
+
+                <div className="bg-blue-50/90 dark:bg-blue-950/30 p-3 rounded-2xl border border-blue-200 dark:border-blue-800/50">
+                  <p className="text-[10px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider">
+                    ३. बँकेत/ट्रस्टकडे भरणा (-)
+                  </p>
+                  <p className="text-base font-black text-blue-700 dark:text-blue-300 mt-0.5">
+                    - ₹{memberDailyLedger.stats.totalSettled.toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-0.5">
+                    {memberDailyLedger.stats.pendingSettlementsCount > 0 ? `(₹${memberDailyLedger.stats.pendingSettlementsAmount.toLocaleString('en-IN')} प्रलंबित)` : 'मंजूर भरणा'}
+                  </p>
+                </div>
+
+                <div className="bg-rose-50/90 dark:bg-rose-950/30 p-3 rounded-2xl border border-rose-200 dark:border-rose-800/50">
+                  <p className="text-[10px] font-bold text-rose-800 dark:text-rose-300 uppercase tracking-wider">
+                    ४. रोखीतून खर्च (-)
+                  </p>
+                  <p className="text-base font-black text-rose-700 dark:text-rose-300 mt-0.5">
+                    - ₹{memberDailyLedger.stats.totalDebited.toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-[10px] text-rose-600 dark:text-rose-400 mt-0.5">
+                    ऑडिट व्हाऊचर्स
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-3 rounded-2xl shadow col-span-2 sm:col-span-1 border border-emerald-500">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-emerald-100">
+                    ५. शिल्लक रोख रक्कम
+                  </p>
+                  <p className="text-lg font-black text-white mt-0.5">
+                    ₹{memberDailyLedger.stats.netInHand.toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-[10px] text-emerald-200 mt-0.5">
+                    हातातील निव्वळ रोख
+                  </p>
+                </div>
+              </div>
+
+              {/* Filter Controls Strip */}
+              <div className="bg-slate-50 dark:bg-slate-800/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3">
+                {/* Type Filter Buttons */}
+                <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto pb-1 md:pb-0">
+                  <button
+                    type="button"
+                    onClick={() => setPassbookTypeFilter('ALL')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      passbookTypeFilter === 'ALL'
+                        ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow'
+                        : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
+                    }`}
+                  >
+                    सर्व नोंदी ({memberDailyLedger.entries.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPassbookTypeFilter('INCOME')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      passbookTypeFilter === 'INCOME'
+                        ? 'bg-emerald-600 text-white shadow'
+                        : 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50'
+                    }`}
+                  >
+                    <span>🟢 स्वीकारलेली रोख</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPassbookTypeFilter('SETTLE')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      passbookTypeFilter === 'SETTLE'
+                        ? 'bg-blue-600 text-white shadow'
+                        : 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50'
+                    }`}
+                  >
+                    <span>🔵 बँक भरणा</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPassbookTypeFilter('DEBIT')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      passbookTypeFilter === 'DEBIT'
+                        ? 'bg-rose-600 text-white shadow'
+                        : 'bg-white dark:bg-slate-700 text-rose-700 dark:text-rose-300 hover:bg-rose-50'
+                    }`}
+                  >
+                    <span>🔴 रोख खर्च</span>
+                  </button>
+                </div>
+
+                {/* Search, Date Filter & Sort */}
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <div className="relative flex-1 sm:w-44">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={passbookSearch}
+                      onChange={(e) => setPassbookSearch(e.target.value)}
+                      placeholder="शोध (पावती, नाव)..."
+                      className="w-full pl-8 pr-2.5 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+
+                  <input
+                    type="date"
+                    value={passbookDateFilter}
+                    onChange={(e) => setPassbookDateFilter(e.target.value)}
+                    className="px-2 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-amber-500"
+                    title="विशिष्ट तारखेनुसार फिल्टर करा"
+                  />
+
+                  {passbookDateFilter && (
+                    <button
+                      type="button"
+                      onClick={() => setPassbookDateFilter('')}
+                      className="p-1.5 bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-200 rounded-xl text-xs"
+                      title="तारीख फिल्टर काढा"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setPassbookSortOrder(passbookSortOrder === 'DESC' ? 'ASC' : 'DESC')}
+                    className="p-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-xl text-xs flex items-center gap-1 shrink-0"
+                    title={passbookSortOrder === 'DESC' ? 'नवीनतम प्रथम (Newest First)' : 'सुरुवातीपासून (Oldest First)'}
+                  >
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{passbookSortOrder === 'DESC' ? 'नवीनतम' : 'सुरुवातीपासून'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Transactions Chronological Table */}
+              {memberDailyLedger.filteredEntries.length === 0 ? (
+                <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+                  <div className="w-12 h-12 bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                    कोणत्याही नोंदी आढळल्या नाहीत
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    निवडलेल्या फिल्टरनुसार कोणताही रोख जमा, भरणा किंवा खर्चाचा व्यवहार सापडला नाही.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-slate-100 dark:bg-slate-700/60 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 uppercase tracking-wider text-[10px] font-black">
+                          <th className="py-3 px-3.5">दिनांक (Date)</th>
+                          <th className="py-3 px-3">प्रकार (Type)</th>
+                          <th className="py-3 px-3.5">तपशील व संदर्भ (Details & Ref)</th>
+                          <th className="py-3 px-3 text-center">पुरावा (Proof)</th>
+                          <th className="py-3 px-3.5 text-right">व्यवहार रक्कम (Amount)</th>
+                          <th className="py-3 px-3.5 text-right">रनिंग शिल्लक (Running Balance)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                        {memberDailyLedger.filteredEntries.map((item) => (
+                          <tr
+                            key={item.id}
+                            className="hover:bg-slate-50/80 dark:hover:bg-slate-750 transition-colors"
+                          >
+                            {/* Date */}
+                            <td className="py-3 px-3.5 whitespace-nowrap font-bold text-slate-700 dark:text-slate-300">
+                              {item.date}
+                            </td>
+
+                            {/* Type Badge */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              {item.type === 'OPENING' && (
+                                <span className="px-2 py-0.5 bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800 rounded-md font-black text-[10px]">
+                                  मागील शिल्लक
+                                </span>
+                              )}
+                              {item.type === 'INCOME' && (
+                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 rounded-md font-black text-[10px] flex items-center gap-1 w-fit">
+                                  <ArrowDownCircle className="w-3 h-3 text-emerald-600" />
+                                  स्वीकारलेली रोख
+                                </span>
+                              )}
+                              {item.type === 'SETTLE' && (
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300 border border-blue-300 dark:border-blue-800 rounded-md font-black text-[10px] flex items-center gap-1 w-fit">
+                                  <Landmark className="w-3 h-3 text-blue-600" />
+                                  बँक भरणा
+                                </span>
+                              )}
+                              {item.type === 'DEBIT' && (
+                                <span className="px-2 py-0.5 bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-md font-black text-[10px] flex items-center gap-1 w-fit">
+                                  <ReceiptIndianRupee className="w-3 h-3 text-rose-600" />
+                                  रोख खर्च
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Details & Ref */}
+                            <td className="py-3 px-3.5">
+                              <p className="font-black text-slate-800 dark:text-slate-100 text-xs">
+                                {item.title}
+                              </p>
+                              <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                <span className="px-1.5 py-0.2 bg-slate-100 dark:bg-slate-700 rounded font-mono font-bold">
+                                  {item.refNo}
+                                </span>
+                                <span>• {item.category}</span>
+                                {item.extraInfo && (
+                                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                                    • {item.extraInfo}
+                                  </span>
+                                )}
+                              </div>
+                              {item.notes && (
+                                <p className="text-[11px] text-slate-400 italic mt-0.5 line-clamp-1">
+                                  "{item.notes}"
+                                </p>
+                              )}
+                            </td>
+
+                            {/* Proof Photo Button */}
+                            <td className="py-3 px-3 text-center whitespace-nowrap">
+                              {item.proofUrl ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewProofUrl(item.proofUrl || null)}
+                                  className="px-2 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 text-slate-700 dark:text-slate-200 hover:text-amber-900 font-bold rounded-lg text-[10px] inline-flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                                  title="फोटो पुरावा पहा"
+                                >
+                                  <ImageIcon className="w-3 h-3 text-amber-500" />
+                                  <span>फोटो</span>
+                                </button>
+                              ) : (
+                                <span className="text-slate-300 dark:text-slate-600 text-[10px]">-</span>
+                              )}
+                            </td>
+
+                            {/* Signed Amount */}
+                            <td className="py-3 px-3.5 text-right whitespace-nowrap">
+                              <span
+                                className={`text-sm font-black ${
+                                  item.type === 'INCOME' || item.type === 'OPENING'
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : 'text-rose-600 dark:text-rose-400'
+                                }`}
+                              >
+                                {item.type === 'INCOME' || item.type === 'OPENING' ? '+' : '-'} ₹
+                                {item.amount.toLocaleString('en-IN')}
+                              </span>
+                              {item.type === 'SETTLE' && item.status === 'प्रलंबित' && (
+                                <p className="text-[9px] text-amber-500 font-bold">प्रलंबित</p>
+                              )}
+                            </td>
+
+                            {/* Running Balance */}
+                            <td className="py-3 px-3.5 text-right whitespace-nowrap font-black text-slate-800 dark:text-slate-100 bg-slate-50/50 dark:bg-slate-800/50">
+                              ₹{item.runningBalance.toLocaleString('en-IN')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                वर्तमान शिल्लक रोख रक्कम: <strong className="text-emerald-600 dark:text-emerald-400 text-sm">₹{memberDailyLedger.stats.netInHand.toLocaleString('en-IN')}</strong>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const mId = dailyPassbookMember.id;
+                    setDailyPassbookMember(null);
+                    handleOpenAddSettlement(mId);
+                  }}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                >
+                  <Landmark className="w-3.5 h-3.5" />
+                  <span>बँक भरणा नोंद</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const mId = dailyPassbookMember.id;
+                    setDailyPassbookMember(null);
+                    handleOpenAddDebit(mId);
+                  }}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                >
+                  <ReceiptIndianRupee className="w-3.5 h-3.5" />
+                  <span>रोखीतून खर्च (Debit)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDailyPassbookMember(null)}
+                  className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl cursor-pointer"
+                >
+                  बंद करा
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
