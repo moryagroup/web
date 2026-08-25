@@ -13,7 +13,7 @@ import { getFinancialYearFromDate, getCalendarYearFromDate, generateNextIncomeTr
 import { RbacGuard } from './RbacGuard';
 import { PlusCircle, ArrowDownLeft, CheckCircle2, Upload, AlertCircle, ArrowLeft, ShieldCheck, BookOpen, BookMarked, Clock } from 'lucide-react';
 import { uploadFileToGoogleDrive, isGoogleDriveUrl } from '../services/googleDriveService';
-import { getNextSerialForReceiptBook, formatPhysicalReceiptNumber } from '../utils/physicalReceiptUtils';
+import { getNextSerialForReceiptBook, formatPhysicalReceiptNumber, isPhysicalReceiptDuplicate } from '../utils/physicalReceiptUtils';
 import { TransactionSuccessModal } from './TransactionSuccessModal';
 
 interface IncomeFormProps {
@@ -121,6 +121,14 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
     setReceiptSerialNo(String(nextSerial));
   };
 
+  // Real-time duplicate check for physical receipt book serial numbers
+  const duplicateCheck = useMemo(() => {
+    if (!isPhysicalReceipt || !receiptBookNo || !receiptSerialNo) {
+      return { isDuplicate: false };
+    }
+    return isPhysicalReceiptDuplicate(receiptBookNo, receiptSerialNo, incomes);
+  }, [isPhysicalReceipt, receiptBookNo, receiptSerialNo, incomes]);
+
   // Handle Depositor Type change
   const handleDepositorTypeChange = (type: DepositorType) => {
     setDepositorType(type);
@@ -209,6 +217,13 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
     }
 
     const isPendingPayment = isPhysicalReceipt && paymentStatus === 'PENDING';
+
+    if (isPhysicalReceipt && duplicateCheck.isDuplicate) {
+      const dup = duplicateCheck.existingIncome;
+      const details = dup ? ` (नोंद: ${dup.depositorName}, रक्कम: ₹${dup.amount}, दिनांक: ${dup.transactionDate})` : '';
+      setErrorMessage(`पावती क्र. ${receiptSerialNo} (पुस्तक क्र. ${receiptBookNo}) आधीच नोंदवली आहे!${details} कृपया पुढील उपलब्ध अनुक्रमांक वापरा.`);
+      return;
+    }
 
     if (!isPendingPayment && paymentMethod === 'रोख' && !cashReceiverMemberId) {
       setErrorMessage('कृपया रोख रक्कम स्वीकारणारा सभासद निवडा.');
@@ -642,7 +657,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
                 {/* Serial / Leaf No */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-amber-900 dark:text-amber-200 uppercase">
+                    <label className={`block text-xs font-bold uppercase ${duplicateCheck.isDuplicate ? 'text-rose-600 dark:text-rose-400' : 'text-amber-900 dark:text-amber-200'}`}>
                       पावती अनुक्रमांक (Serial No.) <span className="text-rose-500">*</span>
                     </label>
                     <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">
@@ -656,11 +671,39 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
                     value={receiptSerialNo}
                     onChange={(e) => setReceiptSerialNo(e.target.value)}
                     placeholder="उदा. 1, 2, 3, 4..."
-                    className="w-full p-2.5 bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-600 rounded-lg text-sm font-black text-amber-900 dark:text-amber-200 outline-none focus:ring-2 focus:ring-amber-500"
+                    className={`w-full p-2.5 rounded-lg text-sm font-black outline-none focus:ring-2 ${
+                      duplicateCheck.isDuplicate
+                        ? 'bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-500 text-rose-700 dark:text-rose-300 focus:ring-rose-400'
+                        : 'bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-600 text-amber-900 dark:text-amber-200 focus:ring-amber-500'
+                    }`}
                   />
-                  <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 font-semibold">
-                    तयार होणारा पावती संदर्भ: <strong className="text-amber-900 dark:text-amber-200">{formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo)}</strong>
-                  </p>
+                  {duplicateCheck.isDuplicate ? (
+                    <div className="mt-2 p-2.5 bg-rose-50 dark:bg-rose-950/70 border border-rose-300 dark:border-rose-700 rounded-xl text-xs space-y-1.5 shadow-xs">
+                      <div className="flex items-center gap-1.5 font-black text-rose-800 dark:text-rose-200">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>⚠️ ही पावती आधीच नोंदवली आहे (Duplicate Receipt)!</span>
+                      </div>
+                      {duplicateCheck.existingIncome && (
+                        <p className="text-[11px] text-rose-900 dark:text-rose-200 font-medium">
+                          <strong>जमादार:</strong> {duplicateCheck.existingIncome.depositorName} | <strong>रक्कम:</strong> ₹{duplicateCheck.existingIncome.amount.toLocaleString('en-IN')} | <strong>तारीख:</strong> {duplicateCheck.existingIncome.transactionDate}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextNum = getNextSerialForReceiptBook(receiptBookNo, incomes);
+                          setReceiptSerialNo(String(nextNum));
+                        }}
+                        className="mt-1 px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[11px] font-bold shadow-xs cursor-pointer inline-flex items-center gap-1 active:scale-95"
+                      >
+                        <span>✓ पुढील उपलब्ध क्र. #{getNextSerialForReceiptBook(receiptBookNo, incomes)} वापरा</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 font-semibold">
+                      तयार होणारा पावती संदर्भ: <strong className="text-amber-900 dark:text-amber-200">{formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo)}</strong>
+                    </p>
+                  )}
                 </div>
 
                 {/* Payment Collection Status (Received vs Pending) */}
@@ -907,10 +950,15 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
         <div className="pt-2">
           <button
             type="submit"
-            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base rounded-xl shadow-lg shadow-emerald-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            disabled={isSubmitting || (isPhysicalReceipt && duplicateCheck.isDuplicate)}
+            className={`w-full py-3.5 text-white font-bold text-base rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 ${
+              isPhysicalReceipt && duplicateCheck.isDuplicate
+                ? 'bg-slate-400 cursor-not-allowed opacity-75 shadow-none'
+                : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200 cursor-pointer'
+            }`}
           >
             <ArrowDownLeft className="w-5 h-5" />
-            <span>जमा नोंद जतन करा</span>
+            <span>{isPhysicalReceipt && duplicateCheck.isDuplicate ? '⚠️ पावती आधीच नोंदवली आहे (Duplicate)' : 'जमा नोंद जतन करा'}</span>
           </button>
         </div>
       </form>

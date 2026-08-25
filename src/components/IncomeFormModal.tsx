@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Plus, User, Info, CheckCircle, BookOpen, BookMarked } from 'lucide-react';
+import { X, Plus, User, Info, CheckCircle, BookOpen, BookMarked, AlertCircle } from 'lucide-react';
 import { getFinancialYearFromDate, generateNextIncomeTransactionNo } from '../utils/dateUtils';
-import { getNextSerialForReceiptBook, formatPhysicalReceiptNumber } from '../utils/physicalReceiptUtils';
+import { getNextSerialForReceiptBook, formatPhysicalReceiptNumber, isPhysicalReceiptDuplicate } from '../utils/physicalReceiptUtils';
 import {
   IncomeTransaction,
   DepositorType,
@@ -96,6 +96,14 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
     setReceiptSerialNo(String(nextSerial));
   };
 
+  // Real-time duplicate check for physical receipt book serial numbers
+  const duplicateCheck = useMemo(() => {
+    if (!isPhysicalReceipt || !receiptBookNo || !receiptSerialNo) {
+      return { isDuplicate: false };
+    }
+    return isPhysicalReceiptDuplicate(receiptBookNo, receiptSerialNo, incomes);
+  }, [isPhysicalReceipt, receiptBookNo, receiptSerialNo, incomes]);
+
   const handleMemberChange = (memberId: string) => {
     setLinkedMemberId(memberId);
     const selectedMem = members.find((m) => m.id === memberId);
@@ -138,6 +146,13 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
     }
     if (!transactionDate) {
       alert('कृपया जमा तारीख निवडा.');
+      return;
+    }
+
+    if (isPhysicalReceipt && duplicateCheck.isDuplicate) {
+      const dup = duplicateCheck.existingIncome;
+      const details = dup ? ` (नोंद: ${dup.depositorName}, रक्कम: ₹${dup.amount}, दिनांक: ${dup.transactionDate})` : '';
+      alert(`पावती क्र. ${receiptSerialNo} (पुस्तक क्र. ${receiptBookNo}) आधीच नोंदवली आहे!${details} कृपया पुढील उपलब्ध अनुक्रमांक वापरा.`);
       return;
     }
 
@@ -541,7 +556,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-[11px] font-bold text-amber-900">
+                    <label className={`block text-[11px] font-bold ${duplicateCheck.isDuplicate ? 'text-rose-600' : 'text-amber-900'}`}>
                       पावती अनुक्रमांक *
                     </label>
                     <span className="text-[9px] text-amber-700 font-bold">
@@ -554,11 +569,39 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
                     required={isPhysicalReceipt}
                     value={receiptSerialNo}
                     onChange={(e) => setReceiptSerialNo(e.target.value)}
-                    className="w-full p-2 bg-white border border-amber-300 rounded text-sm font-black text-amber-900 outline-none"
+                    className={`w-full p-2 rounded text-sm font-black outline-none ${
+                      duplicateCheck.isDuplicate
+                        ? 'bg-rose-50 border-2 border-rose-500 text-rose-700 focus:ring-rose-400'
+                        : 'bg-white border border-amber-300 text-amber-900'
+                    }`}
                   />
-                  <p className="text-[10px] text-amber-800 mt-1 font-semibold">
-                    पावती: <strong>{formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo)}</strong>
-                  </p>
+                  {duplicateCheck.isDuplicate ? (
+                    <div className="mt-1.5 p-2 bg-rose-50 border border-rose-300 rounded-lg text-[10px] space-y-1">
+                      <div className="flex items-center gap-1 font-black text-rose-700">
+                        <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                        <span>⚠️ ही पावती आधीच नोंदवली आहे!</span>
+                      </div>
+                      {duplicateCheck.existingIncome && (
+                        <p className="text-[10px] text-rose-800 font-medium">
+                          {duplicateCheck.existingIncome.depositorName} (₹{duplicateCheck.existingIncome.amount})
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextNum = getNextSerialForReceiptBook(receiptBookNo, incomes);
+                          setReceiptSerialNo(String(nextNum));
+                        }}
+                        className="px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10px] font-bold cursor-pointer inline-flex items-center gap-1 active:scale-95"
+                      >
+                        <span>✓ पुढील क्र. #{getNextSerialForReceiptBook(receiptBookNo, incomes)} वापरा</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-amber-800 mt-1 font-semibold">
+                      पावती: <strong>{formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo)}</strong>
+                    </p>
+                  )}
                 </div>
 
                 {/* Payment Status (Received vs Pending) */}
@@ -696,18 +739,28 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
             </button>
             <button
               type="button"
+              disabled={isPhysicalReceipt && duplicateCheck.isDuplicate}
               onClick={() => processFormSubmit(true)}
-              className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs cursor-pointer shadow-sm active:scale-95"
+              className={`w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm active:scale-95 ${
+                isPhysicalReceipt && duplicateCheck.isDuplicate
+                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-75'
+                  : 'bg-teal-600 hover:bg-teal-700 text-white cursor-pointer'
+              }`}
             >
               <Plus className="w-4 h-4" />
               <span>जतन करून पुढील नोंद करा</span>
             </button>
             <button
               type="submit"
-              className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-md active:scale-95"
+              disabled={isPhysicalReceipt && duplicateCheck.isDuplicate}
+              className={`w-full sm:w-auto flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl font-bold text-xs shadow-md active:scale-95 ${
+                isPhysicalReceipt && duplicateCheck.isDuplicate
+                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-75'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
+              }`}
             >
               <CheckCircle className="w-4 h-4" />
-              <span>जमा नोंद जतन करा</span>
+              <span>{isPhysicalReceipt && duplicateCheck.isDuplicate ? '⚠️ पावती आधीच नोंदवली आहे' : 'जमा नोंद जतन करा'}</span>
             </button>
           </div>
         </form>

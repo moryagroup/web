@@ -32,6 +32,7 @@ import { NativeService } from '../services/nativeService';
 import { ProofLightboxModal } from './ProofLightboxModal';
 import { isGoogleDriveUrl } from '../services/googleDriveService';
 import { dispatchApprovedTransaction, downloadReceiptImage } from '../services/transactionDispatchService';
+import { isPhysicalReceiptDuplicate, formatPhysicalReceiptNumber, getNextSerialForReceiptBook } from '../utils/physicalReceiptUtils';
 
 interface IncomeHistoryProps {
   incomes: IncomeTransaction[];
@@ -1285,8 +1286,20 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               onSubmit={(e) => {
                 e.preventDefault();
                 if (editingIncome) {
+                  if (editingIncome.receiptBookNo && editingIncome.receiptSerialNo) {
+                    const dup = isPhysicalReceiptDuplicate(editingIncome.receiptBookNo, editingIncome.receiptSerialNo, incomes, editingIncome.id);
+                    if (dup.isDuplicate) {
+                      const details = dup.existingIncome ? ` (${dup.existingIncome.depositorName}, ₹${dup.existingIncome.amount})` : '';
+                      alert(`पावती क्र. ${editingIncome.receiptSerialNo} (पुस्तक क्र. ${editingIncome.receiptBookNo}) आधीच नोंदवली आहे!${details} कृपया दुसरा अनुक्रमांक वापरा.`);
+                      return;
+                    }
+                  }
+
                   const finalUpdated: IncomeTransaction = {
                     ...editingIncome,
+                    receiptNumber: (editingIncome.receiptBookNo && editingIncome.receiptSerialNo)
+                      ? formatPhysicalReceiptNumber(editingIncome.receiptBookNo, editingIncome.receiptSerialNo)
+                      : editingIncome.receiptNumber,
                     paymentStatus: editingIncome.paymentStatus || 'RECEIVED',
                     paymentMethod: editingIncome.paymentStatus === 'PENDING' ? 'येणे बाकी' : editingIncome.paymentMethod,
                     updatedAt: new Date().toISOString(),
@@ -1406,6 +1419,38 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                       </option>
                     ))}
                   </select>
+                </div>
+              )}
+
+              {(editingIncome.isPhysicalReceipt || editingIncome.receiptBookNo) && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-xl space-y-2">
+                  <span className="font-bold text-xs text-amber-900 dark:text-amber-200 block">
+                    📖 प्रत्यक्ष पावती पुस्तक तपशील (Physical Receipt Book)
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block font-bold text-[11px] text-amber-800 dark:text-amber-300 mb-1">
+                        पुस्तक क्र. (Book No.)
+                      </label>
+                      <input
+                        type="text"
+                        value={editingIncome.receiptBookNo || '1'}
+                        onChange={(e) => setEditingIncome({ ...editingIncome, receiptBookNo: e.target.value })}
+                        className="w-full p-2 bg-white dark:bg-slate-700 border border-amber-300 dark:border-amber-600 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-[11px] text-amber-800 dark:text-amber-300 mb-1">
+                        पावती अनुक्रमांक (Serial No.)
+                      </label>
+                      <input
+                        type="number"
+                        value={editingIncome.receiptSerialNo || ''}
+                        onChange={(e) => setEditingIncome({ ...editingIncome, receiptSerialNo: e.target.value })}
+                        className="w-full p-2 bg-white dark:bg-slate-700 border border-amber-300 dark:border-amber-600 rounded-lg text-xs font-black text-amber-900 dark:text-amber-200"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
 
