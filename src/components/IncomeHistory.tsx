@@ -279,9 +279,10 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
 
   const handleOpenReceiveModal = (item: IncomeTransaction) => {
     setReceivingIncome(item);
-    setReceivePaymentMethod(item.paymentMethod || 'रोख');
-    setReceiveCashReceiverId(item.cashReceiverMemberId || currentMember?.id || (members[0]?.id || ''));
-    setReceivePaymentRef(item.paymentReference || '');
+    const initialMethod: PaymentMethod = (item.paymentMethod && item.paymentMethod !== 'येणे बाकी') ? item.paymentMethod : 'रोख';
+    setReceivePaymentMethod(initialMethod);
+    setReceiveCashReceiverId(item.cashReceiverMemberId || (members[0]?.id || ''));
+    setReceivePaymentRef(item.paymentReference && item.paymentReference !== 'नमूद नाही' ? item.paymentReference : '');
     setReceiveDate(new Date().toISOString().split('T')[0]);
   };
 
@@ -785,18 +786,27 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                       + ₹{item.amount.toLocaleString('en-IN')}
                     </td>
                     <td className="p-3.5">
-                      <div className="font-semibold">{item.paymentMethod}</div>
-                      {item.paymentMethod === 'रोख' && item.cashReceiverName && (
-                        <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-black flex items-center gap-1 mt-0.5" title={`रोख स्वीकारक: ${item.cashReceiverName}`}>
-                          <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950 px-1 py-0.2 rounded border border-emerald-300 dark:border-emerald-700">
-                            💵 {item.cashReceiverName}
-                          </span>
-                        </div>
-                      )}
-                      {item.paymentReference && (
-                        <div className="text-[10px] text-slate-400 truncate max-w-[100px]">
-                          {item.paymentReference}
-                        </div>
+                      {item.paymentStatus === 'PENDING' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded text-[10px] font-bold whitespace-nowrap">
+                          <Clock className="w-3 h-3 text-amber-600" />
+                          <span>येणे बाकी</span>
+                        </span>
+                      ) : (
+                        <>
+                          <div className="font-semibold">{item.paymentMethod}</div>
+                          {item.paymentMethod === 'रोख' && item.cashReceiverName && (
+                            <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-black flex items-center gap-1 mt-0.5" title={`रोख स्वीकारक: ${item.cashReceiverName}`}>
+                              <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950 px-1 py-0.2 rounded border border-emerald-300 dark:border-emerald-700">
+                                💵 {item.cashReceiverName}
+                              </span>
+                            </div>
+                          )}
+                          {item.paymentReference && item.paymentReference !== 'नमूद नाही' && (
+                            <div className="text-[10px] text-slate-400 truncate max-w-[100px]">
+                              {item.paymentReference}
+                            </div>
+                          )}
+                        </>
                       )}
                     </td>
                     <td className="p-3.5">
@@ -973,11 +983,16 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                   पेमेंट पद्धत
                 </span>
                 <span className="font-medium text-slate-800 dark:text-slate-200">
-                  {selectedIncomeDetail.paymentMethod}
-                  {selectedIncomeDetail.paymentReference ? ` (${selectedIncomeDetail.paymentReference})` : ''}
+                  {selectedIncomeDetail.paymentStatus === 'PENDING'
+                    ? '⏳ येणे बाकी (मिळणे बाकी)'
+                    : `${selectedIncomeDetail.paymentMethod}${
+                        selectedIncomeDetail.paymentReference && selectedIncomeDetail.paymentReference !== 'नमूद नाही'
+                          ? ` (${selectedIncomeDetail.paymentReference})`
+                          : ''
+                      }`}
                 </span>
               </div>
-              {selectedIncomeDetail.paymentMethod === 'रोख' && selectedIncomeDetail.cashReceiverName && (
+              {selectedIncomeDetail.paymentStatus !== 'PENDING' && selectedIncomeDetail.paymentMethod === 'रोख' && selectedIncomeDetail.cashReceiverName && (
                 <div className="col-span-2 p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-xl flex items-center justify-between">
                   <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1">
                     💵 प्रत्यक्ष रोख रक्कम स्वीकारणारा सभासद:

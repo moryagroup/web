@@ -429,12 +429,23 @@ export async function generateReceiptImageCanvas(
   );
 
   // Row 3: Payment Method (Left) & Reference / Cash Receiver (Right)
-  const isCash = transaction.paymentMethod === 'रोख';
-  const paymentMethodStr = isCash ? 'रोख (Cash)' : (transaction.paymentMethod || 'रोख');
-  const paymentRefLabel = isCash && isIncome && inc?.cashReceiverName ? 'रोख स्वीकारक सभासद:' : 'पेमेंट संदर्भ क्र.:';
-  const paymentRefStr = isCash && isIncome && inc?.cashReceiverName 
+  const isPendingIncome = isIncome && inc?.paymentStatus === 'PENDING';
+  const isCash = !isPendingIncome && transaction.paymentMethod === 'रोख';
+  const paymentMethodStr = isPendingIncome
+    ? '⏳ येणे बाकी (Pending)'
+    : isCash
+    ? 'रोख (Cash)'
+    : (transaction.paymentMethod || 'रोख');
+  const paymentRefLabel = isPendingIncome
+    ? 'रक्कम स्थिती:'
+    : isCash && isIncome && inc?.cashReceiverName
+    ? 'रोख स्वीकारक सभासद:'
+    : 'पेमेंट संदर्भ क्र.:';
+  const paymentRefStr = isPendingIncome
+    ? 'मिळणे बाकी (Pending Collection)'
+    : isCash && isIncome && inc?.cashReceiverName 
     ? inc.cashReceiverName 
-    : (transaction.paymentReference ? toMarathiDigits(transaction.paymentReference) : '---');
+    : (transaction.paymentReference && transaction.paymentReference !== 'नमूद नाही' ? toMarathiDigits(transaction.paymentReference) : '---');
   drawTwoColumnRow(
     'पेमेंट पद्धत:',
     paymentMethodStr,

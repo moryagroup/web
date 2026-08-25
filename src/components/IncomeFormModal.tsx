@@ -141,7 +141,9 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       return;
     }
 
-    if (paymentMethod === 'रोख' && !cashReceiverMemberId) {
+    const isPendingPayment = isPhysicalReceipt && paymentStatus === 'PENDING';
+
+    if (!isPendingPayment && paymentMethod === 'रोख' && !cashReceiverMemberId) {
       alert('कृपया रोख रक्कम स्वीकारणारा सभासद निवडा.');
       return;
     }
@@ -184,16 +186,16 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
       occasionId: occasionId || undefined,
       occasionName: selectedOccasionObj ? selectedOccasionObj.name : undefined,
       reason: reason.trim() || `${incomeType} - जमा`,
-      paymentMethod,
-      cashReceiverMemberId: paymentMethod === 'रोख' ? cashReceiverMemberId : undefined,
-      cashReceiverName: paymentMethod === 'रोख' ? finalCashReceiverName : undefined,
-      paymentReference: paymentReference.trim() || 'नमूद नाही',
+      paymentMethod: isPendingPayment ? 'येणे बाकी' : paymentMethod,
+      cashReceiverMemberId: (!isPendingPayment && paymentMethod === 'रोख') ? cashReceiverMemberId : undefined,
+      cashReceiverName: (!isPendingPayment && paymentMethod === 'रोख') ? finalCashReceiverName : undefined,
+      paymentReference: (!isPendingPayment && paymentReference.trim()) ? paymentReference.trim() : 'नमूद नाही',
       receiptNumber: finalReceiptNumber,
       receiptBookNo: isPhysicalReceipt ? receiptBookNo : undefined,
       receiptSerialNo: isPhysicalReceipt ? receiptSerialNo : undefined,
       isPhysicalReceipt,
       paymentStatus: isPhysicalReceipt ? paymentStatus : 'RECEIVED',
-      receivedDate: isPhysicalReceipt && paymentStatus === 'PENDING' ? undefined : transactionDate,
+      receivedDate: isPendingPayment ? undefined : transactionDate,
       notes: notes.trim() || 'नमूद नाही',
       financialYear: getFinancialYearFromDate(transactionDate),
       approvalStatus: isApproved ? 'मंजूर' : 'प्रलंबित',
@@ -463,6 +465,7 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
                 type="button"
                 onClick={() => {
                   setIsPhysicalReceipt(false);
+                  setPaymentStatus('RECEIVED');
                   setPaymentMethod('UPI');
                 }}
                 className={`px-3 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
@@ -592,83 +595,95 @@ export const IncomeFormModal: React.FC<IncomeFormModalProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">पेमेंट पद्धत</label>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none"
-              >
-                <option value="रोख">रोख (Cash)</option>
-                <option value="UPI">UPI</option>
-                <option value="बँक ट्रान्सफर">बँक ट्रान्सफर</option>
-                <option value="चेक">चेक</option>
-                <option value="इतर">इतर</option>
-              </select>
+          {/* Payment Method Inputs (Only shown when Payment Status is RECEIVED) */}
+          {isPhysicalReceipt && paymentStatus === 'PENDING' ? (
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-300 dark:border-amber-700 flex items-start gap-2.5 text-xs">
+              <span className="text-base">⏳</span>
+              <p className="text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed font-medium">
+                रक्कम अद्याप जमा झालेली नसल्याने पेमेंट पद्धत निवडण्याची आवश्यकता नाही. प्रत्यक्ष रक्कम जमा झाल्यावर <strong>&apos;जमा इतिहास&apos;</strong> मधून <strong>&apos;💵 रक्कम मिळाली&apos;</strong> बटणावर क्लिक करून पेमेंट मोड नोंदवता येईल.
+              </p>
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">पेमेंट पद्धत</label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  >
+                    <option value="रोख">रोख (Cash)</option>
+                    <option value="UPI">UPI</option>
+                    <option value="बँक ट्रान्सफर">बँक ट्रान्सफर</option>
+                    <option value="चेक">चेक</option>
+                    <option value="इतर">इतर</option>
+                  </select>
+                </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Ref No. / UPI Id
-              </label>
-              <input
-                type="text"
-                value={paymentReference}
-                onChange={(e) => setPaymentReference(e.target.value)}
-                placeholder="उदा. UPI Ref 920193"
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none"
-              />
-            </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Ref No. / UPI Id
+                  </label>
+                  <input
+                    type="text"
+                    value={paymentReference}
+                    onChange={(e) => setPaymentReference(e.target.value)}
+                    placeholder="उदा. UPI Ref 920193"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                {isPhysicalReceipt ? 'स्वयंचलित पावती संदर्भ' : 'पावती क्रमांक'}
-              </label>
-              <input
-                type="text"
-                disabled={isPhysicalReceipt}
-                value={isPhysicalReceipt ? formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo) : receiptNumber}
-                onChange={(e) => setReceiptNumber(e.target.value)}
-                className={`w-full px-3 py-2 border rounded-xl text-sm font-medium focus:outline-none ${
-                  isPhysicalReceipt
-                    ? 'bg-amber-50 border-amber-300 font-bold text-amber-900 cursor-not-allowed'
-                    : 'border-slate-300 text-slate-800 focus:ring-2 focus:ring-emerald-500'
-                }`}
-              />
-            </div>
-          </div>
-
-          {/* Conditional Cash Receiver Selection for Cash Deposits */}
-          {paymentMethod === 'रोख' && (
-            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-300 dark:border-emerald-700 rounded-xl space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase">
-                  💵 रोख रक्कम स्वीकारणारा सभासद <span className="text-rose-500">*</span>
-                </label>
-                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
-                  नोंदणीकृत सभासद
-                </span>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {isPhysicalReceipt ? 'स्वयंचलित पावती संदर्भ' : 'पावती क्रमांक'}
+                  </label>
+                  <input
+                    type="text"
+                    disabled={isPhysicalReceipt}
+                    value={isPhysicalReceipt ? formatPhysicalReceiptNumber(receiptBookNo, receiptSerialNo) : receiptNumber}
+                    onChange={(e) => setReceiptNumber(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-xl text-sm font-medium focus:outline-none ${
+                      isPhysicalReceipt
+                        ? 'bg-amber-50 border-amber-300 font-bold text-amber-900 cursor-not-allowed'
+                        : 'border-slate-300 text-slate-800 focus:ring-2 focus:ring-emerald-500'
+                    }`}
+                  />
+                </div>
               </div>
-              <select
-                required={paymentMethod === 'रोख'}
-                value={cashReceiverMemberId}
-                onChange={(e) => {
-                  const mId = e.target.value;
-                  setCashReceiverMemberId(mId);
-                  const mem = members.find((m) => m.id === mId);
-                  if (mem) setCashReceiverName(mem.fullName);
-                }}
-                className="w-full p-2 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-600 rounded-lg text-sm font-black text-emerald-950 dark:text-emerald-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer"
-              >
-                <option value="" disabled>-- रोख स्वीकारणारा सभासद निवडा --</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.memberCode} - {m.fullName} {m.designation ? `(${m.designation})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+
+              {/* Conditional Cash Receiver Selection for Cash Deposits */}
+              {paymentMethod === 'रोख' && (
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-300 dark:border-emerald-700 rounded-xl space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-black text-emerald-900 dark:text-emerald-200 uppercase">
+                      💵 रोख रक्कम स्वीकारणारा सभासद <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
+                      नोंदणीकृत सभासद
+                    </span>
+                  </div>
+                  <select
+                    required={paymentMethod === 'रोख'}
+                    value={cashReceiverMemberId}
+                    onChange={(e) => {
+                      const mId = e.target.value;
+                      setCashReceiverMemberId(mId);
+                      const mem = members.find((m) => m.id === mId);
+                      if (mem) setCashReceiverName(mem.fullName);
+                    }}
+                    className="w-full p-2 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-600 rounded-lg text-sm font-black text-emerald-950 dark:text-emerald-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer"
+                  >
+                    <option value="" disabled>-- रोख स्वीकारणारा सभासद निवडा --</option>
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.memberCode} - {m.fullName} {m.designation ? `(${m.designation})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
           )}
 
           <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-4 border-t border-slate-200">
