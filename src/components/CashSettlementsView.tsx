@@ -12,6 +12,8 @@ import {
   PaymentMethod,
 } from '../types';
 import { isDateInSelectedYear, isDateBeforeSelectedYear, getFinancialYearFromDate, generateNextExpenseTransactionNo, generateNextCashSettlementNo } from '../utils/dateUtils';
+import { isCommitteeMember, isBadgedMember } from '../utils/rbac';
+import { RbacGuard } from './RbacGuard';
 import { ProofLightboxModal } from './ProofLightboxModal';
 import { uploadFileToGoogleDrive } from '../services/googleDriveService';
 import { fetchCloudDatabase } from '../services/cloudDatabaseService';
@@ -86,8 +88,6 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
   onNavigate,
   onOpenLogin,
 }) => {
-  const isLoggedIn = currentUser.isLoggedIn !== false;
-
   // Local filter states
   const [localYear, setLocalYear] = useState<string>(selectedYear || '२०२६');
   const [searchQuery, setSearchQuery] = useState('');
@@ -184,6 +184,12 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
       currentUser.name.includes('कौले')
     ));
 
+  const isCommittee =
+    isAdmin ||
+    isTreasurerOrVice ||
+    isCommitteeMember(effectiveRole) ||
+    isCommitteeMember(currentUser?.role);
+
   // Filter incomes and expenses by selected year
   const activeYear = setSelectedYear ? selectedYear : localYear;
   const filteredIncomesByYear = useMemo(() => {
@@ -252,7 +258,15 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
       }
     > = {};
 
-    members.forEach((m) => {
+    const targetMembers = isCommittee
+      ? members
+      : members.filter(
+          (m) =>
+            (loggedMember && m.id === loggedMember.id) ||
+            m.fullName.trim().toLowerCase() === (currentUser?.name || '').trim().toLowerCase()
+        );
+
+    targetMembers.forEach((m) => {
       // 0. Prior Period Opening Balance: Net cash remaining in hand prior to selected year
       const priorReceived = priorIncomes
         .filter(
@@ -339,8 +353,15 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
       totalNetCashAll += netInHand;
     });
 
-    // All pending approvals must always be visible regardless of year filter
-    const pendingApprovalsList = settlementsList.filter((s) => s.approvalStatus === 'प्रलंबित');
+    // Pending approvals visible to committee members, or own pending settlements for regular members
+    const pendingApprovalsList = isTreasurerOrVice
+      ? settlementsList.filter((s) => s.approvalStatus === 'प्रलंबित')
+      : settlementsList.filter(
+          (s) =>
+            s.approvalStatus === 'प्रलंबित' &&
+            ((loggedMember && s.memberId === loggedMember.id) ||
+              (s.memberName && s.memberName.trim().toLowerCase() === (currentUser?.name || '').trim().toLowerCase()))
+        );
 
     const activeCashMembers = Object.values(memberMap)
       .filter((item) => {
@@ -374,7 +395,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
       totalNetCashAll,
       pendingApprovalsList,
     };
-  }, [members, incomes, expenses, filteredIncomesByYear, filteredExpensesByYear, cashSettlements, activeYear, searchQuery]);
+  }, [members, incomes, expenses, filteredIncomesByYear, filteredExpensesByYear, cashSettlements, activeYear, searchQuery, isCommittee, isTreasurerOrVice, loggedMember, currentUser]);
 
   // Open Deposit Modal
   const handleOpenAddSettlement = (memberId?: string) => {
@@ -579,14 +600,31 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
 
   // Filtered Direct Cash Debits List
   const directCashDebitsList = useMemo(() => {
-    return filteredExpensesByYear.filter(
+    const allDebits = filteredExpensesByYear.filter(
       (e) => e.paymentMethod === 'रोख' && (e.isPaidFromCashInHand || Boolean(e.paidByMemberId))
     );
-  }, [filteredExpensesByYear]);
+    if (isCommittee) return allDebits;
+    const userNorm = (currentUser?.name || '').trim().toLowerCase();
+    return allDebits.filter(
+      (e) =>
+        (loggedMember && (e.paidByMemberId === loggedMember.id || e.linkedMemberId === loggedMember.id)) ||
+        (e.paidByMemberName && e.paidByMemberName.trim().toLowerCase() === userNorm) ||
+        (e.createdBy && e.createdBy.trim().toLowerCase() === userNorm)
+    );
+  }, [filteredExpensesByYear, isCommittee, loggedMember, currentUser]);
 
   // Filtered History Settlements
   const filteredHistory = useMemo(() => {
     let list = cashSettlements || [];
+    if (!isCommittee) {
+      const userNorm = (currentUser?.name || '').trim().toLowerCase();
+      list = list.filter(
+        (s) =>
+          (loggedMember && s.memberId === loggedMember.id) ||
+          (s.memberName && s.memberName.trim().toLowerCase() === userNorm) ||
+          (s.createdBy && s.createdBy.trim().toLowerCase() === userNorm)
+      );
+    }
     if (historyFilter !== 'ALL') {
       list = list.filter((s) => s.approvalStatus === historyFilter);
     }
@@ -600,7 +638,20 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
       );
     }
     return list;
-  }, [cashSettlements, historyFilter, searchQuery]);
+  }, [cashSettlements, isCommittee, loggedMember, currentUser, historyFilter, searchQuery]);
+
+  const isLoggedIn = currentUser?.isLoggedIn !== false && Boolean(currentUser?.name);
+
+  if (!isLoggedIn) {
+    return (
+      <RbacGuard
+        currentRole={currentUser?.role}
+        title="रोख संकलन व भरणा हिशोब पाहण्यासाठी लॉगिन आवश्यक"
+        message="स्वतःचा किंवा मंडळाचा रोख संकलन, बँक भरणा व थेट रोख खर्च हिशोब पाहण्यासाठी कृपया लॉगिन करा."
+        onLoginClick={onOpenLogin}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 my-4">
@@ -708,7 +759,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
           </div>
           <div className="min-w-0">
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              १. एकूण उपलब्ध रोख (Available)
+              {isCommittee ? '१. एकूण उपलब्ध रोख (Available)' : '१. माझे उपलब्ध रोख संकलन (My Available)'}
             </p>
             <p className="text-xl font-black text-amber-600 dark:text-amber-400 mt-0.5">
               ₹{memberCashStats.totalAvailableCashAll.toLocaleString('en-IN')}
@@ -731,7 +782,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
           </div>
           <div>
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              २. बँकेत/ट्रस्टकडे जमा (Settled)
+              {isCommittee ? '२. बँकेत/ट्रस्टकडे जमा (Settled)' : '२. माझा बँकेत भरणा (My Settled)'}
             </p>
             <p className="text-xl font-black text-blue-600 dark:text-blue-400 mt-0.5">
               ₹{memberCashStats.totalCashSettledAll.toLocaleString('en-IN')}
@@ -745,7 +796,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
           </div>
           <div>
             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              ३. रोखीतून खर्च (Direct Debits)
+              {isCommittee ? '३. रोखीतून खर्च (Direct Debits)' : '३. माझा रोखीतून खर्च (My Debits)'}
             </p>
             <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-0.5">
               ₹{memberCashStats.totalCashDebitedAll.toLocaleString('en-IN')}
@@ -759,7 +810,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
           </div>
           <div>
             <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
-              ४. निव्वळ शिल्लक रोख (Net in Hand)
+              {isCommittee ? '४. निव्वळ शिल्लक रोख (Net in Hand)' : '४. माझी शिल्लक रोख (My Net in Hand)'}
             </p>
             <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
               ₹{memberCashStats.totalNetCashAll.toLocaleString('en-IN')}
@@ -892,7 +943,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
           }`}
         >
           <Wallet className="w-4 h-4" />
-          <span>सभासदनिहाय शिल्लक रोख हिशोब ({memberCashStats.activeCashMembers.length})</span>
+          <span>{isCommittee ? 'सभासदनिहाय शिल्लक रोख हिशोब' : 'माझा शिल्लक रोख हिशोब'} ({memberCashStats.activeCashMembers.length})</span>
         </button>
 
         <button
@@ -905,7 +956,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
           }`}
         >
           <ReceiptIndianRupee className="w-4 h-4" />
-          <span>रोखीतून केलेल्या खर्चाच्या नोंदी / Audit Debits ({directCashDebitsList.length})</span>
+          <span>{isCommittee ? 'रोखीतून केलेल्या खर्चाच्या नोंदी / Audit Debits' : 'माझ्या रोख खर्चाच्या नोंदी / Audit Debits'} ({directCashDebitsList.length})</span>
         </button>
 
         <button
@@ -918,7 +969,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
           }`}
         >
           <FileText className="w-4 h-4" />
-          <span>गेल्या बँक भरणा नोंदींचा हिशोब इतिहास ({cashSettlements.length})</span>
+          <span>{isCommittee ? 'गेल्या बँक भरणा नोंदींचा हिशोब इतिहास' : 'माझा बँक भरणा हिशोब इतिहास'} ({filteredHistory.length})</span>
         </button>
       </div>
 
@@ -931,10 +982,14 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                 <Wallet className="w-8 h-8" />
               </div>
               <h3 className="text-base font-black text-slate-800 dark:text-slate-100">
-                सध्या कोणत्याही सभासदाकडे रोख शिल्लक नाही
+                {isCommittee
+                  ? 'सध्या कोणत्याही सभासदाकडे रोख शिल्लक नाही'
+                  : 'आपल्याकडे सध्या कोणतीही शिल्लक रोख रक्कम नाही'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                जेव्हा कोणी सभासद रोख स्वरूपात वर्गणी किंवा देणगी स्वीकारेल, तेव्हा त्यांची नोंद व शिल्लक हिशोब येथे दिसेल.
+                {isCommittee
+                  ? 'जेव्हा कोणी सभासद रोख स्वरूपात वर्गणी किंवा देणगी स्वीकारेल, तेव्हा त्यांची नोंद व शिल्लक हिशोब येथे दिसेल.'
+                  : 'जेव्हा आपण रोख स्वरूपात वर्गणी स्वीकाराल किंवा भरणा कराल, तेव्हा आपला सविस्तर रोख हिशोब येथे दिसेल.'}
               </p>
             </div>
           ) : (

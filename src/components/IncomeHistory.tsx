@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { IncomeTransaction, Member, CurrentUser } from '../types';
+import { IncomeTransaction, Member, CurrentUser, PaymentMethod } from '../types';
 import { hasFullFinancialAccess, isBadgedMember, isCoreMemberRole, canApproveFinancialTransactions } from '../utils/rbac';
 import { isDateInSelectedYear } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
@@ -140,8 +140,12 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
     );
   }, [members, currentUser]);
 
-  // Authorized officers (Treasurer, Vice Treasurer, Admin) see all incomes. Regular members see ONLY their own incomes.
-  const canViewAll = currentUser ? canApproveFinancialTransactions(currentUser.role) : false;
+  // Committee members (पदाधिकारी) see all incomes. Regular members (सभासद) see ONLY their own incomes.
+  const canViewAll = currentUser
+    ? isBadgedMember(currentUser.role) ||
+      (currentMember && isBadgedMember(currentMember.designation)) ||
+      canApproveFinancialTransactions(currentUser.role)
+    : false;
 
   const baseIncomes = useMemo(() => {
     if (canViewAll) {

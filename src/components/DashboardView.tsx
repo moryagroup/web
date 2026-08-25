@@ -243,12 +243,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const activeYear = selectedYear || getCalendarYearFromDate(new Date().toISOString().split('T')[0]);
 
+  const isCommittee =
+    canApprove ||
+    isBadgedMember(currentUser.role) ||
+    isBadgedMember(currentMember?.designation);
+
   const displayIncomes = useMemo(() => {
     if (!Array.isArray(incomes)) return [];
     const yearIncomes = incomes.filter((i) =>
       isDateInSelectedYear(i.transactionDate, activeYear, i.financialYear)
     );
-    if (canApprove) return yearIncomes;
+    if (isCommittee) return yearIncomes;
     const userNorm = (currentUser?.name || '').trim().toLowerCase();
     return yearIncomes.filter(
       (i) =>
@@ -256,22 +261,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         (i.depositorName || '').trim().toLowerCase().includes(userNorm) ||
         (i.createdBy || '').trim().toLowerCase().includes(userNorm)
     );
-  }, [incomes, canApprove, currentMember, currentUser, activeYear]);
+  }, [incomes, isCommittee, currentMember, currentUser, activeYear]);
 
   const displayExpenses = useMemo(() => {
     if (!Array.isArray(expenses)) return [];
     const yearExpenses = expenses.filter((e) =>
       isDateInSelectedYear(e.expenseDate, activeYear, e.financialYear)
     );
-    if (canApprove) return yearExpenses;
+    if (isCommittee) return yearExpenses;
     const userNorm = (currentUser?.name || '').trim().toLowerCase();
     return yearExpenses.filter(
       (e) =>
-        (currentMember && e.linkedMemberId === currentMember.id) ||
+        (currentMember && (e.linkedMemberId === currentMember.id || e.paidByMemberId === currentMember.id)) ||
+        (e.paidByMemberName || '').trim().toLowerCase().includes(userNorm) ||
         (e.recipientName || '').trim().toLowerCase().includes(userNorm) ||
         (e.createdBy || '').trim().toLowerCase().includes(userNorm)
     );
-  }, [expenses, canApprove, currentMember, currentUser, activeYear]);
+  }, [expenses, isCommittee, currentMember, currentUser, activeYear]);
 
   // User's personal total deposits and expenses for the Selected/Current Year (Total, Online & Cash)
   const userPersonalSummary = useMemo(() => {

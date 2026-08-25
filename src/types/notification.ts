@@ -14,6 +14,7 @@ export type NotificationType =
   | 'suggestion'           // 💡 सूचना / प्रतिसाद
   | 'poll_created'         // 🗳️ नवीन मतदान / चर्चा पोल
   | 'poll_decided'         // 🏆 मतदानाचा अंतिम निर्णय
+  | 'system'               // ⚙️ प्रणाली / वैशिष्ट्ये बदल सूचना
   | 'general';             // 📢 सर्वसाधारण सूचना
 
 export type NotificationFilter = 'all' | 'transactions' | 'tasks' | 'profile';

@@ -208,7 +208,9 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       }
     }
 
-    if (paymentMethod === 'रोख' && !cashReceiverMemberId) {
+    const isPendingPayment = isPhysicalReceipt && paymentStatus === 'PENDING';
+
+    if (!isPendingPayment && paymentMethod === 'रोख' && !cashReceiverMemberId) {
       setErrorMessage('कृपया रोख रक्कम स्वीकारणारा सभासद निवडा.');
       return;
     }
@@ -238,16 +240,16 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
       occasionId: selectedOccasion?.id,
       occasionName: selectedOccasion?.name,
       reason: reason.trim() || `${incomeType} - जमा`,
-      paymentMethod,
-      cashReceiverMemberId: paymentMethod === 'रोख' ? cashReceiverMemberId : undefined,
-      cashReceiverName: paymentMethod === 'रोख' ? finalCashReceiverName : undefined,
-      paymentReference: paymentReference.trim() || 'नमूद नाही',
+      paymentMethod: isPendingPayment ? 'येणे बाकी' : paymentMethod,
+      cashReceiverMemberId: (!isPendingPayment && paymentMethod === 'रोख') ? cashReceiverMemberId : undefined,
+      cashReceiverName: (!isPendingPayment && paymentMethod === 'रोख') ? finalCashReceiverName : undefined,
+      paymentReference: (!isPendingPayment && paymentReference.trim()) ? paymentReference.trim() : 'नमूद नाही',
       receiptNumber: finalReceiptNumber,
       receiptBookNo: isPhysicalReceipt ? receiptBookNo : undefined,
       receiptSerialNo: isPhysicalReceipt ? receiptSerialNo : undefined,
       isPhysicalReceipt,
       paymentStatus: isPhysicalReceipt ? paymentStatus : 'RECEIVED',
-      receivedDate: isPhysicalReceipt && paymentStatus === 'PENDING' ? undefined : transactionDate,
+      receivedDate: isPendingPayment ? undefined : transactionDate,
       attachmentUrl: attachmentUrl || undefined,
       notes: notes.trim() || 'नमूद नाही',
       financialYear: getFinancialYearFromDate(transactionDate),

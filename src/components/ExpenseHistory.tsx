@@ -123,8 +123,12 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
     );
   }, [members, currentUser]);
 
-  // Authorized officers (Treasurer, Vice Treasurer, Admin) see all expenses. Regular members see ONLY their own expenses.
-  const canViewAll = currentUser ? canApproveFinancialTransactions(currentUser.role) : false;
+  // Committee members (पदाधिकारी) see all expenses. Regular members (सभासद) see ONLY their own expenses.
+  const canViewAll = currentUser
+    ? isBadgedMember(currentUser.role) ||
+      (currentMember && isBadgedMember(currentMember.designation)) ||
+      canApproveFinancialTransactions(currentUser.role)
+    : false;
 
   const baseExpenses = useMemo(() => {
     if (canViewAll) {
@@ -132,10 +136,11 @@ export const ExpenseHistory: React.FC<ExpenseHistoryProps> = ({
     }
     const userNameNorm = (currentUser?.name || '').trim().toLowerCase();
     return expenses.filter((e) => {
-      const isLinkedMember = currentMember && e.linkedMemberId === currentMember.id;
+      const isLinkedMember = currentMember && (e.linkedMemberId === currentMember.id || e.paidByMemberId === currentMember.id);
+      const isPaidBy = (e.paidByMemberName || '').trim().toLowerCase().includes(userNameNorm);
       const isRecipient = (e.recipientName || '').trim().toLowerCase().includes(userNameNorm);
       const isCreator = (e.createdBy || '').trim().toLowerCase().includes(userNameNorm);
-      return isLinkedMember || isRecipient || isCreator;
+      return isLinkedMember || isPaidBy || isRecipient || isCreator;
     });
   }, [expenses, canViewAll, currentMember, currentUser]);
 

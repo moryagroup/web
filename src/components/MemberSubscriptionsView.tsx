@@ -120,7 +120,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
     return incomes.filter((i) => isDateInSelectedYear(i.transactionDate, selectedYear, i.financialYear));
   }, [incomes, selectedYear]);
 
-  if (!isLoggedIn || !isBadged) {
+  if (!isLoggedIn) {
     return (
       <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl max-w-xl mx-auto text-center space-y-5 my-8">
         <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
@@ -128,18 +128,18 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
         </div>
         <div className="space-y-2">
           <h2 className="text-xl font-black text-slate-800">
-            सभासद वर्गणी हिशोब केवळ पदाधिकाऱ्यांसाठी उपलब्ध
+            सभासद वर्गणी हिशोब पाहण्यासाठी लॉगिन करा
           </h2>
           <p className="text-xs text-slate-600 leading-relaxed">
-            सर्व सभासदांची वर्गणी टार्गेट, जमा हिशोब व संपर्क यादी पाहण्याचा अधिकार केवळ कार्यकारिणी पदाधिकारी (Badged Members) व ॲडमिन यांनाच आहे.
+            आपला वैयक्तिक वर्गणी हिशोब, भरणा पावत्या व स्थिती पाहण्यासाठी कृपया लॉगिन करा.
           </p>
         </div>
         <button
-          onClick={() => onOpenLogin && onOpenLogin(undefined, 'admin')}
+          onClick={() => onOpenLogin && onOpenLogin(undefined, 'member')}
           className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold text-xs rounded-xl shadow-lg inline-flex items-center gap-2 cursor-pointer transition-all"
         >
           <Lock className="w-4 h-4" />
-          <span>पदाधिकारी / ॲडमिन म्हणून लॉगिन करा</span>
+          <span>लॉगिन करा</span>
         </button>
       </div>
     );
@@ -629,9 +629,17 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
   };
 
   // Sort members strictly in requested order:
-  // अध्यक्ष → कार्याध्यक्ष → उपाध्यक्ष → सचिव → खजिनदार → उपخजिनदार → सभासद
+  // अध्यक्ष → कार्याध्यक्ष → उपाध्यक्ष → सचिव → खजिनदार → उपखजिनदार → सभासद
   const sortedAndFilteredMembers = useMemo(() => {
-    return [...members]
+    let list = [...members];
+    if (!isBadged) {
+      list = list.filter(
+        (m) =>
+          (loggedMember && m.id === loggedMember.id) ||
+          m.fullName.trim().toLowerCase() === (currentUser?.name || '').trim().toLowerCase()
+      );
+    }
+    return list
       .filter((m) => {
         if (!searchQuery.trim()) return true;
         const q = searchQuery.toLowerCase();
@@ -648,7 +656,7 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
         if (rankA !== rankB) return rankA - rankB;
         return a.memberCode.localeCompare(b.memberCode, undefined, { numeric: true });
       });
-  }, [members, searchQuery]);
+  }, [members, searchQuery, isBadged, loggedMember, currentUser]);
 
   // Compute Overall Membership Target, Collection and Pending Stats
   const overallStats = useMemo(() => {
@@ -657,14 +665,20 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
     let totalDonationCollected = 0;
     let completedMembersCount = 0;
 
-    const regularMembers = members.filter(
-      (m) =>
-        m.id !== 'm-admin' &&
-        m.designation !== 'ॲडमिन' &&
-        !(m.fullName || '').toLowerCase().includes('ॲडमिन')
-    );
+    const baseList = isBadged
+      ? members.filter(
+          (m) =>
+            m.id !== 'm-admin' &&
+            m.designation !== 'ॲडमिन' &&
+            !(m.fullName || '').toLowerCase().includes('ॲडमिन')
+        )
+      : members.filter(
+          (m) =>
+            (loggedMember && m.id === loggedMember.id) ||
+            m.fullName.trim().toLowerCase() === (currentUser?.name || '').trim().toLowerCase()
+        );
 
-    regularMembers.forEach((m) => {
+    baseList.forEach((m) => {
       const target = m.annualTargetAmount || 6000;
       totalTarget += target;
       const sub = getMemberSubscriptionPaid(m.id, filteredIncomesByYear, undefined, m.fullName);
@@ -684,9 +698,9 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
       totalRemaining,
       totalDonationCollected,
       completedMembersCount,
-      totalMembers: regularMembers.length,
+      totalMembers: baseList.length,
     };
-  }, [members, filteredIncomesByYear]);
+  }, [members, filteredIncomesByYear, isBadged, loggedMember, currentUser]);
 
   return (
     <div className="space-y-6 my-4">
@@ -709,9 +723,11 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">सभासद व पदाधिकारी यादी (हिशोब)</h2>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                {isBadged ? 'सभासद व पदाधिकारी यादी (हिशोब)' : 'माझा वर्गणी हिशोब'}
+              </h2>
               <span className="px-2.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-md text-xs font-black">
-                एकूण {members.length}
+                {isBadged ? `एकूण ${members.length}` : 'वैयक्तिक हिशोब'}
               </span>
               {isAdmin && (
                 <span className="px-2 py-0.5 bg-purple-100 text-purple-900 border border-purple-300 rounded-md text-[10px] font-black flex items-center gap-1">
@@ -721,7 +737,9 @@ export const MemberSubscriptionsView: React.FC<MemberSubscriptionsViewProps> = (
               )}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              पदाधिकारी व सर्व सभासदांची नाव, पदवी, वार्षिक निर्धारित वर्गणी (₹६,०००) व जमा हिशोब.
+              {isBadged
+                ? 'पदाधिकारी व सर्व सभासदांची नाव, पदवी, वार्षिक निर्धारित वर्गणी (₹६,०००) व जमा हिशोब.'
+                : 'आपली वार्षिक निर्धारित वर्गणी (₹६,०००), भरणा पावत्या व जमा हिशोब.'}
             </p>
           </div>
         </div>

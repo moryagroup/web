@@ -47,6 +47,7 @@ export type PaymentMethod =
   | 'UPI'
   | 'बँक ट्रान्सफर'
   | 'चेक'
+  | 'येणे बाकी'
   | 'इतर';
 
 export type ApprovalStatus = 'प्रलंबित' | 'मंजूर' | 'रद्द';
