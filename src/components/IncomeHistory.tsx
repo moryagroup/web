@@ -1285,7 +1285,13 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               onSubmit={(e) => {
                 e.preventDefault();
                 if (editingIncome) {
-                  onUpdateIncome?.(editingIncome);
+                  const finalUpdated: IncomeTransaction = {
+                    ...editingIncome,
+                    paymentStatus: editingIncome.paymentStatus || 'RECEIVED',
+                    paymentMethod: editingIncome.paymentStatus === 'PENDING' ? 'येणे बाकी' : editingIncome.paymentMethod,
+                    updatedAt: new Date().toISOString(),
+                  };
+                  onUpdateIncome?.(finalUpdated);
                   setEditingIncome(null);
                 }
               }}

@@ -187,6 +187,36 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
       parsedApprovalStatus = 'प्रलंबित';
     }
 
+    // Parse payment collection status (RECEIVED vs PENDING)
+    let parsedPaymentStatus: 'RECEIVED' | 'PENDING' = 'RECEIVED';
+    let parsedReceivedDate = row.received_date || undefined;
+
+    if (cleanNotes.includes('[PAY_STATUS:')) {
+      const m = cleanNotes.match(/\[PAY_STATUS:([^\]]+)\]/);
+      if (m) {
+        parsedPaymentStatus = m[1].trim() as 'RECEIVED' | 'PENDING';
+        cleanNotes = cleanNotes.replace(/\[PAY_STATUS:[^\]]+\]/g, '').trim();
+      }
+    } else if (cleanReason.includes('[PAY_STATUS:')) {
+      const m = cleanReason.match(/\[PAY_STATUS:([^\]]+)\]/);
+      if (m) {
+        parsedPaymentStatus = m[1].trim() as 'RECEIVED' | 'PENDING';
+        cleanReason = cleanReason.replace(/\[PAY_STATUS:[^\]]+\]/g, '').trim();
+      }
+    } else if (row.payment_status === 'PENDING' || row.payment_status === 'RECEIVED') {
+      parsedPaymentStatus = row.payment_status;
+    } else if (row.payment_method === 'येणे बाकी') {
+      parsedPaymentStatus = 'PENDING';
+    }
+
+    if (cleanNotes.includes('[REC_DATE:')) {
+      const m = cleanNotes.match(/\[REC_DATE:([^\]]+)\]/);
+      if (m) {
+        parsedReceivedDate = m[1].trim();
+        cleanNotes = cleanNotes.replace(/\[REC_DATE:[^\]]+\]/g, '').trim();
+      }
+    }
+
     let rawTransNo = row.transaction_no || '';
     if (rawTransNo === 'CR-2026-50' || rawTransNo === 'CR-2026-49' || rawTransNo.endsWith('-50')) {
       rawTransNo = 'CR-2026-18';
@@ -213,6 +243,8 @@ export async function fetchIncomesFromSupabase(): Promise<IncomeTransaction[]> {
       receiptBookNo: row.receipt_book_no || row.receiptBookNo,
       receiptSerialNo: row.receipt_serial_no || row.receiptSerialNo,
       isPhysicalReceipt: row.is_physical_receipt || Boolean(row.receipt_book_no),
+      paymentStatus: parsedPaymentStatus,
+      receivedDate: parsedReceivedDate,
       reason: cleanReason,
       notes: cleanNotes || undefined,
       attachmentUrl,
@@ -235,6 +267,8 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
       ? ` [CASH_REC:${income.cashReceiverMemberId}:${income.cashReceiverName || ''}]`
       : '';
   const statusTag = ` [STATUS:${income.approvalStatus || 'प्रलंबित'}]`;
+  const payStatusTag = ` [PAY_STATUS:${income.paymentStatus || (income.paymentMethod === 'येणे बाकी' ? 'PENDING' : 'RECEIVED')}]`;
+  const recDateTag = income.receivedDate ? ` [REC_DATE:${income.receivedDate}]` : '';
 
   const row: any = {
     id: income.id,
@@ -252,7 +286,7 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
     payment_reference: income.paymentReference || null,
     receipt_number: income.receiptNumber || null,
     reason: income.reason,
-    notes: ((income.notes || '') + cashRecTag + statusTag).trim() || null,
+    notes: ((income.notes || '') + cashRecTag + statusTag + payStatusTag + recDateTag).trim() || null,
     approval_status: income.approvalStatus || 'प्रलंबित',
     approved_by: income.approvedBy || null,
     approved_by_role: income.approvedByRole || null,
@@ -279,7 +313,7 @@ export async function saveIncomeToSupabase(income: IncomeTransaction): Promise<v
       payment_reference: income.paymentReference || null,
       receipt_number: income.receiptNumber || null,
       reason: dbAttachmentUrl ? `${income.reason}\n__ATTACHMENT__:${dbAttachmentUrl}` : income.reason,
-      notes: ((income.notes || '') + cashRecTag + statusTag).trim() || null,
+      notes: ((income.notes || '') + cashRecTag + statusTag + payStatusTag + recDateTag).trim() || null,
       recorded_by: income.createdBy || 'सभासद',
       updated_at: new Date().toISOString(),
     };
