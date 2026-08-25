@@ -261,23 +261,23 @@ export const DailyTransactionsView: React.FC<DailyTransactionsViewProps> = ({
   });
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-2.5 sm:p-6 space-y-3 sm:space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-amber-900 via-rose-950 to-orange-950 rounded-3xl p-6 text-white shadow-xl border border-amber-500/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-4">
+      <div className="bg-gradient-to-r from-amber-900 via-rose-950 to-orange-950 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 text-white shadow-xl border border-amber-500/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <img
             src={groupLogo || moryaLogo}
             alt="मोरया ग्रुप लोगो"
-            className="w-14 h-14 rounded-2xl border-2 border-amber-400 p-0.5 bg-slate-950 object-contain shadow-md shrink-0"
+            className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl border-2 border-amber-400 p-0.5 bg-slate-950 object-contain shadow-md shrink-0"
           />
-          <div>
-            <span className="px-2.5 py-0.5 bg-amber-500/30 border border-amber-400/40 text-amber-200 text-[10px] font-bold rounded-full uppercase tracking-wider">
+          <div className="min-w-0">
+            <span className="px-2 py-0.5 bg-amber-500/30 border border-amber-400/40 text-amber-200 text-[9px] sm:text-[10px] font-bold rounded-full uppercase tracking-wider">
               दैनिक रोजमेळ (Daily Rozmel Ledger)
             </span>
-            <h1 className="text-xl sm:text-2xl font-black text-amber-300 mt-0.5">
+            <h1 className="text-base sm:text-2xl font-black text-amber-300 mt-0.5 truncate">
               दैनिक व्यवहार इतिहास (Daily Transactions)
             </h1>
-            <p className="text-xs text-amber-100/80 font-medium">
+            <p className="text-[10px] sm:text-xs text-amber-100/80 font-medium truncate">
               रोजचा जमा-खर्च, शिल्लक रक्कम व दैनिक रोख मेळ अहवाल
             </p>
           </div>
@@ -286,104 +286,104 @@ export const DailyTransactionsView: React.FC<DailyTransactionsViewProps> = ({
         <div className="flex items-center gap-2 self-end md:self-auto shrink-0 print:hidden">
           <button
             onClick={handlePrintRozmel}
-            className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] sm:text-xs rounded-lg sm:rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>प्रिंट / PDF रिपोर्ट</span>
           </button>
         </div>
       </div>
 
       {/* Date Selector Bar */}
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+      <div className="bg-white dark:bg-slate-800 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
+        <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
           <button
             onClick={handlePrevDay}
-            className="p-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 text-slate-700 dark:text-slate-200 rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-600 shrink-0"
+            className="p-1.5 sm:p-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 text-slate-700 dark:text-slate-200 rounded-lg sm:rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-600 shrink-0"
             title="मागील दिवस"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
-          <div className="flex-1 sm:flex-none flex items-center gap-2 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600">
-            <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <div className="flex-1 sm:flex-none flex items-center gap-1.5 sm:gap-2 bg-slate-50 dark:bg-slate-900 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl border border-slate-300 dark:border-slate-600">
+            <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent text-sm font-bold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer"
             />
           </div>
 
           <button
             onClick={handleNextDay}
-            className="p-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 text-slate-700 dark:text-slate-200 rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-600 shrink-0"
+            className="p-1.5 sm:p-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 text-slate-700 dark:text-slate-200 rounded-lg sm:rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-600 shrink-0"
             title="पुढील दिवस"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
           {selectedDate !== todayStr && (
             <button
               onClick={() => setSelectedDate(todayStr)}
-              className="px-3 py-2 bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0"
+              className="px-2.5 py-1 sm:px-3 sm:py-2 bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all cursor-pointer shrink-0"
             >
               📅 आज
             </button>
           )}
         </div>
 
-        <div className="text-xs font-bold text-slate-600 dark:text-slate-300 bg-amber-50 dark:bg-slate-900/60 px-3 py-1.5 rounded-xl border border-amber-200 dark:border-slate-700 text-center sm:text-right w-full sm:w-auto">
+        <div className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 bg-amber-50 dark:bg-slate-900/60 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl border border-amber-200 dark:border-slate-700 text-center sm:text-right w-full sm:w-auto">
           {formattedDateLocale}
         </div>
       </div>
 
-      {/* Daily Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Daily Metrics Cards (Compact 2x2 on Mobile, 4-Col on Desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {/* Total Jama */}
-        <div className="bg-emerald-50/70 dark:bg-emerald-950/40 p-4 rounded-2xl border-2 border-emerald-300 dark:border-emerald-700 shadow-xs space-y-2">
-          <div className="flex justify-between items-center text-emerald-900 dark:text-emerald-300">
-            <span className="text-xs font-bold uppercase tracking-wider">आजची जमा (Income)</span>
-            <div className="p-2 bg-emerald-600 text-white rounded-xl shadow-2xs">
-              <TrendingUp className="w-4 h-4" />
+        <div className="bg-emerald-50/70 dark:bg-emerald-950/40 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-emerald-300 dark:border-emerald-700 shadow-xs space-y-1 sm:space-y-2 flex flex-col justify-between">
+          <div className="flex justify-between items-center text-emerald-900 dark:text-emerald-300 gap-1">
+            <span className="text-[9px] sm:text-xs font-bold uppercase tracking-wider truncate">आजची जमा (Income)</span>
+            <div className="p-1 sm:p-2 bg-emerald-600 text-white rounded-md sm:rounded-xl shadow-2xs shrink-0">
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-2xl font-black text-emerald-700 dark:text-emerald-400">
+          <div className="text-base sm:text-2xl font-black text-emerald-700 dark:text-emerald-400 truncate">
             ₹{totalJama.toLocaleString('en-IN')}
           </div>
-          <div className="text-[11px] text-emerald-800 dark:text-emerald-300 font-semibold flex justify-between pt-1 border-t border-emerald-200 dark:border-emerald-800/60">
+          <div className="text-[8px] sm:text-[11px] text-emerald-800 dark:text-emerald-300 font-semibold flex flex-col sm:flex-row justify-between gap-0.5 pt-1 border-t border-emerald-200 dark:border-emerald-800/60 leading-tight">
             <span>💵 रोख: ₹{cashJama.toLocaleString('en-IN')}</span>
             <span>📱 डिजिटल: ₹{digitalJama.toLocaleString('en-IN')}</span>
           </div>
         </div>
 
         {/* Total Kharch */}
-        <div className="bg-rose-50/70 dark:bg-rose-950/40 p-4 rounded-2xl border-2 border-rose-300 dark:border-rose-700 shadow-xs space-y-2">
-          <div className="flex justify-between items-center text-rose-900 dark:text-rose-300">
-            <span className="text-xs font-bold uppercase tracking-wider">आजचा खर्च (Expense)</span>
-            <div className="p-2 bg-rose-600 text-white rounded-xl shadow-2xs">
-              <TrendingDown className="w-4 h-4" />
+        <div className="bg-rose-50/70 dark:bg-rose-950/40 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-rose-300 dark:border-rose-700 shadow-xs space-y-1 sm:space-y-2 flex flex-col justify-between">
+          <div className="flex justify-between items-center text-rose-900 dark:text-rose-300 gap-1">
+            <span className="text-[9px] sm:text-xs font-bold uppercase tracking-wider truncate">आजचा खर्च (Expense)</span>
+            <div className="p-1 sm:p-2 bg-rose-600 text-white rounded-md sm:rounded-xl shadow-2xs shrink-0">
+              <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-2xl font-black text-rose-700 dark:text-rose-400">
+          <div className="text-base sm:text-2xl font-black text-rose-700 dark:text-rose-400 truncate">
             ₹{totalKharch.toLocaleString('en-IN')}
           </div>
-          <div className="text-[11px] text-rose-800 dark:text-rose-300 font-semibold flex justify-between pt-1 border-t border-rose-200 dark:border-rose-800/60">
+          <div className="text-[8px] sm:text-[11px] text-rose-800 dark:text-rose-300 font-semibold flex flex-col sm:flex-row justify-between gap-0.5 pt-1 border-t border-rose-200 dark:border-rose-800/60 leading-tight">
             <span>💵 रोख: ₹{cashKharch.toLocaleString('en-IN')}</span>
             <span>📱 डिजिटल: ₹{digitalKharch.toLocaleString('en-IN')}</span>
           </div>
         </div>
 
         {/* Net Daily Balance */}
-        <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border-2 border-slate-300 dark:border-slate-600 shadow-xs space-y-2">
-          <div className="flex justify-between items-center text-slate-700 dark:text-slate-200">
-            <span className="text-xs font-bold uppercase tracking-wider">निव्वळ शिल्लक (Net Difference)</span>
-            <div className="p-2 bg-slate-700 text-white rounded-xl shadow-2xs">
-              <Scale className="w-4 h-4" />
+        <div className="bg-slate-50 dark:bg-slate-800 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-slate-300 dark:border-slate-600 shadow-xs space-y-1 sm:space-y-2 flex flex-col justify-between">
+          <div className="flex justify-between items-center text-slate-700 dark:text-slate-200 gap-1">
+            <span className="text-[9px] sm:text-xs font-bold uppercase tracking-wider truncate">निव्वळ शिल्लक (Net)</span>
+            <div className="p-1 sm:p-2 bg-slate-700 text-white rounded-md sm:rounded-xl shadow-2xs shrink-0">
+              <Scale className="w-3 h-3 sm:w-4 sm:h-4" />
             </div>
           </div>
           <div
-            className={`text-2xl font-black ${
+            className={`text-base sm:text-2xl font-black truncate ${
               netBalance >= 0
                 ? 'text-emerald-700 dark:text-emerald-400'
                 : 'text-rose-600 dark:text-rose-400'
@@ -391,21 +391,21 @@ export const DailyTransactionsView: React.FC<DailyTransactionsViewProps> = ({
           >
             ₹{netBalance.toLocaleString('en-IN')}
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold pt-1 border-t border-slate-200 dark:border-slate-700">
-            आजची एकूण जमा व खर्चातील फरक
+          <div className="text-[8px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-semibold pt-1 border-t border-slate-200 dark:border-slate-700 truncate leading-tight">
+            आजची जमा-खर्च फरक
           </div>
         </div>
 
         {/* Daily Cash Balance Flow */}
-        <div className="bg-amber-50/70 dark:bg-amber-950/40 p-4 rounded-2xl border-2 border-amber-300 dark:border-amber-700 shadow-xs space-y-2">
-          <div className="flex justify-between items-center text-amber-900 dark:text-amber-200">
-            <span className="text-xs font-bold uppercase tracking-wider">हातातील रोख शिल्लक (Cash Flow)</span>
-            <div className="p-2 bg-amber-600 text-white rounded-xl shadow-2xs">
-              <Wallet className="w-4 h-4" />
+        <div className="bg-amber-50/70 dark:bg-amber-950/40 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-amber-300 dark:border-amber-700 shadow-xs space-y-1 sm:space-y-2 flex flex-col justify-between">
+          <div className="flex justify-between items-center text-amber-900 dark:text-amber-200 gap-1">
+            <span className="text-[9px] sm:text-xs font-bold uppercase tracking-wider truncate">हातातील रोख (Cash)</span>
+            <div className="p-1 sm:p-2 bg-amber-600 text-white rounded-md sm:rounded-xl shadow-2xs shrink-0">
+              <Wallet className="w-3 h-3 sm:w-4 sm:h-4" />
             </div>
           </div>
           <div
-            className={`text-2xl font-black ${
+            className={`text-base sm:text-2xl font-black truncate ${
               netCashBalance >= 0
                 ? 'text-amber-800 dark:text-amber-300'
                 : 'text-rose-600 dark:text-rose-400'
@@ -413,50 +413,50 @@ export const DailyTransactionsView: React.FC<DailyTransactionsViewProps> = ({
           >
             ₹{netCashBalance.toLocaleString('en-IN')}
           </div>
-          <div className="text-[11px] text-amber-800 dark:text-amber-300 font-semibold pt-1 border-t border-amber-200 dark:border-amber-800/60">
-            आज प्राप्त झालेली निव्वळ रोख रक्कम
+          <div className="text-[8px] sm:text-[11px] text-amber-800 dark:text-amber-300 font-semibold pt-1 border-t border-amber-200 dark:border-amber-800/60 truncate leading-tight">
+            आजची निव्वळ रोख
           </div>
         </div>
       </div>
 
       {/* Scope Filter (Only for Committee Members: All vs My vs Member filter; Regular members see personal notice) */}
       {isCommitteeMember ? (
-        <div className="bg-amber-50/80 dark:bg-slate-800/90 p-3.5 rounded-2xl border border-amber-200 dark:border-amber-700/60 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+        <div className="bg-amber-50/80 dark:bg-slate-800/90 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border border-amber-200 dark:border-amber-700/60 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 shadow-xs">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
-              <Filter className="w-4 h-4 text-amber-600" />
+            <span className="text-[11px] sm:text-xs font-bold text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
+              <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" />
               <span>व्यवहार व्याप्ती (Scope):</span>
             </span>
-            <div className="inline-flex bg-white dark:bg-slate-700 p-1 rounded-xl border border-amber-200 dark:border-slate-600 shadow-2xs">
+            <div className="inline-flex bg-white dark:bg-slate-700 p-0.5 sm:p-1 rounded-lg sm:rounded-xl border border-amber-200 dark:border-slate-600 shadow-2xs">
               <button
                 type="button"
                 onClick={() => setScopeFilter('ALL')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                   scopeFilter === 'ALL'
                     ? 'bg-amber-600 text-white shadow-xs'
                     : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600'
                 }`}
               >
-                <Users className="w-3.5 h-3.5" />
-                <span>सर्व व्यवहार (All Transactions)</span>
+                <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span>सर्व व्यवहार</span>
               </button>
               <button
                 type="button"
                 onClick={() => setScopeFilter('MY')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                   scopeFilter === 'MY'
                     ? 'bg-amber-600 text-white shadow-xs'
                     : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600'
                 }`}
               >
-                <User className="w-3.5 h-3.5" />
-                <span>माझे व्यवहार (My Transactions)</span>
+                <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span>माझे व्यवहार</span>
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-bold text-amber-950 dark:text-amber-200 whitespace-nowrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+            <label className="text-[10px] sm:text-xs font-bold text-amber-950 dark:text-amber-200 whitespace-nowrap">
               विशिष्ट सभासद:
             </label>
             <select
@@ -468,7 +468,7 @@ export const DailyTransactionsView: React.FC<DailyTransactionsViewProps> = ({
                   setScopeFilter('ALL');
                 }
               }}
-              className="px-3 py-1.5 bg-white dark:bg-slate-700 border border-amber-300 dark:border-slate-600 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
+              className="flex-1 sm:flex-none px-2.5 py-1 sm:px-3 sm:py-1.5 bg-white dark:bg-slate-700 border border-amber-300 dark:border-slate-600 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 outline-none cursor-pointer"
             >
               <option value="">-- सर्व सभासद --</option>
               {members.map((m) => (
@@ -480,44 +480,44 @@ export const DailyTransactionsView: React.FC<DailyTransactionsViewProps> = ({
           </div>
         </div>
       ) : (
-        <div className="bg-blue-50 dark:bg-blue-950/40 p-3 rounded-2xl border border-blue-200 dark:border-blue-700 text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center justify-between shadow-xs">
-          <div className="flex items-center gap-2">
-            <span className="p-1 bg-blue-600 text-white rounded-lg text-xs">👤</span>
-            <span>तुम्ही फक्त तुमचे स्वतःचे दैनिक व्यवहार पाहत आहात (My Transactions Only).</span>
+        <div className="bg-blue-50 dark:bg-blue-950/40 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-blue-200 dark:border-blue-700 text-[10px] sm:text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="p-0.5 sm:p-1 bg-blue-600 text-white rounded-md text-[10px] sm:text-xs">👤</span>
+            <span>तुम्ही फक्त तुमचे स्वतःचे दैनिक व्यवहार पाहत आहात (My Transactions).</span>
           </div>
-          <span className="text-[11px] text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/60 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-800">
+          <span className="text-[9px] sm:text-[11px] text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/60 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg border border-blue-200 dark:border-blue-800">
             {currentUser?.name || 'सभासद'}
           </span>
         </div>
       )}
 
       {/* Filter & Search Toolbar */}
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-3">
+      <div className="bg-white dark:bg-slate-800 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-2.5 sm:gap-3">
         <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-3 top-2.5 sm:top-3 text-slate-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="नावाने, कारणाने किंवा पावतीने शोधा..."
-            className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 dark:text-slate-100"
+            className="w-full pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 dark:text-slate-100"
           />
         </div>
 
-        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl w-full md:w-auto overflow-x-auto">
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg sm:rounded-xl w-full md:w-auto overflow-x-auto">
           <button
             onClick={() => setSelectedFilter('ALL')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-bold rounded-md sm:rounded-lg transition-all cursor-pointer whitespace-nowrap ${
               selectedFilter === 'ALL'
                 ? 'bg-amber-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
             }`}
           >
-            सर्व व्यवहार ({combinedTransactions.length})
+            सर्व ({combinedTransactions.length})
           </button>
           <button
             onClick={() => setSelectedFilter('INCOME')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-bold rounded-md sm:rounded-lg transition-all cursor-pointer whitespace-nowrap ${
               selectedFilter === 'INCOME'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
@@ -527,7 +527,7 @@ export const DailyTransactionsView: React.FC<DailyTransactionsViewProps> = ({
           </button>
           <button
             onClick={() => setSelectedFilter('EXPENSE')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-bold rounded-md sm:rounded-lg transition-all cursor-pointer whitespace-nowrap ${
               selectedFilter === 'EXPENSE'
                 ? 'bg-rose-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
@@ -537,21 +537,21 @@ export const DailyTransactionsView: React.FC<DailyTransactionsViewProps> = ({
           </button>
           <button
             onClick={() => setSelectedFilter('CASH')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-bold rounded-md sm:rounded-lg transition-all cursor-pointer whitespace-nowrap ${
               selectedFilter === 'CASH'
                 ? 'bg-amber-700 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
             }`}
           >
-            💵 रोख नोंदी
+            💵 रोख
           </button>
         </div>
       </div>
 
       {/* Unified Daily Timeline Table */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-          <span className="font-bold text-sm text-slate-700 dark:text-slate-200">
+      <div className="bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+          <span className="font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-200">
             दैनिक जमा-खर्च क्रमिक यादी ({filteredTimeline.length})
           </span>
           <span className="text-xs text-slate-500 dark:text-slate-400">

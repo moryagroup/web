@@ -110,6 +110,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isMemberPhotoModalOpen, setIsMemberPhotoModalOpen] = useState(false);
   const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
+  const [showAllPendingIncomes, setShowAllPendingIncomes] = useState(false);
+  const [showAllPendingCashSettlements, setShowAllPendingCashSettlements] = useState(false);
+  const [showAllPendingExpenses, setShowAllPendingExpenses] = useState(false);
 
   const handleProofClick = (url: string) => {
     if (!url) return;
@@ -874,7 +877,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="space-y-2">
-            {pendingIncomes.map((inc) => (
+            {(showAllPendingIncomes ? pendingIncomes : pendingIncomes.slice(0, 5)).map((inc) => (
               <div
                 key={inc.id}
                 className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-emerald-200/80 dark:border-emerald-700/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
@@ -945,6 +948,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             ))}
           </div>
+
+          {pendingIncomes.length > 5 && (
+            <button
+              type="button"
+              onClick={() => setShowAllPendingIncomes(!showAllPendingIncomes)}
+              className="w-full mt-3 py-2 bg-emerald-100/90 dark:bg-emerald-950/80 hover:bg-emerald-200 dark:hover:bg-emerald-900 text-emerald-900 dark:text-emerald-200 font-bold text-xs rounded-xl border border-emerald-300 dark:border-emerald-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+            >
+              {showAllPendingIncomes ? (
+                <>
+                  <ChevronUp className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                  <span>कमी करा (पहिले ५ दाखवा)</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                  <span>आणखी {pendingIncomes.length - 5} प्रलंबित जमा पहा (एकूण {pendingIncomes.length} व्यवहारांपैकी)</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       )}
 
@@ -966,7 +989,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="space-y-2">
-            {pendingCashSettlements.map((s) => (
+            {(showAllPendingCashSettlements ? pendingCashSettlements : pendingCashSettlements.slice(0, 5)).map((s) => (
               <div
                 key={s.id}
                 className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-sky-200/80 dark:border-sky-700/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
@@ -1045,6 +1068,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             ))}
           </div>
+
+          {pendingCashSettlements.length > 5 && (
+            <button
+              type="button"
+              onClick={() => setShowAllPendingCashSettlements(!showAllPendingCashSettlements)}
+              className="w-full mt-3 py-2 bg-sky-100/90 dark:bg-sky-950/80 hover:bg-sky-200 dark:hover:bg-sky-900 text-sky-900 dark:text-sky-200 font-bold text-xs rounded-xl border border-sky-300 dark:border-sky-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+            >
+              {showAllPendingCashSettlements ? (
+                <>
+                  <ChevronUp className="w-4 h-4 text-sky-700 dark:text-sky-400" />
+                  <span>कमी करा (पहिले ५ दाखवा)</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 text-sky-700 dark:text-sky-400" />
+                  <span>आणखी {pendingCashSettlements.length - 5} प्रलंबित भरणा नोंदी पहा (एकूण {pendingCashSettlements.length} व्यवहारांपैकी)</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       )}
       {/* Pending Expense Approvals Banner (If any) */}
@@ -1065,7 +1108,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="space-y-2">
-            {pendingExpenses.map((exp) => (
+            {(showAllPendingExpenses ? pendingExpenses : pendingExpenses.slice(0, 5)).map((exp) => (
               <div
                 key={exp.id}
                 className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-amber-200/80 dark:border-amber-700/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
@@ -1130,6 +1173,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             ))}
           </div>
+
+          {pendingExpenses.length > 5 && (
+            <button
+              type="button"
+              onClick={() => setShowAllPendingExpenses(!showAllPendingExpenses)}
+              className="w-full mt-3 py-2 bg-amber-100/90 dark:bg-amber-950/80 hover:bg-amber-200 dark:hover:bg-amber-900 text-amber-900 dark:text-amber-200 font-bold text-xs rounded-xl border border-amber-300 dark:border-amber-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+            >
+              {showAllPendingExpenses ? (
+                <>
+                  <ChevronUp className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                  <span>कमी करा (पहिले ५ दाखवा)</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                  <span>आणखी {pendingExpenses.length - 5} प्रलंबित खर्च पहा (एकूण {pendingExpenses.length} व्यवहारांपैकी)</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       )}
 
