@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { IncomeTransaction, Member, CurrentUser, PaymentMethod } from '../types';
 import { hasFullFinancialAccess, isBadgedMember, isCoreMemberRole, canApproveFinancialTransactions } from '../utils/rbac';
-import { isDateInSelectedYear } from '../utils/dateUtils';
+import { isDateInSelectedYear, convertEnglishToMarathiDigits } from '../utils/dateUtils';
 import { RbacGuard } from './RbacGuard';
 import {
   Search,
@@ -714,10 +714,8 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
               <tr className="bg-slate-100/70 dark:bg-slate-700/60 text-[11px] font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
                 <th className="p-3.5">तारीख</th>
                 <th className="p-3.5">व्यवहार क्र.</th>
+                <th className="p-3.5">पावती पुस्तक क्र.</th>
                 <th className="p-3.5">जमा करणाऱ्याचे नाव</th>
-                <th className="p-3.5">प्रकार</th>
-                <th className="p-3.5">जमा प्रकार</th>
-                <th className="p-3.5">कारण / तपशील</th>
                 <th className="p-3.5 text-right">रक्कम</th>
                 <th className="p-3.5">पेमेंट</th>
                 <th className="p-3.5">नोंद करणारे</th>
@@ -728,7 +726,7 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-xs text-slate-700 dark:text-slate-200">
               {filteredIncomes.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-slate-400">
+                  <td colSpan={9} className="p-8 text-center text-slate-400">
                     कोणतेही जमा व्यवहार आढळले नाहीत.
                   </td>
                 </tr>
@@ -742,13 +740,19 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                         year: 'numeric',
                       })}
                     </td>
-                    <td className="p-3.5 font-mono text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
-                      <div>{item.transactionNo}</div>
-                      {(item.isPhysicalReceipt || item.receiptBookNo) && (
-                        <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded text-[9px] font-black mt-0.5 whitespace-nowrap">
-                          <BookOpen className="w-2.5 h-2.5" />
-                          <span>पु. #{item.receiptBookNo || '1'} / पा. #{item.receiptSerialNo || '1'}</span>
-                        </div>
+                    <td className="p-3.5 font-mono text-[11px] text-slate-500 dark:text-slate-400 font-semibold whitespace-nowrap">
+                      {item.transactionNo}
+                    </td>
+                    <td className="p-3.5 font-medium whitespace-nowrap">
+                      {item.isPhysicalReceipt || item.receiptBookNo ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded-lg text-[11px] font-black shadow-2xs">
+                          <BookOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <span>
+                            पुस्तक #{convertEnglishToMarathiDigits(item.receiptBookNo || '1')} (पावती अनुक्रमांक #{convertEnglishToMarathiDigits(item.receiptSerialNo || '1')})
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">डिजिटल नोंद (—)</span>
                       )}
                     </td>
                     <td className="p-3.5 font-bold text-slate-800 dark:text-slate-100">
@@ -757,30 +761,6 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                         <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-normal">
                           {item.linkedMemberName}
                         </div>
-                      )}
-                    </td>
-                    <td className="p-3.5">
-                      <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded text-[10px] font-semibold">
-                        {item.depositorType}
-                      </span>
-                    </td>
-                    <td className="p-3.5">
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          item.incomeType === 'सभासद वर्गणी'
-                            ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700'
-                            : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700'
-                        }`}
-                      >
-                        {item.incomeType}
-                      </span>
-                    </td>
-                    <td className="p-3.5 max-w-xs truncate" title={item.reason}>
-                      {item.reason}
-                      {item.occasionName && (
-                        <span className="block text-[10px] text-slate-400">
-                          उत्सव: {item.occasionName}
-                        </span>
                       )}
                     </td>
                     <td className="p-3.5 text-right font-black text-emerald-700 text-sm whitespace-nowrap">

@@ -100,6 +100,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({
   const [createdTransaction, setCreatedTransaction] = useState<IncomeTransaction | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
   const [paymentStatus, setPaymentStatus] = useState<'RECEIVED' | 'PENDING'>('RECEIVED');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Default cash receiver to logged-in user or first member
   useEffect(() => {
