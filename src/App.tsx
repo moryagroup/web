@@ -1761,6 +1761,7 @@ export default function App() {
                 incomes={formattedIncomes}
                 groupLogo={groupLogo}
                 onAddIncome={handleAddIncome}
+                onUpdateIncome={handleUpdateIncome}
                 onAddCustomIncomeType={handleAddCustomIncomeType}
                 onSuccessNavigate={() => setActiveTab('income-history')}
                 onNavigate={(tab) => setActiveTab(tab)}
