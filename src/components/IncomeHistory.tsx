@@ -32,7 +32,7 @@ import { NativeService } from '../services/nativeService';
 import { ProofLightboxModal } from './ProofLightboxModal';
 import { isGoogleDriveUrl } from '../services/googleDriveService';
 import { dispatchApprovedTransaction, downloadReceiptImage } from '../services/transactionDispatchService';
-import { isPhysicalReceiptDuplicate, formatPhysicalReceiptNumber, getNextSerialForReceiptBook } from '../utils/physicalReceiptUtils';
+import { isPhysicalReceiptDuplicate, formatPhysicalReceiptNumber, getNextSerialForReceiptBook, formatCompactReceiptDisplay } from '../utils/physicalReceiptUtils';
 
 interface IncomeHistoryProps {
   incomes: IncomeTransaction[];
@@ -744,32 +744,10 @@ export const IncomeHistory: React.FC<IncomeHistoryProps> = ({
                       {item.transactionNo}
                     </td>
                     <td className="p-3.5 font-medium whitespace-nowrap">
-                      {item.isPhysicalReceipt || item.receiptBookNo ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded-lg text-[11px] font-black shadow-2xs">
-                          <BookOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                          <span>
-                            पुस्तक #{convertEnglishToMarathiDigits(item.receiptBookNo || '1')} (पावती अनुक्रमांक #{convertEnglishToMarathiDigits(item.receiptSerialNo || '1')})
-                          </span>
-                        </span>
-                      ) : item.receiptNumber ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded-lg text-[11px] font-black shadow-2xs">
-                          <BookOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                          <span>
-                            पावती क्र. #{convertEnglishToMarathiDigits(item.receiptNumber)}
-                          </span>
-                        </span>
-                      ) : item.receiptSerialNo ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded-lg text-[11px] font-black shadow-2xs">
-                          <BookOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                          <span>
-                            पावती अनुक्रमांक #{convertEnglishToMarathiDigits(item.receiptSerialNo)}
-                          </span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600 rounded text-[11px] font-bold">
-                          <span>पावती #{item.transactionNo}</span>
-                        </span>
-                      )}
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-950 dark:text-amber-100 border border-amber-300 dark:border-amber-700 rounded text-xs font-black shadow-2xs font-mono">
+                        <BookOpen className="w-3 h-3 text-amber-700 dark:text-amber-400 shrink-0" />
+                        <span>{formatCompactReceiptDisplay(item)}</span>
+                      </span>
                     </td>
                     <td className="p-3.5 font-bold text-slate-800 dark:text-slate-100">
                       <div>{item.depositorName}</div>

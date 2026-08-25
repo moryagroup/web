@@ -91,15 +91,54 @@ export function isPhysicalReceiptDuplicate(
 }
 
 /**
- * Formats a clean, readable receipt number from Book No and Serial No
+ * Formats a clean, readable receipt number from Book No and Serial No (e.g. 1-304)
  */
 export function formatPhysicalReceiptNumber(
   bookNo: string,
   serialNo: string | number
 ): string {
-  const b = bookNo.trim() || '1';
+  const b = bookNo ? bookNo.trim() : '1';
   const s = String(serialNo).trim() || '1';
-  return `पुस्तक क्र. ${b} / पावती क्र. ${s}`;
+  return `${b}-${s}`;
+}
+
+/**
+ * Formats ultra-compact receipt number display (e.g. 1-304 or 1-341)
+ */
+export function formatCompactReceiptDisplay(item: {
+  isPhysicalReceipt?: boolean;
+  receiptBookNo?: string;
+  receiptSerialNo?: string;
+  receiptNumber?: string;
+  transactionNo?: string;
+}): string {
+  if (item.receiptBookNo && item.receiptSerialNo) {
+    return `${item.receiptBookNo.trim()}-${item.receiptSerialNo.trim()}`;
+  }
+
+  if (item.receiptNumber) {
+    const raw = item.receiptNumber;
+    // Extract digit sequences (e.g. "पुस्तक क्र. 1 / पावती क्र. 304" -> ["1", "304"])
+    const matches = raw.match(/\d+/g);
+    if (matches && matches.length >= 2) {
+      return `${matches[0]}-${matches[1]}`;
+    } else if (matches && matches.length === 1) {
+      const b = item.receiptBookNo ? item.receiptBookNo.trim() : '1';
+      return `${b}-${matches[0]}`;
+    }
+    return raw.replace(/^(?:पावती|पुस्तक)\s*(?:क्र\.?|#)?\s*/g, '').trim();
+  }
+
+  if (item.receiptSerialNo) {
+    const b = item.receiptBookNo ? item.receiptBookNo.trim() : '1';
+    return `${b}-${item.receiptSerialNo.trim()}`;
+  }
+
+  if (item.transactionNo) {
+    return item.transactionNo;
+  }
+
+  return '—';
 }
 
 /**
