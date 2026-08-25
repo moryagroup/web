@@ -151,6 +151,8 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
 
   // Member Daily Cash Passbook Modal State
   const [dailyPassbookMember, setDailyPassbookMember] = useState<Member | null>(null);
+  const [passbookViewMode, setPassbookViewMode] = useState<'DAILY_SUMMARY' | 'TRANSACTIONS'>('DAILY_SUMMARY');
+  const [expandedDayDates, setExpandedDayDates] = useState<string[]>([]);
   const [passbookTypeFilter, setPassbookTypeFilter] = useState<'ALL' | 'INCOME' | 'SETTLE' | 'DEBIT'>('ALL');
   const [passbookDateFilter, setPassbookDateFilter] = useState<string>('');
   const [passbookSearch, setPassbookSearch] = useState<string>('');
@@ -631,9 +633,77 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
       filtered.reverse();
     }
 
+    // Compute Day-Wise Summary (Grouped by rawDate for daily tally)
+    const uniqueDates = Array.from(
+      new Set(rawEntries.map((e) => e.rawDate).filter((d) => d && d !== '0000-00-00'))
+    ).sort();
+
+    let dayRunning = openingCash;
+    const dayWiseSummaryList: Array<{
+      rawDate: string;
+      date: string;
+      cashReceived: number;
+      incomesList: typeof currentIncomes;
+      cashSettled: number;
+      settlementsList: typeof currentSettlements;
+      cashDebited: number;
+      debitsList: typeof currentDebits;
+      netDayChange: number;
+      endOfDayBalance: number;
+    }> = [];
+
+    uniqueDates.forEach((d) => {
+      const dayIncomes = currentIncomes.filter((i) => i.transactionDate === d);
+      const daySettles = currentSettlements.filter((s) => s.depositDate === d);
+      const dayDebits = currentDebits.filter((e) => e.expenseDate === d);
+
+      const dayRec = dayIncomes.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+      const daySet = daySettles.filter((s) => s.approvalStatus === 'मंजूर').reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+      const dayDeb = dayDebits.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+      const netChange = dayRec - daySet - dayDeb;
+      dayRunning += netChange;
+
+      dayWiseSummaryList.push({
+        rawDate: d,
+        date: d,
+        cashReceived: dayRec,
+        incomesList: dayIncomes,
+        cashSettled: daySet,
+        settlementsList: daySettles,
+        cashDebited: dayDeb,
+        debitsList: dayDebits,
+        netDayChange: netChange,
+        endOfDayBalance: Math.max(0, dayRunning),
+      });
+    });
+
+    let filteredDayWise = [...dayWiseSummaryList];
+
+    if (passbookDateFilter) {
+      filteredDayWise = filteredDayWise.filter((dw) => dw.rawDate.startsWith(passbookDateFilter));
+    }
+
+    if (passbookSearch.trim()) {
+      const q = passbookSearch.toLowerCase();
+      filteredDayWise = filteredDayWise.filter(
+        (dw) =>
+          dw.date.toLowerCase().includes(q) ||
+          dw.incomesList.some((i) => (i.depositorName || '').toLowerCase().includes(q) || (i.receiptNumber || '').toLowerCase().includes(q)) ||
+          dw.settlementsList.some((s) => s.destination.toLowerCase().includes(q) || (s.bankRefNo || '').toLowerCase().includes(q)) ||
+          dw.debitsList.some((e) => (e.recipientName || '').toLowerCase().includes(q) || (e.billNumber || '').toLowerCase().includes(q))
+      );
+    }
+
+    if (passbookSortOrder === 'DESC') {
+      filteredDayWise.reverse();
+    }
+
     return {
       entries: computedEntries,
       filteredEntries: filtered,
+      dayWiseSummary: dayWiseSummaryList,
+      filteredDayWise,
       stats: {
         openingCash,
         totalReceived: currentIncomes.reduce((s, i) => s + (Number(i.amount) || 0), 0),
@@ -666,7 +736,7 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
     const st = memberDailyLedger.stats;
 
     let text = `🚩 *मोरया ग्रुप मित्र मंडळ (ट्रस्ट)* 🚩\n`;
-    text += `*दैनिक रोख हिशोब व व्यवहार पासबुक (Cash Ledger)*\n`;
+    text += `*दैनिक रोख हिशोब व टॅली पासबुक (Daily Cash Tally)*\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `👤 *सभासद:* ${m.fullName} (${m.designation || 'सभासद'})\n`;
     text += `🏷️ *कोड:* ${m.memberCode} | 📱 *मो:* ${m.phone}\n`;
@@ -682,11 +752,13 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
     text += `💰 *निव्वळ शिल्लक रोख रक्कम: ₹${st.netInHand.toLocaleString('en-IN')}* 💰\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-    text += `📋 *दैनिक व्यवहारांचा तपशील (${memberDailyLedger.entries.length} नोंदी):*\n`;
-    const recent = [...memberDailyLedger.entries].reverse().slice(0, 15);
-    recent.forEach((item, idx) => {
-      const sign = item.type === 'INCOME' || item.type === 'OPENING' ? '🟢 +' : '🔴 -';
-      text += `${idx + 1}. [${item.date}] ${sign}₹${item.amount.toLocaleString('en-IN')} - ${item.title} (${item.category})\n`;
+    text += `📅 *दिनांकनिहाय रोख सारांश (Day-wise Tally):*\n`;
+    const recentDays = [...memberDailyLedger.dayWiseSummary].reverse().slice(0, 10);
+    recentDays.forEach((dw) => {
+      text += `• *[${dw.date}]* जमा: +₹${dw.cashReceived.toLocaleString('en-IN')}`;
+      if (dw.cashSettled > 0) text += ` | भरणा: -₹${dw.cashSettled.toLocaleString('en-IN')}`;
+      if (dw.cashDebited > 0) text += ` | खर्च: -₹${dw.cashDebited.toLocaleString('en-IN')}`;
+      text += ` ➔ *शिल्लक: ₹${dw.endOfDayBalance.toLocaleString('en-IN')}*\n`;
     });
 
     text += `\n🔗 *अधिक माहितीसाठी ॲपमध्ये पहा:*\n${window.location.origin}`;
@@ -2340,231 +2412,590 @@ export const CashSettlementsView: React.FC<CashSettlementsViewProps> = ({
                 </div>
               </div>
 
-              {/* Filter Controls Strip */}
-              <div className="bg-slate-50 dark:bg-slate-800/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3">
-                {/* Type Filter Buttons */}
-                <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto pb-1 md:pb-0">
-                  <button
-                    type="button"
-                    onClick={() => setPassbookTypeFilter('ALL')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      passbookTypeFilter === 'ALL'
-                        ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow'
-                        : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
-                    }`}
-                  >
-                    सर्व नोंदी ({memberDailyLedger.entries.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPassbookTypeFilter('INCOME')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                      passbookTypeFilter === 'INCOME'
-                        ? 'bg-emerald-600 text-white shadow'
-                        : 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50'
-                    }`}
-                  >
-                    <span>🟢 स्वीकारलेली रोख</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPassbookTypeFilter('SETTLE')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                      passbookTypeFilter === 'SETTLE'
-                        ? 'bg-blue-600 text-white shadow'
-                        : 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50'
-                    }`}
-                  >
-                    <span>🔵 बँक भरणा</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPassbookTypeFilter('DEBIT')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                      passbookTypeFilter === 'DEBIT'
-                        ? 'bg-rose-600 text-white shadow'
-                        : 'bg-white dark:bg-slate-700 text-rose-700 dark:text-rose-300 hover:bg-rose-50'
-                    }`}
-                  >
-                    <span>🔴 रोख खर्च</span>
-                  </button>
-                </div>
+              {/* Modal View Mode Tabs */}
+              <div className="flex border-b border-slate-200 dark:border-slate-700 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPassbookViewMode('DAILY_SUMMARY')}
+                  className={`py-2.5 px-4 text-xs font-black flex items-center gap-1.5 border-b-2 cursor-pointer transition-colors ${
+                    passbookViewMode === 'DAILY_SUMMARY'
+                      ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-t-xl'
+                      : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 text-emerald-600" />
+                  <span>📅 दिवसनिहाय सारांश व टॅली (Daily Tally) ({memberDailyLedger.dayWiseSummary.length} दिवस)</span>
+                </button>
 
-                {/* Search, Date Filter & Sort */}
-                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                  <div className="relative flex-1 sm:w-44">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={passbookSearch}
-                      onChange={(e) => setPassbookSearch(e.target.value)}
-                      placeholder="शोध (पावती, नाव)..."
-                      className="w-full pl-8 pr-2.5 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-500"
-                    />
-                  </div>
-
-                  <input
-                    type="date"
-                    value={passbookDateFilter}
-                    onChange={(e) => setPassbookDateFilter(e.target.value)}
-                    className="px-2 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-amber-500"
-                    title="विशिष्ट तारखेनुसार फिल्टर करा"
-                  />
-
-                  {passbookDateFilter && (
-                    <button
-                      type="button"
-                      onClick={() => setPassbookDateFilter('')}
-                      className="p-1.5 bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-200 rounded-xl text-xs"
-                      title="तारीख फिल्टर काढा"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => setPassbookSortOrder(passbookSortOrder === 'DESC' ? 'ASC' : 'DESC')}
-                    className="p-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-xl text-xs flex items-center gap-1 shrink-0"
-                    title={passbookSortOrder === 'DESC' ? 'नवीनतम प्रथम (Newest First)' : 'सुरुवातीपासून (Oldest First)'}
-                  >
-                    <ArrowUpDown className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">{passbookSortOrder === 'DESC' ? 'नवीनतम' : 'सुरुवातीपासून'}</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setPassbookViewMode('TRANSACTIONS')}
+                  className={`py-2.5 px-4 text-xs font-black flex items-center gap-1.5 border-b-2 cursor-pointer transition-colors ${
+                    passbookViewMode === 'TRANSACTIONS'
+                      ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-t-xl'
+                      : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
+                  }`}
+                >
+                  <FileText className="w-4 h-4 text-blue-600" />
+                  <span>📑 सर्व पावत्यांचा तपशील (All Transactions) ({memberDailyLedger.entries.length})</span>
+                </button>
               </div>
 
-              {/* Transactions Chronological Table */}
-              {memberDailyLedger.filteredEntries.length === 0 ? (
-                <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
-                  <div className="w-12 h-12 bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto">
-                    <BookOpen className="w-6 h-6" />
+              {/* ─── TAB 1: DAY-WISE DAILY SUMMARY TABLE (DAILY TALLY) ─── */}
+              {passbookViewMode === 'DAILY_SUMMARY' && (
+                <div className="space-y-3">
+                  {/* Quick search and date filter for Day-wise summary */}
+                  <div className="flex items-center justify-between gap-3 flex-wrap bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 font-bold flex items-center gap-1.5">
+                      <Info className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>प्रत्येक दिवसाचा एकूण जमा, भरणा व शिल्लक हिशोब टॅली करा:</span>
+                    </p>
+
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={passbookSearch}
+                          onChange={(e) => setPassbookSearch(e.target.value)}
+                          placeholder="तारीख किंवा नाव शोधा..."
+                          className="pl-8 pr-2.5 py-1 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500 w-44"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setPassbookSortOrder(passbookSortOrder === 'DESC' ? 'ASC' : 'DESC')}
+                        className="p-1.5 px-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-xl text-xs flex items-center gap-1 shrink-0"
+                        title={passbookSortOrder === 'DESC' ? 'नवीनतम प्रथम (Newest First)' : 'सुरुवातीपासून (Oldest First)'}
+                      >
+                        <ArrowUpDown className="w-3 h-3 text-emerald-600" />
+                        <span>{passbookSortOrder === 'DESC' ? 'नवीनतम' : 'सुरुवातीपासून'}</span>
+                      </button>
+                    </div>
                   </div>
-                  <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">
-                    कोणत्याही नोंदी आढळल्या नाहीत
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    निवडलेल्या फिल्टरनुसार कोणताही रोख जमा, भरणा किंवा खर्चाचा व्यवहार सापडला नाही.
-                  </p>
+
+                  {memberDailyLedger.filteredDayWise.length === 0 ? (
+                    <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+                      <div className="w-12 h-12 bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto">
+                        <Calendar className="w-6 h-6" />
+                      </div>
+                      <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                        कोणत्याही दिवसाच्या नोंदी आढळल्या नाहीत
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        या सभासदाने निवडलेल्या वर्षात रोख संकलन स्वीकारलेले नाही.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-slate-100 dark:bg-slate-700/60 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 uppercase tracking-wider text-[10px] font-black">
+                              <th className="py-3 px-3.5">दिनांक (Date)</th>
+                              <th className="py-3 px-3 text-right">स्वीकारलेली रोख (+)</th>
+                              <th className="py-3 px-3 text-right">बँकेत भरणा (-)</th>
+                              <th className="py-3 px-3 text-right">रोख खर्च (-)</th>
+                              <th className="py-3 px-3 text-right">दिवसाचा बदल (Net Change)</th>
+                              <th className="py-3 px-3.5 text-right">दिवसाअखेर शिल्लक (Closing)</th>
+                              <th className="py-3 px-3 text-center">तपशील</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                            {/* Opening Carryforward Row */}
+                            {activeYear !== 'ALL' && memberDailyLedger.stats.openingCash > 0 && (
+                              <tr className="bg-amber-50/70 dark:bg-amber-950/20 font-bold border-b border-amber-200/60">
+                                <td className="py-2.5 px-3.5 text-amber-900 dark:text-amber-200">
+                                  {activeYear} वर्षारंभी शिल्लक (Opening)
+                                </td>
+                                <td className="py-2.5 px-3 text-right text-slate-400">-</td>
+                                <td className="py-2.5 px-3 text-right text-slate-400">-</td>
+                                <td className="py-2.5 px-3 text-right text-slate-400">-</td>
+                                <td className="py-2.5 px-3 text-right text-amber-700 dark:text-amber-300 font-black">+ ₹{memberDailyLedger.stats.openingCash.toLocaleString('en-IN')}</td>
+                                <td className="py-2.5 px-3.5 text-right font-black text-amber-900 dark:text-amber-200">₹{memberDailyLedger.stats.openingCash.toLocaleString('en-IN')}</td>
+                                <td className="py-2.5 px-3 text-center text-slate-400 text-[10px]">Opening</td>
+                              </tr>
+                            )}
+
+                            {memberDailyLedger.filteredDayWise.map((day) => {
+                              const isExpanded = expandedDayDates.includes(day.rawDate);
+                              return (
+                                <React.Fragment key={day.rawDate}>
+                                  <tr
+                                    onClick={() => {
+                                      setExpandedDayDates((prev) =>
+                                        prev.includes(day.rawDate)
+                                          ? prev.filter((d) => d !== day.rawDate)
+                                          : [...prev, day.rawDate]
+                                      );
+                                    }}
+                                    className="hover:bg-slate-50/80 dark:hover:bg-slate-750 transition-colors cursor-pointer"
+                                  >
+                                    {/* Date */}
+                                    <td className="py-3 px-3.5 whitespace-nowrap font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                      <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isExpanded ? 'rotate-90 text-emerald-600' : ''}`} />
+                                      <span>{day.date}</span>
+                                    </td>
+
+                                    {/* Cash Received */}
+                                    <td className="py-3 px-3 text-right whitespace-nowrap">
+                                      {day.cashReceived > 0 ? (
+                                        <div>
+                                          <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                                            + ₹{day.cashReceived.toLocaleString('en-IN')}
+                                          </span>
+                                          <span className="text-[10px] text-slate-400 block font-normal">
+                                            ({day.incomesList.length} पावत्या)
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span className="text-slate-300 dark:text-slate-600">-</span>
+                                      )}
+                                    </td>
+
+                                    {/* Bank Settled */}
+                                    <td className="py-3 px-3 text-right whitespace-nowrap">
+                                      {day.cashSettled > 0 ? (
+                                        <div>
+                                          <span className="font-black text-blue-600 dark:text-blue-400 text-sm">
+                                            - ₹{day.cashSettled.toLocaleString('en-IN')}
+                                          </span>
+                                          <span className="text-[10px] text-slate-400 block font-normal">
+                                            ({day.settlementsList.length} भरणा)
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span className="text-slate-300 dark:text-slate-600">-</span>
+                                      )}
+                                    </td>
+
+                                    {/* Cash Debited */}
+                                    <td className="py-3 px-3 text-right whitespace-nowrap">
+                                      {day.cashDebited > 0 ? (
+                                        <div>
+                                          <span className="font-black text-rose-600 dark:text-rose-400 text-sm">
+                                            - ₹{day.cashDebited.toLocaleString('en-IN')}
+                                          </span>
+                                          <span className="text-[10px] text-slate-400 block font-normal">
+                                            ({day.debitsList.length} खर्च)
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span className="text-slate-300 dark:text-slate-600">-</span>
+                                      )}
+                                    </td>
+
+                                    {/* Net Day Change */}
+                                    <td className="py-3 px-3 text-right whitespace-nowrap font-bold">
+                                      <span className={day.netDayChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+                                        {day.netDayChange >= 0 ? '+' : ''} ₹{day.netDayChange.toLocaleString('en-IN')}
+                                      </span>
+                                    </td>
+
+                                    {/* End of Day Closing Balance */}
+                                    <td className="py-3 px-3.5 text-right whitespace-nowrap font-black text-sm text-slate-900 dark:text-slate-100 bg-slate-50/70 dark:bg-slate-800/70">
+                                      ₹{day.endOfDayBalance.toLocaleString('en-IN')}
+                                    </td>
+
+                                    {/* Action */}
+                                    <td className="py-3 px-3 text-center whitespace-nowrap">
+                                      <span className="px-2 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-emerald-50 text-slate-600 dark:text-slate-300 font-bold rounded-lg text-[10px] inline-flex items-center gap-1">
+                                        <Eye className="w-3 h-3 text-emerald-600" />
+                                        <span>{isExpanded ? 'लपवा' : 'तपशील'}</span>
+                                      </span>
+                                    </td>
+                                  </tr>
+
+                                  {/* Expanded Day Details (Receipts, Settlements, Debits) */}
+                                  {isExpanded && (
+                                    <tr>
+                                      <td colSpan={7} className="p-3 bg-slate-50/90 dark:bg-slate-850 border-y border-slate-200 dark:border-slate-700">
+                                        <div className="space-y-3">
+                                          <div className="flex items-center justify-between">
+                                            <h5 className="font-bold text-slate-800 dark:text-slate-200 text-xs">
+                                              📅 {day.date} रोजीच्या सर्व व्यवहारांचा तपशील:
+                                            </h5>
+                                            <span className="text-[11px] text-slate-500">
+                                              एकूण {day.incomesList.length + day.settlementsList.length + day.debitsList.length} नोंदी
+                                            </span>
+                                          </div>
+
+                                          {/* Receipts Inflow List */}
+                                          {day.incomesList.length > 0 && (
+                                            <div className="space-y-1.5">
+                                              <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
+                                                <ArrowDownCircle className="w-3.5 h-3.5" />
+                                                स्वीकारलेली रोख (Cash Receipts - {day.incomesList.length}):
+                                              </p>
+                                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                {day.incomesList.map((inc) => (
+                                                  <div key={inc.id} className="p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-emerald-200 dark:border-emerald-800/40 flex justify-between items-start gap-2 shadow-xs">
+                                                    <div>
+                                                      <span className="font-bold text-slate-800 dark:text-slate-100 text-xs">
+                                                        {inc.depositorName}
+                                                      </span>
+                                                      <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                                        <span>{inc.receiptNumber ? `पावती क्र. ${inc.receiptNumber}` : inc.transactionNo}</span>
+                                                        <span> • {inc.incomeType}</span>
+                                                      </div>
+                                                      {inc.notes && <p className="text-[10px] text-slate-400 italic">"{inc.notes}"</p>}
+                                                    </div>
+                                                    <div className="text-right shrink-0">
+                                                      <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs">
+                                                        + ₹{Number(inc.amount).toLocaleString('en-IN')}
+                                                      </span>
+                                                      {inc.attachmentUrl && (
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setPreviewProofUrl(inc.attachmentUrl || null);
+                                                          }}
+                                                          className="block text-[9px] text-amber-500 font-bold hover:underline mt-0.5"
+                                                        >
+                                                          📷 फोटो पहा
+                                                        </button>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {/* Bank Settlements List */}
+                                          {day.settlementsList.length > 0 && (
+                                            <div className="space-y-1.5">
+                                              <p className="text-[11px] font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1">
+                                                <Landmark className="w-3.5 h-3.5" />
+                                                बँकेत/ट्रस्टकडे भरणा (Bank Settlements - {day.settlementsList.length}):
+                                              </p>
+                                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                {day.settlementsList.map((st) => (
+                                                  <div key={st.id} className="p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-blue-200 dark:border-blue-800/40 flex justify-between items-start gap-2 shadow-xs">
+                                                    <div>
+                                                      <span className="font-bold text-slate-800 dark:text-slate-100 text-xs">
+                                                        {st.destination}
+                                                      </span>
+                                                      <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                                        <span>{st.bankRefNo && st.bankRefNo !== 'नमूद नाही' ? `संदर्भ: ${st.bankRefNo}` : st.settlementNo}</span>
+                                                        <span className={st.approvalStatus === 'मंजूर' ? 'text-emerald-500 font-bold ml-1' : 'text-amber-500 font-bold ml-1'}>
+                                                          • {st.approvalStatus}
+                                                        </span>
+                                                      </div>
+                                                      {st.notes && <p className="text-[10px] text-slate-400 italic">"{st.notes}"</p>}
+                                                    </div>
+                                                    <div className="text-right shrink-0">
+                                                      <span className="font-black text-blue-600 dark:text-blue-400 text-xs">
+                                                        - ₹{Number(st.amount).toLocaleString('en-IN')}
+                                                      </span>
+                                                      {st.slipPhotoUrl && (
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setPreviewProofUrl(st.slipPhotoUrl || null);
+                                                          }}
+                                                          className="block text-[9px] text-amber-500 font-bold hover:underline mt-0.5"
+                                                        >
+                                                          📷 स्लिप फोटो
+                                                        </button>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {/* Expense Debits List */}
+                                          {day.debitsList.length > 0 && (
+                                            <div className="space-y-1.5">
+                                              <p className="text-[11px] font-bold text-rose-700 dark:text-rose-300 flex items-center gap-1">
+                                                <ReceiptIndianRupee className="w-3.5 h-3.5" />
+                                                रोखीतून खर्च (Expense Debits - {day.debitsList.length}):
+                                              </p>
+                                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                {day.debitsList.map((deb) => (
+                                                  <div key={deb.id} className="p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-rose-200 dark:border-rose-800/40 flex justify-between items-start gap-2 shadow-xs">
+                                                    <div>
+                                                      <span className="font-bold text-slate-800 dark:text-slate-100 text-xs">
+                                                        {deb.recipientName || 'अधिकृत खर्च'}
+                                                      </span>
+                                                      <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                                        <span>{deb.billNumber ? `बिल क्र. ${deb.billNumber}` : deb.transactionNo}</span>
+                                                        <span> • {deb.expenseCategory}</span>
+                                                      </div>
+                                                      {deb.reason && <p className="text-[10px] text-slate-400 italic">"{deb.reason}"</p>}
+                                                    </div>
+                                                    <div className="text-right shrink-0">
+                                                      <span className="font-black text-rose-600 dark:text-rose-400 text-xs">
+                                                        - ₹{Number(deb.amount).toLocaleString('en-IN')}
+                                                      </span>
+                                                      {deb.attachmentUrl && (
+                                                        <button
+                                                          type="button"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setPreviewProofUrl(deb.attachmentUrl || null);
+                                                          }}
+                                                          className="block text-[9px] text-amber-500 font-bold hover:underline mt-0.5"
+                                                        >
+                                                          📷 बिल फोटो
+                                                        </button>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-xs">
-                      <thead>
-                        <tr className="bg-slate-100 dark:bg-slate-700/60 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 uppercase tracking-wider text-[10px] font-black">
-                          <th className="py-3 px-3.5">दिनांक (Date)</th>
-                          <th className="py-3 px-3">प्रकार (Type)</th>
-                          <th className="py-3 px-3.5">तपशील व संदर्भ (Details & Ref)</th>
-                          <th className="py-3 px-3 text-center">पुरावा (Proof)</th>
-                          <th className="py-3 px-3.5 text-right">व्यवहार रक्कम (Amount)</th>
-                          <th className="py-3 px-3.5 text-right">रनिंग शिल्लक (Running Balance)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                        {memberDailyLedger.filteredEntries.map((item) => (
-                          <tr
-                            key={item.id}
-                            className="hover:bg-slate-50/80 dark:hover:bg-slate-750 transition-colors"
-                          >
-                            {/* Date */}
-                            <td className="py-3 px-3.5 whitespace-nowrap font-bold text-slate-700 dark:text-slate-300">
-                              {item.date}
-                            </td>
+              )}
 
-                            {/* Type Badge */}
-                            <td className="py-3 px-3 whitespace-nowrap">
-                              {item.type === 'OPENING' && (
-                                <span className="px-2 py-0.5 bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800 rounded-md font-black text-[10px]">
-                                  मागील शिल्लक
-                                </span>
-                              )}
-                              {item.type === 'INCOME' && (
-                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 rounded-md font-black text-[10px] flex items-center gap-1 w-fit">
-                                  <ArrowDownCircle className="w-3 h-3 text-emerald-600" />
-                                  स्वीकारलेली रोख
-                                </span>
-                              )}
-                              {item.type === 'SETTLE' && (
-                                <span className="px-2 py-0.5 bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300 border border-blue-300 dark:border-blue-800 rounded-md font-black text-[10px] flex items-center gap-1 w-fit">
-                                  <Landmark className="w-3 h-3 text-blue-600" />
-                                  बँक भरणा
-                                </span>
-                              )}
-                              {item.type === 'DEBIT' && (
-                                <span className="px-2 py-0.5 bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-md font-black text-[10px] flex items-center gap-1 w-fit">
-                                  <ReceiptIndianRupee className="w-3 h-3 text-rose-600" />
-                                  रोख खर्च
-                                </span>
-                              )}
-                            </td>
+              {/* ─── TAB 2: INDIVIDUAL TRANSACTIONS TABLE ─── */}
+              {passbookViewMode === 'TRANSACTIONS' && (
+                <div className="space-y-4">
+                  {/* Filter Controls Strip */}
+                  <div className="bg-slate-50 dark:bg-slate-800/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3">
+                    {/* Type Filter Buttons */}
+                    <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto pb-1 md:pb-0">
+                      <button
+                        type="button"
+                        onClick={() => setPassbookTypeFilter('ALL')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          passbookTypeFilter === 'ALL'
+                            ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow'
+                            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
+                        }`}
+                      >
+                        सर्व नोंदी ({memberDailyLedger.entries.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPassbookTypeFilter('INCOME')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                          passbookTypeFilter === 'INCOME'
+                            ? 'bg-emerald-600 text-white shadow'
+                            : 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50'
+                        }`}
+                      >
+                        <span>🟢 स्वीकारलेली रोख</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPassbookTypeFilter('SETTLE')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                          passbookTypeFilter === 'SETTLE'
+                            ? 'bg-blue-600 text-white shadow'
+                            : 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50'
+                        }`}
+                      >
+                        <span>🔵 बँक भरणा</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPassbookTypeFilter('DEBIT')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                          passbookTypeFilter === 'DEBIT'
+                            ? 'bg-rose-600 text-white shadow'
+                            : 'bg-white dark:bg-slate-700 text-rose-700 dark:text-rose-300 hover:bg-rose-50'
+                        }`}
+                      >
+                        <span>🔴 रोख खर्च</span>
+                      </button>
+                    </div>
 
-                            {/* Details & Ref */}
-                            <td className="py-3 px-3.5">
-                              <p className="font-black text-slate-800 dark:text-slate-100 text-xs">
-                                {item.title}
-                              </p>
-                              <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                <span className="px-1.5 py-0.2 bg-slate-100 dark:bg-slate-700 rounded font-mono font-bold">
-                                  {item.refNo}
-                                </span>
-                                <span>• {item.category}</span>
-                                {item.extraInfo && (
-                                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                                    • {item.extraInfo}
-                                  </span>
-                                )}
-                              </div>
-                              {item.notes && (
-                                <p className="text-[11px] text-slate-400 italic mt-0.5 line-clamp-1">
-                                  "{item.notes}"
-                                </p>
-                              )}
-                            </td>
+                    {/* Search, Date Filter & Sort */}
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                      <div className="relative flex-1 sm:w-44">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={passbookSearch}
+                          onChange={(e) => setPassbookSearch(e.target.value)}
+                          placeholder="शोध (पावती, नाव)..."
+                          className="w-full pl-8 pr-2.5 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
 
-                            {/* Proof Photo Button */}
-                            <td className="py-3 px-3 text-center whitespace-nowrap">
-                              {item.proofUrl ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setPreviewProofUrl(item.proofUrl || null)}
-                                  className="px-2 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 text-slate-700 dark:text-slate-200 hover:text-amber-900 font-bold rounded-lg text-[10px] inline-flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
-                                  title="फोटो पुरावा पहा"
-                                >
-                                  <ImageIcon className="w-3 h-3 text-amber-500" />
-                                  <span>फोटो</span>
-                                </button>
-                              ) : (
-                                <span className="text-slate-300 dark:text-slate-600 text-[10px]">-</span>
-                              )}
-                            </td>
+                      <input
+                        type="date"
+                        value={passbookDateFilter}
+                        onChange={(e) => setPassbookDateFilter(e.target.value)}
+                        className="px-2 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-amber-500"
+                        title="विशिष्ट तारखेनुसार फिल्टर करा"
+                      />
 
-                            {/* Signed Amount */}
-                            <td className="py-3 px-3.5 text-right whitespace-nowrap">
-                              <span
-                                className={`text-sm font-black ${
-                                  item.type === 'INCOME' || item.type === 'OPENING'
-                                    ? 'text-emerald-600 dark:text-emerald-400'
-                                    : 'text-rose-600 dark:text-rose-400'
-                                }`}
-                              >
-                                {item.type === 'INCOME' || item.type === 'OPENING' ? '+' : '-'} ₹
-                                {item.amount.toLocaleString('en-IN')}
-                              </span>
-                              {item.type === 'SETTLE' && item.status === 'प्रलंबित' && (
-                                <p className="text-[9px] text-amber-500 font-bold">प्रलंबित</p>
-                              )}
-                            </td>
+                      {passbookDateFilter && (
+                        <button
+                          type="button"
+                          onClick={() => setPassbookDateFilter('')}
+                          className="p-1.5 bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-200 rounded-xl text-xs"
+                          title="तारीख फिल्टर काढा"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
 
-                            {/* Running Balance */}
-                            <td className="py-3 px-3.5 text-right whitespace-nowrap font-black text-slate-800 dark:text-slate-100 bg-slate-50/50 dark:bg-slate-800/50">
-                              ₹{item.runningBalance.toLocaleString('en-IN')}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                      <button
+                        type="button"
+                        onClick={() => setPassbookSortOrder(passbookSortOrder === 'DESC' ? 'ASC' : 'DESC')}
+                        className="p-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-xl text-xs flex items-center gap-1 shrink-0"
+                        title={passbookSortOrder === 'DESC' ? 'नवीनतम प्रथम (Newest First)' : 'सुरुवातीपासून (Oldest First)'}
+                      >
+                        <ArrowUpDown className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{passbookSortOrder === 'DESC' ? 'नवीनतम' : 'सुरुवातीपासून'}</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Transactions Chronological Table */}
+                  {memberDailyLedger.filteredEntries.length === 0 ? (
+                    <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+                      <div className="w-12 h-12 bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto">
+                        <BookOpen className="w-6 h-6" />
+                      </div>
+                      <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                        कोणत्याही नोंदी आढळल्या नाहीत
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        निवडलेल्या फिल्टरनुसार कोणताही रोख जमा, भरणा किंवा खर्चाचा व्यवहार सापडला नाही.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-slate-100 dark:bg-slate-700/60 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 uppercase tracking-wider text-[10px] font-black">
+                              <th className="py-3 px-3.5">दिनांक (Date)</th>
+                              <th className="py-3 px-3">प्रकार (Type)</th>
+                              <th className="py-3 px-3.5">तपशील व संदर्भ (Details & Ref)</th>
+                              <th className="py-3 px-3 text-center">पुरावा (Proof)</th>
+                              <th className="py-3 px-3.5 text-right">व्यवहार रक्कम (Amount)</th>
+                              <th className="py-3 px-3.5 text-right">रनिंग शिल्लक (Running Balance)</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                            {memberDailyLedger.filteredEntries.map((item) => (
+                              <tr
+                                key={item.id}
+                                className="hover:bg-slate-50/80 dark:hover:bg-slate-750 transition-colors"
+                              >
+                                {/* Date */}
+                                <td className="py-3 px-3.5 whitespace-nowrap font-bold text-slate-700 dark:text-slate-300">
+                                  {item.date}
+                                </td>
+
+                                {/* Type Badge */}
+                                <td className="py-3 px-3 whitespace-nowrap">
+                                  {item.type === 'OPENING' && (
+                                    <span className="px-2 py-0.5 bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800 rounded-md font-black text-[10px]">
+                                      मागील शिल्लक
+                                    </span>
+                                  )}
+                                  {item.type === 'INCOME' && (
+                                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 rounded-md font-black text-[10px] flex items-center gap-1 w-fit">
+                                      <ArrowDownCircle className="w-3 h-3 text-emerald-600" />
+                                      स्वीकारलेली रोख
+                                    </span>
+                                  )}
+                                  {item.type === 'SETTLE' && (
+                                    <span className="px-2 py-0.5 bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300 border border-blue-300 dark:border-blue-800 rounded-md font-black text-[10px] flex items-center gap-1 w-fit">
+                                      <Landmark className="w-3 h-3 text-blue-600" />
+                                      बँक भरणा
+                                    </span>
+                                  )}
+                                  {item.type === 'DEBIT' && (
+                                    <span className="px-2 py-0.5 bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-md font-black text-[10px] flex items-center gap-1 w-fit">
+                                      <ReceiptIndianRupee className="w-3 h-3 text-rose-600" />
+                                      रोख खर्च
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* Details & Ref */}
+                                <td className="py-3 px-3.5">
+                                  <p className="font-black text-slate-800 dark:text-slate-100 text-xs">
+                                    {item.title}
+                                  </p>
+                                  <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                    <span className="px-1.5 py-0.2 bg-slate-100 dark:bg-slate-700 rounded font-mono font-bold">
+                                      {item.refNo}
+                                    </span>
+                                    <span>• {item.category}</span>
+                                    {item.extraInfo && (
+                                      <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                                        • {item.extraInfo}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {item.notes && (
+                                    <p className="text-[11px] text-slate-400 italic mt-0.5 line-clamp-1">
+                                      "{item.notes}"
+                                    </p>
+                                  )}
+                                </td>
+
+                                {/* Proof Photo Button */}
+                                <td className="py-3 px-3 text-center whitespace-nowrap">
+                                  {item.proofUrl ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setPreviewProofUrl(item.proofUrl || null)}
+                                      className="px-2 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-amber-100 text-slate-700 dark:text-slate-200 hover:text-amber-900 font-bold rounded-lg text-[10px] inline-flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                                      title="फोटो पुरावा पहा"
+                                    >
+                                      <ImageIcon className="w-3 h-3 text-amber-500" />
+                                      <span>फोटो</span>
+                                    </button>
+                                  ) : (
+                                    <span className="text-slate-300 dark:text-slate-600 text-[10px]">-</span>
+                                  )}
+                                </td>
+
+                                {/* Signed Amount */}
+                                <td className="py-3 px-3.5 text-right whitespace-nowrap">
+                                  <span
+                                    className={`text-sm font-black ${
+                                      item.type === 'INCOME' || item.type === 'OPENING'
+                                        ? 'text-emerald-600 dark:text-emerald-400'
+                                        : 'text-rose-600 dark:text-rose-400'
+                                    }`}
+                                  >
+                                    {item.type === 'INCOME' || item.type === 'OPENING' ? '+' : '-'} ₹
+                                    {item.amount.toLocaleString('en-IN')}
+                                  </span>
+                                  {item.type === 'SETTLE' && item.status === 'प्रलंबित' && (
+                                    <p className="text-[9px] text-amber-500 font-bold">प्रलंबित</p>
+                                  )}
+                                </td>
+
+                                {/* Running Balance */}
+                                <td className="py-3 px-3.5 text-right whitespace-nowrap font-black text-slate-800 dark:text-slate-100 bg-slate-50/50 dark:bg-slate-800/50">
+                                  ₹{item.runningBalance.toLocaleString('en-IN')}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
