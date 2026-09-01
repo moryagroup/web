@@ -1,0 +1,109 @@
+MASTER HANDOVER PROMPT — Morya Group Web ERP (moryagroupweb)
+
+Instructions for the Incoming AI Agent:
+Read this entire document carefully. It contains all context, secrets, architecture guidelines, role hierarchy, and verification steps necessary to take over development on this project without missing a beat.
+
+================================================================================
+1. PROJECT OVERVIEW & SCOPE
+================================================================================
+- Project Name: Morya Group Web Application ERP (moryagroupweb)
+- Domain: Community ERP web application and Android mobile shell for Morya Group (गणेशोत्सव / मंडळ / कमिटी).
+- Primary Language / Localization: Marathi (Devanagari script) for UI labels, role designations, receipt numbering, and daily ledger terminology.
+
+================================================================================
+2. TECH STACK & KEY FILES
+================================================================================
+- Frontend Stack: React 19, TypeScript, Vite 6, Tailwind CSS v4, Lucide Icons, Motion.
+- Database & Sync: Firebase 10 Firestore (morya-group-352ad) with live onSnapshot real-time listeners across 7 collections (incomes, expenses, members, occasions, gallery, suggestions, settings), backed by storageService.ts for local cache and offline support.
+- Mobile Wrapper: Capacitor 7 (Android shell in android/).
+- Core Files to Reference:
+  * PROJECT.md — Full architecture, milestone tracking, and interface contracts.
+  * TEST_READY.md & TEST_INFRA.md — 4-tier test suite documentation and traceability matrix.
+  * src/App.tsx — Main application state, tab navigation, Firestore real-time listener subscriptions.
+  * src/config/firebase.ts — Firebase app and Firestore client initialization.
+  * src/services/firestoreService.ts — Firestore CRUD operations and real-time listeners.
+  * src/services/storageService.ts — LocalStorage fallback & cache service.
+  * src/utils/rbac.ts — Role-based access control and designation hierarchy ranks.
+  * src/utils/exportUtils.ts — UTF-8 BOM CSV exporter & print helper.
+  * capacitor.config.ts — Mobile app configuration.
+
+================================================================================
+3. CREDENTIALS, SECRETS & ENVIRONMENT CONFIGURATIONS
+================================================================================
+
+A. File: .env (Firebase Production Config)
+If this file is missing in the project root, create it with:
+--------------------------------------------------------------------------------
+VITE_FIREBASE_API_KEY=AIzaSyDFzf3gVs0vhstWxsbG6DJui13yNb97Dgs
+VITE_FIREBASE_AUTH_DOMAIN=morya-group-352ad.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=morya-group-352ad
+VITE_FIREBASE_STORAGE_BUCKET=morya-group-352ad.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=1033031751154
+VITE_FIREBASE_APP_ID=1:1033031751154:web:c5f40ec456aca1deab076b
+VITE_FIREBASE_MEASUREMENT_ID=G-M9X7HPGWT0
+--------------------------------------------------------------------------------
+
+B. File: .env.local (Supabase Config)
+If this file is missing in the project root, create it with:
+--------------------------------------------------------------------------------
+VITE_SUPABASE_URL=https://aqvwscvcmfrasqesgifw.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxdndzY3ZjbWZyYXNxZXNnaWZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2ODYyMzcsImV4cCI6MjEwMjI2MjIzN30.v6tRVT8Yq3a6ott-rRX3dgsmeopJ1ebWs8sjkjJTpvw
+--------------------------------------------------------------------------------
+
+C. Git Remote & Identity
+- Repository URL: https://github.com/moryagroup/web.git
+- Git User Config:
+  git remote set-url origin https://github.com/moryagroup/web.git
+  git config user.name "Antigravity Agent"
+  git config user.email "antigravity-agent@moryagroup.local"
+
+D. In-App Admin / Master Password
+- Master Password for Admin Login & Confirmation Modals: Tom&jerry5633#
+
+================================================================================
+4. CRITICAL ARCHITECTURAL RULES & INVARIANTS
+================================================================================
+1. Role-Based Access Control (RBAC) Hierarchy (src/utils/rbac.ts):
+   - Strictly respect the Marathi rank hierarchy:
+     अध्यक्ष (Rank 1) > उपाध्यक्ष (Rank 2) > खजिनदार (Rank 3) > उपखजिनदार (Rank 4) > सदस्य (Rank 5) > सभासद (Rank 6) > पाहुणा / Guest (Rank 7).
+   - Financial write permissions are strictly limited to financial roles (अध्यक्ष, खजिनदार, उपखजिनदार, ॲडमिन, Admin).
+   - Logged-out users default to the unauthenticated Guest state (पाहुणा).
+
+2. Marathi UTF-8 BOM CSV & PDF Exports (src/utils/exportUtils.ts):
+   - All CSV downloads must prepend UTF-8 BOM (\uFEFF) and follow RFC-4180 escaping so Marathi Devanagari text displays properly in Microsoft Excel without character corruption.
+   - Clean printable statements use @media print rules in src/index.css to hide headers/sidebars and display clear print layouts.
+
+3. Real-Time Firestore Sync:
+   - UI views stay in sync with Firestore via onSnapshot subscriptions.
+   - Never break empty array listener callbacks or local storage cache fallbacks.
+
+4. Recent Core Features Implemented:
+   - Day-wise Daily Cash Tally Table & Accordion Ledger (दिनांकनिहाय रोख सारांश व टॅली / रोजमेळ).
+   - Committee Scope Filter: All vs My Transactions (restricts normal members to own daily transactions).
+   - Pending Physical Receipts Deposit: Directly deposit duplicate pending receipt numbers upon entry.
+   - Pending Approvals UI: Limit pending approval transactions to 5 items with inline expand toggle & "see all" options on the dashboard.
+
+================================================================================
+5. ENVIRONMENT VERIFICATION & HEALTH CHECK COMMANDS
+================================================================================
+To verify that the project is in a healthy state on this new laptop:
+
+# 1. Type Checking
+npx tsc --noEmit
+
+# 2. Production Bundle Build
+npm run build
+
+# 3. Automated Test Suite (25/25 must pass)
+npx tsx tests/runner.ts
+
+# 4. Local Development Server (port 3000)
+npm run dev
+
+================================================================================
+6. HANDOVER SIGN-OFF CHECKLIST FOR THE AGENT
+================================================================================
+- [ ] Confirm both .env and .env.local files exist in project root.
+- [ ] Verify npx tsc --noEmit passes with 0 errors.
+- [ ] Verify npx tsx tests/runner.ts passes 100% of test cases.
+- [ ] Confirm readiness to the user.
